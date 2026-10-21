@@ -48,7 +48,7 @@ resolve here.
 
 `lib/analysis_options.yaml` is RELAY's: `flutter_lints`, the strict language modes and
 RELAY's linter rules. An app includes it with
-`include: package:apsira_tools/analysis_options.yaml`.
+`include: package:apsira_tools/analysis_options.yaml`. The including app must have `flutter_lints` in its own `dev_dependencies`: the include resolves lint names, not packages.
 
 ## Tests
 

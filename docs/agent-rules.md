@@ -2,8 +2,8 @@
 # APSIRA — standing rules for army agents
 
 ## Non-negotiables
-- **Brand assets are copied unchanged.** Any file under `packages/apsira_ui/lib/{fonts,brand}` is byte-identical to its source in `apsira-brand/`; the provenance test proves it. Never recolour, re-encode or "optimise" them.
-- **Colour literals live in one file:** `packages/apsira_ui/lib/src/colors.dart`. Nowhere else in any package.
+- **Brand assets are copied unchanged.** Every file under `packages/apsira_ui/lib/{fonts,brand}` matches its `SHA256SUMS`, and the ones `apsira-brand/` holds (the two Archivo Expanded TTFs, the Archivo licence, the reversed lockup) are byte-identical to it; the provenance test proves both. Never recolour, re-encode or "optimise" them.
+- **Colour literals live in one file:** `packages/apsira_ui/lib/src/colors.dart`. Nowhere else under any package's `lib/` (`tool/check.sh` greps `lib/`; tests and the tools' own fixtures may hold literals they check).
 - **Packages never depend on `build_runner`** or ship generated code (D-APK-001).
 - **A package requires the lowest Flutter any live consumer pins** (`apsira_ui`: `>=3.47.0`).
 - **Behaviour is RELAY's.** Every extracted file names its source in a header comment (`// From relay <path> @ 5f606e9`). A change in behaviour from RELAY's needs a `D-APK-nnn` entry; a rename is not a change in behaviour.

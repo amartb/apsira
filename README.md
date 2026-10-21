@@ -102,7 +102,8 @@ versioned export/import bundle that the central app can consume later.
 | `apsira_tools` | The layering lint, the l10n check, the coverage gate and the privacy guards, configured per app by `tool/apsira_tools.yaml`. |
 
 Apps pin them by git reference to a per-package tag (`apsira_ui-v0.1.0`), never by path
-in a committed `pubspec.yaml`. What is app-specific stays in the app: its own
+in a committed `pubspec.yaml` (the one path consumer is `apsira_ui/example`, inside the
+package itself). What is app-specific stays in the app: its own
 `ThemeExtension`s, its ports beyond `Clock`/`IdGen`, its components, its icon art, its
 codegen. Packages never depend on `build_runner`.
 
@@ -172,5 +173,5 @@ The procedure that brought Lyceum Folio in (planning thread of 2026-10-21):
 | `folios/`, `tomes/` | Briefs, one per app |
 | `packages/` | `apsira_core`, `apsira_ui`, `apsira_tools` |
 | `docs/decisions.md` | The ecosystem's decision log (`D-APK-nnn`) |
-| `tool/check.sh` | Runs every package's analyze and tests |
+| `tool/check.sh` | The full check: every package's analyze and tests (the `apsira_ui/example` consumer included), each `version:` against its tag, `sha256sum -c` of fonts and brand; verdict line `check: PASS` |
 | `.army.toml` | The army's configuration for the `apsira` lane |

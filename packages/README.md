@@ -70,6 +70,6 @@ Every tool takes `--config` (the tools file). `l10n_check` names its gen-l10n fi
 
 - Never `build_runner` in a package.
 - A package requires the lowest Flutter any live consumer pins.
-- Colour literals exist only in `apsira_ui/lib/src/colors.dart`.
-- Brand files are copied unchanged from `../apsira-brand/`; the provenance test fails on
-  any byte difference.
+- Colour literals exist only in `apsira_ui/lib/src/colors.dart` (checked over every package's `lib/`; tests and fixtures are exempt).
+- Brand files match `SHA256SUMS`; those that also exist in `../apsira-brand/` are byte-identical
+  to it; the provenance test fails on any difference.

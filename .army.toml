@@ -26,7 +26,7 @@ gates = [
   { name = "core",   cmd = "bash -c 'cd packages/apsira_core && dart analyze --fatal-infos && dart test'", proves = "apsira_core analyzes and its tests pass", paths = ["packages/apsira_core/**"], requires = ["file:packages/apsira_core/pubspec.yaml"], mem_gb = 1 },
   { name = "tools",  cmd = "bash -c 'cd packages/apsira_tools && dart analyze --fatal-infos && dart test'", proves = "apsira_tools analyzes and its tests (RELAY's lint fixtures) pass", paths = ["packages/apsira_tools/**"], requires = ["file:packages/apsira_tools/pubspec.yaml"], mem_gb = 1 },
   { name = "ui",     cmd = "bash -c 'cd packages/apsira_ui && flutter analyze && flutter test'", proves = "apsira_ui analyzes; tokens, contrast, type scale, fonts and brand provenance tests pass", paths = ["packages/apsira_ui/**", "apsira-brand/**"], requires = ["file:packages/apsira_ui/pubspec.yaml"], mem_gb = 3 },
-  { name = "check",  cmd = "bash -c 'set -o pipefail; mkdir -p .army; bash tool/check.sh 2>&1 | tee .army/check.log; grep -qx \"check: PASS\" .army/check.log'", proves = "every package: analyze + tests, version equals tag, sha256 of fonts and lockup against apsira-brand/", paths = [".army-never-at-merge"], requires = ["file:tool/check.sh", "env:APSIRA_FULL_CHECK"], mem_gb = 3 },
+  { name = "check",  cmd = "bash -c 'set -o pipefail; mkdir -p .army; bash tool/check.sh 2>&1 | tee .army/check.log; grep -qx \"check: PASS\" .army/check.log'", proves = "every package: analyze + tests (ui example included), each pubspec version matches its tag when one exists, sha256 of fonts and brand", paths = [".army-never-at-merge"], requires = ["file:tool/check.sh", "env:APSIRA_FULL_CHECK"], mem_gb = 3 },
 ]
 
 [assurance]
@@ -46,7 +46,7 @@ vision = "README.md"
 ecosystem = ["docs/decisions.md", "packages/README.md"]
 
 [network]
-allow = ["pub.dev", "storage.googleapis.com"]   # pub fetches for the packages' few dependencies (flutter_lucide, yaml, args, test)
+allow = ["pub.dev", "storage.googleapis.com"]   # pub fetches for the packages' few dependencies (flutter_lucide, yaml, test)
 online = false
 
 [resources]

@@ -15,8 +15,8 @@ becomes Decided on review), Superseded.
 
 | ID | Decision | Status |
 |---|---|---|
-| D-APK-001 | Three shared Dart packages in `packages/`: `apsira_core`, `apsira_ui`, `apsira_tools`; extracted from RELAY v1.0.0 | Decided |
-| D-APK-002 | `apsira_tools` v0.1 is RELAY's tooling with per-app configuration; VIATICUM's deltas become config knobs in v0.2 | Decided |
+| D-APK-001 | Three shared Dart packages in `packages/`: `apsira_core`, `apsira_ui`, `apsira_tools`; extracted from RELAY v1.0.0 | Decided (amended by D-APK-006) |
+| D-APK-002 | `apsira_tools` v0.1 is RELAY's tooling with per-app configuration; VIATICUM's deltas become config knobs in v0.2 | Decided (amended by D-APK-006) |
 | D-APK-003 | Apps pin packages by git reference to a per-package tag; path overrides only for co-development, never committed | Decided |
 | D-APK-004 | Classes of app: folio (phone), tome (PC), the central app; the charter's membership test | Decided |
 | D-APK-005 | Sync lives only in the future central app; individual apps stay network-free and master-app ready | Decided (direction; may change) |
@@ -26,7 +26,7 @@ becomes Decided on review), Superseded.
 
 ## D-APK-001 — Three shared Dart packages, extracted from RELAY v1.0.0
 
-- **Status:** Decided (2026-10-21).
+- **Status:** Decided (2026-10-21). **Amended by D-APK-006:** no inter-package dependency in v0.x; the shim line is the barrel form; `lib/fonts/` keeps RELAY's nine-file layout.
 - **Context:** RELAY and VIATICUM copy-ported the same theme, `Result` type, log model and
   tool scripts; the copies already differ by 90–210 lines per script. LYCEUM is the third
   Flutter app. The operator ruled that the shared packages are created now, in this
@@ -75,7 +75,7 @@ becomes Decided on review), Superseded.
 
 ## D-APK-002 — `apsira_tools` v0.1 is RELAY's tooling with configuration; VIATICUM's deltas are v0.2
 
-- **Status:** Decided (2026-10-21).
+- **Status:** Decided (2026-10-21). **Amended by D-APK-006:** `disabled_rules` is already in v0.1; `--config` names the tools file and `l10n_check` takes `--l10n-config`.
 - **Decision:** v0.1 ports RELAY's five tools unchanged in behaviour, replacing their
   constants (`_package`, the per-layer package allowlists, the colour-literal exemption
   directories, the locales, the coverage thresholds, the privacy file paths) with keys

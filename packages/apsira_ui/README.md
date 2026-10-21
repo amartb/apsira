@@ -62,5 +62,5 @@ this repository, byte for byte against `../../apsira-brand/`.
 | `test/goldens/token_sheet.png` | Every token as a swatch: a value change moves it |
 | `example/` | A consumer app whose test proves the qualified fonts, licences and lockup load |
 
-`flutter analyze && flutter test` here; `cd example && flutter pub get && flutter test`
+`flutter analyze && flutter test` here; `cd example && rm -rf build && flutter pub get && flutter test` (a stale `build/unit_test_assets` makes the font test lie)
 for the consumer proof. RELAY test groups not carried are listed in `CHANGELOG.md` 0.1.0.
