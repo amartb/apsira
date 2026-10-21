@@ -1,0 +1,66 @@
+# From relay pubspec.yaml @ 5f606e9 (the flutter_lucide pin, the lints and the
+# `flutter: assets:` / `fonts:` blocks, with `assets/` → `lib/`).
+name: apsira_ui
+description: "The Apsira visual language: tokens, theme, type scale, shape, chrome icons, fonts and the lockup."
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.13.0
+  # The lowest Flutter any live consumer pins (docs/agent-rules.md).
+  flutter: ">=3.47.0"
+
+# apsira_ui depends on no other apsira_* package in v0.x (plan P-1, D-APK-006).
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_lucide: ^1.59.0
+
+dev_dependencies:
+  # sha256 of the brand files in test/brand_provenance_test.dart.
+  crypto: ^3.0.7
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  # The OFL travels with the fonts (lib/fonts/README.md). Assets sit under
+  # lib/ so a consumer's bundle carries them as packages/apsira_ui/lib/….
+  assets:
+    - lib/fonts/LICENSE-Archivo.txt
+    - lib/fonts/OFL-Archivo.txt
+    - lib/fonts/OFL-JetBrainsMono.txt
+    # Lucide's ISC licence, for the Licences page (ApsiraBrand.registerLicences).
+    - lib/licenses/lucide.txt
+    # The Apsira Labs reversed horizontal lockup, copied unchanged from
+    # apsira-brand/02-lockups (ApsiraBrand.lockupReversed).
+    - lib/brand/apsira-labs-horizontal-reversed-1600w.png
+
+  # Families are named as in ApsiraFonts (lib/src/typography.dart); a
+  # consumer sees them as packages/apsira_ui/<family>.
+  fonts:
+    # Archivo Expanded, byte-identical to apsira-brand/06-fonts.
+    - family: ArchivoExpanded
+      fonts:
+        - asset: lib/fonts/ArchivoExpanded-400.ttf
+          weight: 400
+        - asset: lib/fonts/ArchivoExpanded-600.ttf
+          weight: 600
+    # Normal-width Archivo, variable (wdth, wght), from google/fonts.
+    # One file at every weight the scale uses, so the matcher finds an exact
+    # weight and never synthesises bold over the wght axis the styles set.
+    - family: Archivo
+      fonts:
+        - asset: lib/fonts/Archivo[wdth,wght].ttf
+          weight: 400
+        - asset: lib/fonts/Archivo[wdth,wght].ttf
+          weight: 500
+        - asset: lib/fonts/Archivo[wdth,wght].ttf
+          weight: 600
+        - asset: lib/fonts/Archivo[wdth,wght].ttf
+          weight: 700
+    # JetBrains Mono, variable (wght), from google/fonts: monospace fields.
+    - family: JetBrainsMono
+      fonts:
+        - asset: lib/fonts/JetBrainsMono[wght].ttf
+          weight: 400

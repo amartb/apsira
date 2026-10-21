@@ -1,0 +1,18 @@
+Copyright (c) 2026 Alejandro. All rights reserved.
+
+The code, tests and documentation of apsira_ui, and the Apsira Labs lockup
+(lib/brand/apsira-labs-horizontal-reversed-1600w.png), may not be copied,
+modified or distributed without the copyright holder's written permission.
+
+Exceptions. These files are third-party works under their own licences,
+whose texts ship beside them and are registered on an app's Licences page by
+ApsiraBrand.registerLicences():
+
+- lib/fonts/ArchivoExpanded-400.ttf, lib/fonts/ArchivoExpanded-600.ttf:
+  SIL Open Font License 1.1, text in lib/fonts/LICENSE-Archivo.txt.
+- lib/fonts/Archivo[wdth,wght].ttf:
+  SIL Open Font License 1.1, text in lib/fonts/OFL-Archivo.txt.
+- lib/fonts/JetBrainsMono[wght].ttf:
+  SIL Open Font License 1.1, text in lib/fonts/OFL-JetBrainsMono.txt.
+- lib/licenses/lucide.txt: the ISC licence of the Lucide icons, which the
+  flutter_lucide dependency supplies (this package ships only the text).
