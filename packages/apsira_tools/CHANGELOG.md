@@ -17,6 +17,8 @@ source, as `bin/` commands (`dart run apsira_tools:<tool>`) configured per app b
 - **`l10n_check --l10n-config` (P-5).** RELAY's `--config <l10n.yaml>` is renamed,
   because `--config` now names the tools file in every command. RELAY's own gate
   ran `l10n_check` with no flags, so it is unaffected.
+- **`layering.disabled_rules` comes forward into v0.1.** D-APK-002 listed it among
+  the v0.2 knobs; this release already carries it (D-APK-006).
 - Every RELAY constant is a config key: `package` (default: the pubspec name),
   `layering.{root, domain_packages, feature_packages, colour_literal_exempt,
   disabled_rules}`, `l10n.{config, required_locales, scan_exemptions}`,

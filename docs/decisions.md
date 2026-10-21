@@ -20,6 +20,7 @@ becomes Decided on review), Superseded.
 | D-APK-003 | Apps pin packages by git reference to a per-package tag; path overrides only for co-development, never committed | Decided |
 | D-APK-004 | Classes of app: folio (phone), tome (PC), the central app; the charter's membership test | Decided |
 | D-APK-005 | Sync lives only in the future central app; individual apps stay network-free and master-app ready | Decided (direction; may change) |
+| D-APK-006 | What the v0.1 extraction settled: no package depends on another in v0.x; RELAY's fonts layout; `l10n_check --l10n-config`; no `args`; `disabled_rules` in v0.1; barrel imports | Proposed |
 
 ---
 
@@ -200,3 +201,49 @@ becomes Decided on review), Superseded.
 - **Consequences:** LYCEUM removes the LAN sync it inherited from Lyceum Folio (its
   D-009); VIATICUM's earlier rejection of LAN sync (its decision log, "LAN sync, as LYCEUM
   and Folio") becomes the ecosystem rule.
+
+## D-APK-006 — What the v0.1 extraction settled
+
+- **Status:** Proposed (2026-10-21).
+- **Context:** Extracting the three packages from RELAY `5f606e9` met points that
+  D-APK-001, D-APK-002 and `packages/README.md` left open or got wrong. Each was settled
+  in the session plan (P-1 to P-5, R-9) and is recorded here.
+- **Decision:**
+  - **No package depends on another in v0.x (P-1).** `apsira_ui` does not depend on
+    `apsira_core`; nothing in RELAY's theme imports the core. Evidence (scratch pub
+    test, 2026-10-21): an app pinning `a` at tag `t2` and `b`, which has
+    `a: path: ../a`, at tag `t1` on the same commit fails: "Because every version of b
+    from git depends on a from git … at 7e65cc… and app depends on a from git … at t2,
+    b from git is forbidden." With an edge, the consuming snippet of
+    `packages/README.md` (each package pinned by its own tag) would not resolve.
+  - **`apsira_ui/lib/fonts/` keeps RELAY's `assets/fonts/` layout (P-2):** all nine
+    files (the four TTFs, `LICENSE-Archivo.txt`, `OFL-Archivo.txt`,
+    `OFL-JetBrainsMono.txt`, `SHA256SUMS`, `README.md`), so `sha256sum -c SHA256SUMS`
+    checks RELAY's file unchanged and `LICENSE-Archivo.txt` sits beside the TTFs as in
+    `apsira-brand/06-fonts/`. `lib/licenses/` holds only Lucide's `lucide.txt`.
+  - **`l10n_check --l10n-config` (P-5).** RELAY's `--config <l10n.yaml>` is renamed,
+    because `--config` names `tool/apsira_tools.yaml` in every tool. RELAY's gate ran
+    `l10n_check` without flags, so adoption is unaffected.
+  - **`args` is not a dependency of `apsira_tools` (P-3).** RELAY's tools parse their
+    own flags; `--config` joins each hand-written parser. `yaml` is the only dependency.
+  - **`layering.disabled_rules` comes forward into v0.1.** D-APK-002 listed it among the
+    v0.2 knobs; v0.1 already carries it (rule ids whose findings are dropped; an unknown
+    id exits 2), so VIATICUM's missing `colour-literals` rule is configurable today.
+  - **Barrel imports (R-9).** Each package's `src/` is private; apps import
+    `package:apsira_core/apsira_core.dart`, `package:apsira_core/testing.dart` and
+    `package:apsira_ui/apsira_ui.dart`. D-APK-001's shim line
+    `export 'package:apsira_core/result.dart';` names a library that does not exist;
+    the shim is `export 'package:apsira_core/apsira_core.dart' show Failure, Result,
+    Ok, Err;`.
+- **Alternatives rejected:** `apsira_ui` depending on `apsira_core` by a committed
+  `path: ../apsira_core` (an app pinning both by their own tags fails version solving,
+  as above); the same edge by `git: ref: apsira_core-v0.1.0` plus an uncommitted
+  override (resolution needs the network and a tag that exists only after the
+  operator's push, so `tool/check.sh` could not run before the release); moving the OFL
+  texts to `lib/licenses/` (breaks the verbatim `SHA256SUMS`) or copying them there
+  (two copies to keep identical); a different tools-wide flag name (contradicts the
+  per-app `--config` of D-APK-002); rewriting five parsers on `args` (behaviour risk,
+  no gain).
+- **Consequences:** an app pins each package it uses by that package's own tag. A
+  future edge between packages needs a new decision that keeps that snippet resolving.
+  RELAY's and VIATICUM's adoption sessions use the barrel shim above.
