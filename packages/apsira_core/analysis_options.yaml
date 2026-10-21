@@ -1,0 +1,35 @@
+# From relay analysis_options.yaml @ 5f606e9
+# Static analysis for apsira_core: the recommended Dart lints (RELAY uses the
+# Flutter set; this package is pure Dart) plus RELAY's strict language modes
+# and rules. `dart analyze --fatal-infos` must report no issues.
+include: package:lints/recommended.yaml
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    missing_required_param: error
+    missing_return: error
+  exclude:
+    - build/**
+    - .army/**
+    # Test fixtures are inputs, not code under test.
+    - test/fixtures/**
+
+linter:
+  rules:
+    - always_declare_return_types
+    - avoid_dynamic_calls
+    - avoid_print
+    - cancel_subscriptions
+    - close_sinks
+    - directives_ordering
+    - prefer_final_fields
+    - prefer_final_locals
+    - prefer_single_quotes
+    - sort_constructors_first
+    - unawaited_futures
+    - unnecessary_lambdas
+    - unnecessary_parenthesis
