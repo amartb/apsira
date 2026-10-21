@@ -89,6 +89,56 @@ becomes Decided on review), Superseded.
   or "VIATICUM-specific, stays in VIATICUM".
 - **Consequences:** VIATICUM keeps its copies until v0.2; LYCEUM uses v0.1 from its first
   theme commit.
+- **Delta list (2026-10-21).** VIATICUM `20f05f6` against RELAY `5f606e9`, tool by tool.
+  Each difference is either a "config knob in v0.2" (a value or toggle a key could
+  carry; "v0.1 key" marks the ones `tool/apsira_tools.yaml` already carries) or
+  "VIATICUM-specific" (logic that stays in VIATICUM).
+  - `layering_lint`:
+    - `domain_packages` is `{collection, crypto, meta}`. Config knob in v0.2 (v0.1 key).
+    - `feature_packages` lacks `json_annotation`. Config knob in v0.2 (v0.1 key).
+    - There is no `colour-literals` rule. Config knob in v0.2 (v0.1 key
+      `disabled_rules`).
+    - There are no clock-package time readers among the forbidden calls; VIATICUM's
+      domain cannot import `clock`. Config knob in v0.2 (forbidden-call set).
+    - `app/tutorial/` is an extra router-like layer that may import features. Config
+      knob in v0.2 (`extra_layers`).
+    - Rule `tutorial-packages`: `app/tutorial/` never imports `flutter_riverpod`,
+      `riverpod` or `riverpod_annotation`. Config knob in v0.2 (per-layer forbidden
+      packages).
+    - `app/l10n/` may not read `domain/`. Config knob in v0.2 (per-layer import
+      matrix).
+    - `features/spike_lab/` is a dev-only `lab` layer: it may import any package or a
+      dev-only one and may silence `depend_on_referenced_packages`, and no feature
+      imports it (rule `lab-imports`). VIATICUM-specific.
+  - `l10n_check`:
+    - The gen-l10n file is `l10n.yaml` at the root. Config knob in v0.2 (v0.1 key
+      `l10n.config`).
+    - `scan_exemptions` adds `features/spike_lab/`. Config knob in v0.2 (v0.1 key).
+    - The scan also flags literals passed to `SelectableText(` and to
+      `TextSpan(text:`. Config knob in v0.2 (generic; a candidate default).
+    - `archivalTerms`: nine Spanish archival ARB keys must hold fixed values.
+      VIATICUM-specific.
+  - `coverage_gate`:
+    - There is no `--run` mode; it reads an existing `coverage/lcov.info`. Config knob
+      in v0.2 (v0.1 key `coverage.run` unset).
+    - There is no export-only (barrel) exemption, so a barrel missing from lcov fails.
+      Config knob in v0.2 (toggle).
+  - `deps_check`:
+    - A new check: every direct and dev dependency needs a row in
+      `docs/dependencies.md`, with new flags `--pubspec` and `--dependencies-doc`.
+      Config knob in v0.2 (an optional dependency-table check).
+    - On a clean run it prints the dependency paths that reach each network exception.
+      The summary differs: no unused-allowlist line. VIATICUM-specific.
+  - `manifest_check`:
+    - The manifest may be a positional argument as well as `--manifest`. Config knob in
+      v0.2 (CLI shape).
+    - `--architecture` (default `docs/07-architecture.md`): every requested and
+      declared permission must be in its §11.1 table, every declared one needs a
+      reason, and the app's own signature permissions are allowed. Config knob in v0.2
+      (approved-permissions source).
+    - The `<application>` backup attributes must be set (`allowBackup="false"`, or
+      the `ViaticumBackupAgent` with `fullBackupOnly` and its data-extraction
+      rules). VIATICUM-specific.
 
 ## D-APK-003 — Pinning by git reference to a per-package tag
 

@@ -1,0 +1,20 @@
+# From relay tool/privacy/declared_permissions.txt @ 5f606e9
+# The permissions Relay's merged prodRelease manifest declares, exactly
+# (privacy_guards, 08 §3 and §9). tool/privacy/manifest_check.dart fails
+# CI when the manifest holds one that is not listed here, or lacks one that
+# is. Every entry is in architecture §11.1, or is the app's own signature
+# permission; the suite checks both. INTERNET is never listed (D-041).
+#
+# Format: <permission>: <why it is in the manifest>
+# Add a §11.1 permission here in the task whose plugin or code brings it.
+
+com.apsiralabs.relay.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: added by androidx.core for receivers registered as not exported (Android 13+); protectionLevel signature, so only Relay itself holds it
+android.permission.USE_BIOMETRIC: the app lock (P1-21, architecture §11.1); local_auth_android's manifest declares it and the merge brings it in; granted at install, never prompted
+android.permission.WAKE_LOCK: WorkManager (workmanager, P1-18; architecture §7.1, §11.1) holds wake locks while it runs a scheduled job, and a fired reminder alarm keeps the device awake while its Dart callback runs (android_alarm_manager_plus, P3b-08); androidx.work's manifest declares it and the main manifest restates it for the alarms; granted at install, never prompted
+android.permission.RECEIVE_BOOT_COMPLETED: WorkManager (workmanager, P1-18; architecture §7.1, §11.1) reschedules the scheduled backup after a reboot (its RescheduleReceiver); android_alarm_manager_plus re-arms its alarms and the zone module's receiver queues a reminder resync after a reboot (P3b-08, D-115); androidx.work's manifest declares it and the main manifest restates it; granted at install, never prompted
+android.permission.RECORD_AUDIO: voice memos (P2-04, architecture §11.1); record_android's manifest declares it and the main manifest restates it; a runtime permission, asked on the first recording
+android.permission.FOREGROUND_SERVICE: recording with the screen off (P2-04, architecture §11.1); flutter_foreground_task's and androidx.work's manifests declare it; granted at install, never prompted
+android.permission.FOREGROUND_SERVICE_MICROPHONE: the recorder's foreground service is typed microphone (P2-04, architecture §11.1; Android 14 requires the type's permission); the main manifest declares it; granted at install, never prompted
+android.permission.POST_NOTIFICATIONS: the recording's ongoing notification with Pause and Stop (P2-04, architecture §11.1) and reminder notifications (P3b-08); flutter_foreground_task's and flutter_local_notifications' manifests declare it; a runtime permission, asked on the first recording or the first reminder
+android.permission.USE_EXACT_ALARM: exact reminder alarms (P3b-08, D-025, architecture §11.1); the main manifest declares it for android_alarm_manager_plus; granted at install and not revocable, never prompted
+android.permission.VIBRATE: the Reminders notification channel vibrates (P3b-08, architecture §11.1); flutter_local_notifications' manifest declares it; granted at install, never prompted

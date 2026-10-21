@@ -1,0 +1,253 @@
+# From relay tool/privacy/dependency_allowlist.yaml @ 5f606e9
+# Runtime dependency allowlist (privacy_guards, 08 §3 and §9; D-041).
+# tool/privacy/deps_check.dart fails CI when a package reachable from
+# pubspec.yaml's regular dependencies (dev dependencies excluded) is not
+# listed here, or is a known network package. Each entry says why the
+# package is there and why it does no network I/O in the app. Direct
+# dependencies also carry their line in docs/dependencies.md.
+#
+# Hook-only packages say "build hook, not in the APK": D-096 reads the
+# no-network-code rule as runtime only (sqlite3's hook downloads its
+# sha256-checked prebuilt library at build time).
+allowed:
+  # Direct dependencies (docs/dependencies.md).
+  android_alarm_manager_plus: direct (P3b-08, D-025 addendum); exact reminder alarms (setExactAndAllowWhileIdle, rescheduled after a reboot) behind the AlarmScheduler port, only in lib/data/platform/alarm_manager_scheduler.dart; AlarmManager and a JobIntentService over method channels, its reboot registry in app-private SharedPreferences; no dependencies beyond Flutter, no permissions of its own, no network code
+  app_settings: direct (P2-04); opens the app's page in the system settings when the microphone permission was denied (UX §4.3.3), behind AudioRecorder.openAppSettings; one Kotlin class starting a Settings intent over a method channel, no permissions, no network code (its internet-connectivity panel is a settings screen, never called)
+  crypto: direct (P1-17c), in the APK; the sha256 of the backup's snapshot and entries (architecture §10.1) and uuid's v5 hashing, besides the build hooks' sqlite3 checksums; pure Dart, no I/O
+  drift: direct; the database (D-012); local SQLite only
+  flutter: Flutter SDK
+  flutter_local_notifications: direct (P3b-08, D-114); reminder notifications with Done, Snooze and Snooze… actions behind the Notifier port, only in lib/data/platform/local_notifier.dart; NotificationManager over a method channel, declares VIBRATE and POST_NOTIFICATIONS (architecture §11.1); its timezone brings http, which lib/ never reaches (network_exceptions, D-114)
+  flutter_localizations: Flutter SDK; EN and ES localisation (D-030)
+  flutter_foreground_task: direct (P2-04, ruling P2-R1); the microphone-typed foreground service and its Pause and Stop notification that keep a recording going with the screen off, behind AudioRecorder (D-017 addendum); a Kotlin service and method channel, merges FOREGROUND_SERVICE, WAKE_LOCK, RECEIVE_BOOT_COMPLETED and POST_NOTIFICATIONS (all in architecture §11.1), no network code
+  flutter_lucide: direct; the Lucide icon font (D-068) behind AppIcons (P1-07d); IconData constants and one bundled font, no dependencies beyond Flutter, no platform code, no network code
+  flutter_riverpod: direct; state management
+  flutter_windowmanager_plus: direct; "hide in recents" behind the ScreenPrivacy port (P1-21d, architecture §11); sets and clears FLAG_SECURE on the activity's window, Java only, no dependencies, no permissions, no network code
+  freezed_annotation: direct; annotations for generated models
+  go_router: direct; navigation
+  image: direct (P2-01, D-110); decodes photos and scans and encodes their JPEG thumbnails in a background isolate (lib/data/files/image_thumbnails.dart); pure Dart codecs, no platform code, no network code
+  image_picker: direct (P2-06); the system camera (ACTION_IMAGE_CAPTURE) and the Android photo picker with multi-select behind the PhotoSource port, only in lib/data/platform/image_picker_photo_source.dart; no permissions (Relay declares no CAMERA, so the plugin never asks for it), no re-compression without maxWidth, maxHeight or imageQuality (D-017); its platform interface declares http for web code only (network_exceptions, D-111)
+  image_picker_android: direct (P2-06); image_picker on Android, imported to turn on the system photo picker (PickVisualMedia, PickMultipleVisualMedia); a FileProvider for the camera's output file and Play services' photo-picker backport module declaration, no permissions, no network code
+  image_picker_platform_interface: direct (P2-06); image_picker's plugin interface, imported for ImagePickerPlatform.instance; its http dependency is used only by the web-only picked_file/html.dart (network_exceptions, D-111)
+  intl: direct; dates, numbers and messages
+  json_annotation: direct; annotations for generated JSON code
+  just_audio: direct (P2-05, ruling P2-R2); voice-memo playback behind the AudioPlayer port, local files only through setFilePath (lib/data/platform/just_audio_player.dart, the only importer; privacy_guards checks it); its URL, stream and LockCaching sources hold HttpClient and a loopback HttpServer and are never used, and the APK has no INTERNET permission; ExoPlayer (media3) on Android, no permissions of its own
+  local_auth: direct; the app lock's biometric and device-credential prompt (P1-21); platform channels to the OS, no I/O of its own
+  local_auth_android: direct (P1-21d); local_auth on Android, imported for AndroidAuthMessages, the prompt's localised title, hint and cancel (D-030); BiometricPrompt through androidx.biometric, declares USE_BIOMETRIC, no network code
+  path_provider: direct; app-storage paths for the log and the database
+  record: direct (P2-04, ruling P2-R1); AAC-LC recording into an app-private .m4a (D-017) with pause, resume, the live amplitude and the audio-focus pause on a call, behind AudioRecorder (lib/data/platform/record_audio_recorder.dart); platform channels to MediaRecorder and MediaCodec, no network code
+  riverpod_annotation: direct; annotations for generated providers
+  rrule: direct; RRULE expansion behind RecurrenceEngine (D-043 addendum); pure Dart, no I/O
+  saf_stream: direct (P1-17c); streams backup files into and out of the SAF folder behind the BackupTarget port (D-018 addendum); ContentResolver streams over a method channel and jni, no permissions, no network code
+  saf_util: direct (P1-17c); picks, lists, renames and deletes in the SAF backup folder behind the BackupTarget port (D-018 addendum); DocumentsContract calls over a method channel, no permissions, no network code
+  uuid: direct; UUIDv7 behind the IdGen port (D-014)
+  share_plus: direct (P1-18); the system share sheet behind the Sharer port (Share as text, P1-06; the log share, P1-20); an ACTION_SEND chooser intent and a FileProvider for shared files, over a method channel; no permissions, no network code
+  workmanager: direct (P1-18); scheduled background jobs behind the BackgroundJobs port (architecture §7.1, D-025 addendum); androidx.work through pigeon channels; no network code, and its merged ACCESS_NETWORK_STATE is removed in the main manifest (R-3)
+
+  # Build hooks (D-096).
+  code_assets: build hook, not in the APK
+  glob: build hook (native_toolchain_c); file matching at build time
+  hooks: build hook, not in the APK
+  native_toolchain_c: build hook, not in the APK
+  process: build hook (native_toolchain_c); runs the C toolchain at build time
+  pub_semver: build hooks; version constraints, pure Dart
+  record_use: build hook (hooks); pure Dart
+  yaml: build hook (hooks); reads hook configuration, pure Dart
+
+  # Platform and native interop.
+  dbus: flutter_local_notifications_linux's D-Bus client; Linux only, never used on Android; its socket code is the D-Bus transport (unix socket, or TCP for a tcp bus address), not a network client
+  flutter_local_notifications_linux: flutter_local_notifications on Linux, unused on Android
+  flutter_local_notifications_platform_interface: flutter_local_notifications' plugin interface, pure Dart
+  flutter_local_notifications_web: flutter_local_notifications on the web, unused on Android
+  flutter_local_notifications_windows: flutter_local_notifications on Windows, unused on Android
+  flutter_plugin_android_lifecycle: local_auth_android's access to the activity lifecycle (Flutter team); no I/O
+  ffi: native interop for sqlite3, jni and path_provider; no I/O of its own
+  posix: archive's file-permission calls (chmod) through FFI to libc, unused by image's in-memory codecs; no network code
+  jni: Java interop for path_provider_android's app-storage paths and saf_stream's chunk reads and writes; in-process calls only
+  jni_flutter: path_provider_android's Java interop, Flutter side
+  jni_util: jni path helpers, pure Dart
+  audio_session: just_audio's audio focus and interruptions (a call pauses playback); AudioManager calls over a method channel, no permissions, no network code
+  file_selector_linux: image_picker on Linux (image_picker_linux), unused on Android
+  file_selector_macos: image_picker on macOS (image_picker_macos), unused on Android
+  file_selector_platform_interface: image_picker's desktop file dialogs, plugin interface, pure Dart; declares http but imports it nowhere (network_exceptions, D-111)
+  file_selector_windows: image_picker on Windows (image_picker_windows), unused on Android
+  image_picker_for_web: image_picker on the web, unused on Android
+  image_picker_ios: image_picker on iOS, unused on Android
+  image_picker_linux: image_picker on Linux, unused on Android
+  image_picker_macos: image_picker on macOS, unused on Android
+  image_picker_windows: image_picker on Windows, unused on Android
+  just_audio_platform_interface: just_audio's plugin interface, pure Dart
+  just_audio_web: just_audio on the web (an HTML audio element), unused on Android
+  local_auth_darwin: local_auth on iOS and macOS, unused on Android
+  local_auth_platform_interface: local_auth's plugin interface, pure Dart
+  local_auth_windows: local_auth on Windows, unused on Android
+  share_plus_platform_interface: share_plus's plugin interface, pure Dart
+  url_launcher_linux: share_plus on Linux (mailto links), unused on Android; hands URLs to the desktop, no network code
+  url_launcher_platform_interface: url_launcher's plugin interface (share_plus on Linux and Windows), pure Dart
+  url_launcher_web: share_plus on the web, unused on Android
+  url_launcher_windows: share_plus on Windows (mailto links), unused on Android; hands URLs to the shell, no network code
+  win32: share_plus on Windows (the share UI through FFI), unused on Android; no network code
+  ffi_leak_tracker: win32's FFI allocation tracking, pure Dart; Windows only, unused on Android
+  workmanager_android: workmanager on Android; androidx.work:work-runtime 2.11.2; no network code
+  workmanager_apple: workmanager on iOS and macOS, unused on Android
+  workmanager_linux: workmanager on Linux, unused on Android
+  workmanager_platform_interface: workmanager's plugin interface and pigeon messages, pure Dart
+  workmanager_web: workmanager on the web, unused on Android
+  objective_c: path_provider_foundation; iOS and macOS only, unused on Android
+  package_config: jni reads package_config.json for its generator; local files only
+  path_provider_android: path_provider on Android
+  path_provider_foundation: path_provider on iOS and macOS, unused on Android
+  path_provider_linux: path_provider on Linux, unused on Android
+  path_provider_platform_interface: path_provider's plugin interface
+  path_provider_windows: path_provider on Windows, unused on Android
+  platform: platform detection for path_provider and process, pure Dart
+  plugin_platform_interface: the plugin interface base, pure Dart
+  record_android: record on Android; AudioRecord and MediaCodec into a local file, declares RECORD_AUDIO; no network code
+  record_ios: record on iOS, unused on Android
+  record_linux: record on Linux (a local parecord/ffmpeg process), unused on Android
+  record_macos: record on macOS, unused on Android
+  record_platform_interface: record's plugin interface, pure Dart
+  record_web: record on the web, unused on Android
+  record_windows: record on Windows, unused on Android
+  shared_preferences: flutter_foreground_task's saved task data (saveData/getData, unused by Relay); local key-value file only
+  shared_preferences_android: shared_preferences on Android; the app-private SharedPreferences and DataStore files, no network code
+  shared_preferences_foundation: shared_preferences on iOS and macOS, unused on Android
+  shared_preferences_linux: shared_preferences on Linux (a local JSON file), unused on Android
+  shared_preferences_platform_interface: shared_preferences' plugin interface, pure Dart
+  shared_preferences_web: shared_preferences on the web (localStorage), unused on Android
+  shared_preferences_windows: shared_preferences on Windows (a local JSON file), unused on Android
+  sqlite3: drift's SQLite bindings (FFI); its build hook fetches the prebuilt library at build time (D-096), no network code at runtime
+  web: browser bindings for drift and sqlite3, web only, unused on Android
+  xdg_directories: path_provider on Linux, unused on Android
+
+  # Flutter SDK and UI.
+  characters: Flutter SDK; grapheme clusters
+  cupertino_ui: go_router; Cupertino widgets, UI only
+  flutter_web_plugins: Flutter SDK via go_router; web only, unused on Android
+  material_color_utilities: Flutter SDK; colour maths
+  material_ui: go_router; Material widgets, UI only
+  sky_engine: Flutter SDK engine
+  vector_math: Flutter SDK; geometry
+
+  # Pure Dart utilities.
+  archive: image's PNG and TIFF inflate (P2-01); in memory, no network code; the app's own zips never use it (ruling R-15, layering dev-packages)
+  args: jni's argument parsing, pure Dart
+  async: stream and future utilities (drift, riverpod), pure Dart
+  clock: time abstraction (intl, riverpod, time), pure Dart; on the domain allowlist (D-043 addendum), but app code takes time only from the Clock port
+  collection: collection utilities, pure Dart (domain allowlist, D-043)
+  convert: drift's encodings, pure Dart
+  cross_file: share_plus's XFile, the file it shares; local files only
+  file: file-system abstraction (glob, process); local files only
+  fixnum: uuid's 64-bit integers, pure Dart
+  http_parser: http's header parsing, pure Dart; in the runtime closure only beside http (network_exceptions, D-111, D-114), never imported by lib/
+  listen: riverpod's listener utilities, pure Dart
+  logging: in-process log records (go_router, build hooks) with no sink of its own; the app logs only through Log (D-050)
+  meta: annotations, pure Dart
+  mime: share_plus's MIME types for shared files, by extension or header bytes, pure Dart
+  path: path manipulation (intl), pure Dart; on the domain allowlist with rrule's closure (D-043 addendum)
+  petitparser: xml's parser, pure Dart
+  riverpod: riverpod's core, pure Dart
+  rxdart: stream extensions for just_audio and audio_session, pure Dart
+  source_span: text spans (yaml, test_api), pure Dart
+  stack_trace: stack trace parsing (drift, riverpod), pure Dart
+  state_notifier: riverpod's notifier base, pure Dart
+  stream_channel: drift's isolate channels, in-process only
+  synchronized: just_audio_web's locks, pure Dart
+  string_scanner: text scanning (yaml, glob), pure Dart
+  term_glyph: terminal glyphs (source_span), pure Dart
+  timezone: flutter_local_notifications' zoned scheduling, which Relay never calls (alarms go through AlarmScheduler); nothing under lib/ imports it, and its http-importing browser.dart and URL-loading standalone.dart are banned there (network_exceptions, D-114)
+  time: rrule's DateTime and Duration extensions, pure Dart; its clock-reading getters are banned in domain (layering pure-calls, D-043 addendum)
+  typed_data: typed lists, pure Dart
+  xml: flutter_local_notifications_windows' notification XML, pure Dart
+
+  # Test support that flutter_riverpod declares; never imported by lib/,
+  # so tree shaking keeps it out of the APK.
+  boolean_selector: test only (test_api via flutter_riverpod's flutter_test)
+  fake_async: test only (flutter_test via flutter_riverpod)
+  flutter_test: Flutter SDK test library; flutter_riverpod declares it, lib/ never imports it
+  leak_tracker: test only (flutter_test via flutter_riverpod)
+  leak_tracker_flutter_testing: test only (flutter_test via flutter_riverpod)
+  leak_tracker_testing: test only (flutter_test via flutter_riverpod)
+  matcher: test only (flutter_test via flutter_riverpod)
+  test_api: test only (flutter_test via flutter_riverpod)
+  vm_service: test only (leak_tracker via flutter_test); its WebSocket client library is never imported by lib/
+
+# Dev and test only: Patrol (D-093, P0-21b) and what its closure adds to
+# the runtime closure above. A dev dependency, so Flutter leaves its plugin
+# out of release builds and deps_check.dart never reaches these; recorded
+# here so a reader sees why network packages appear in pubspec.lock. If one
+# ever enters the runtime closure, `allowed` (and `network`) still decide.
+dev_only:
+  patrol: dev dependency; native-UI emulator tests in patrol_test/, run by nightly.yml (D-093)
+  patrol_finders: patrol's widget finders; test code only
+  patrol_log: patrol's test-run log protocol; test code only
+  dispose_scope: patrol_finders' resource scopes; test code only
+  equatable: patrol's value equality; test code only
+  http: patrol's client for its on-device test server, over localhost, during instrumented runs only; a network package, never in the APK
+  http_multi_server: patrol's on-device test server (localhost); a network package, never in the APK
+  http_parser: http's header parsing, pure Dart; test runs only
+  shelf: patrol's on-device test server (localhost); a network package, never in the APK
+
+# Spike-only (D-104, D-105; the section keeps its name from the removed
+# Spike lab): dev dependencies whose plugin must stay out of release
+# builds, and exactly what their closure adds. deps_check.dart fails when a
+# regular dependency reaches one, when such a closure adds a package not
+# listed here, or a network package other than a `network_exceptions`
+# entry. Empty since flutter_local_notifications became a regular
+# dependency (D-114).
+spike_only: {}
+
+# The one network package the closure may hold (D-105, P0-12c), checked
+# at import level: deps_check.dart fails when a file under lib/ imports or
+# exports a URI starting with one of its `banned_imports`. In the runtime
+# closure it holds only while its `runtime_via` packages are the only ones
+# that depend on it (D-111, D-114); without `runtime_via` it holds there
+# never. A second entry fails the
+# check until a decision allows it.
+network_exceptions:
+  http:
+    reason: timezone (flutter_local_notifications' dependency, 0.10 and later) depends on http, which only its browser.dart imports, and standalone.dart loads a database from a URL (D-114); image_picker's platform interfaces declare it, and only image_picker_platform_interface's web-only picked_file/html.dart imports it (D-111); lib/ imports none of these, nor http, and the APK has no INTERNET permission
+    banned_imports:
+      - package:http/
+      - package:timezone/standalone.dart
+      - package:timezone/browser.dart
+      - package:image_picker_for_web/
+      - package:image_picker_platform_interface/src/types/picked_file/html.dart
+    runtime_via:
+      - file_selector_platform_interface
+      - image_picker_platform_interface
+      - timezone
+
+# Known network packages: never allowed, at runtime, whatever the reason.
+network:
+  - appwrite
+  - cached_network_image
+  - connectivity_plus
+  - cronet_http
+  - cupertino_http
+  - dio
+  - flutter_cache_manager
+  - google_sign_in
+  - googleapis
+  - googleapis_auth
+  - graphql
+  - grpc
+  - http
+  - http2
+  - http_multi_server
+  - mqtt_client
+  - ok_http
+  - pocketbase
+  - shelf
+  - shelf_web_socket
+  - socket_io_client
+  - supabase
+  - supabase_flutter
+  - web_socket
+  - web_socket_channel
+  - webview_flutter
+
+# Whole families of network packages, by name prefix.
+network_prefixes:
+  - firebase_
+  - sentry
+  - amplify_

@@ -1,0 +1,4 @@
+{
+  "@@locale": "es",
+  "notesInFolder": "{count, plural, =0{No hay notas en {carpeta}} =1{Una nota en {carpeta}} other{{count} notas en {carpeta}}}"
+}

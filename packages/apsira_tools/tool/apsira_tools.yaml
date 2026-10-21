@@ -1,0 +1,54 @@
+# apsira_tools configuration (D-APK-002): the suite's own and the worked
+# example. Every command reads it from tool/apsira_tools.yaml, or from
+# `--config <path>`. An absent or empty file reproduces RELAY @ 5f606e9;
+# every key below is set to that default except `package`, which defaults to
+# the pubspec's name and is `relay` here because the test fixtures are
+# RELAY's tree. An unknown key is a usage error (exit 2).
+
+# The package whose `package:<name>/` URIs map to layering.root.
+package: relay
+
+layering:
+  # The directory the layers live in.
+  root: lib
+  # Packages domain/ and core/ may import (besides the pure dart: libraries).
+  domain_packages:
+    [clock, collection, freezed_annotation, meta, path, rrule, time]
+  # Packages features/ may import: never Drift or plugins.
+  feature_packages:
+    - collection
+    - flutter
+    - flutter_localizations
+    - flutter_riverpod
+    - freezed_annotation
+    - go_router
+    - intl
+    - json_annotation
+    - meta
+    - riverpod
+    - riverpod_annotation
+  # apsira_core imports count as core/ (domain and core may use it);
+  # apsira_ui imports as app/theme/. The only names allowed here.
+  shared_packages: [apsira_core, apsira_ui]
+  # Path prefixes, relative to root, where colour literals may live.
+  colour_literal_exempt: [app/theme/]
+  # Rule ids whose findings are dropped (layering_lint names the rules).
+  disabled_rules: []
+
+l10n:
+  # The gen-l10n file (arb-dir, template-arb-file); `--l10n-config` wins.
+  config: lib/app/l10n/l10n.yaml
+  required_locales: [en, es]
+  # Source paths, relative to the scanned directory, the Text( scan skips.
+  scan_exemptions: [app/l10n/generated/, features/theme_preview/]
+
+coverage:
+  # The test directory `--run` defaults to; unset runs no tests and reads
+  # coverage/lcov.info.
+  # run: test/domain
+  min_lines: 90
+  min_branches: 85
+
+privacy:
+  allowlist: tool/privacy/dependency_allowlist.yaml
+  declared_permissions: tool/privacy/declared_permissions.txt

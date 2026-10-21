@@ -1,0 +1,21 @@
+{
+  "root": "fixture_app",
+  "packages": [
+    {
+      "name": "fixture_app",
+      "version": "0.0.1",
+      "kind": "root",
+      "source": "root",
+      "dependencies": ["collection", "meta", "shelf"],
+      "directDependencies": ["collection", "meta"],
+      "devDependencies": ["shelf"]
+    },
+    {"name": "collection", "version": "1.19.1", "kind": "direct", "source": "hosted", "dependencies": []},
+    {"name": "meta", "version": "1.17.0", "kind": "direct", "source": "hosted", "dependencies": []},
+    {"name": "shelf", "version": "1.4.2", "kind": "dev", "source": "hosted", "dependencies": ["http_parser", "web_socket_channel"]},
+    {"name": "http_parser", "version": "4.1.2", "kind": "transitive", "source": "hosted", "dependencies": ["collection"]},
+    {"name": "web_socket_channel", "version": "3.0.3", "kind": "transitive", "source": "hosted", "dependencies": []}
+  ],
+  "sdks": [],
+  "executables": []
+}

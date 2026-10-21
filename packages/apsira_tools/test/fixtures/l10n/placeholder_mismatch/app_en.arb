@@ -1,0 +1,10 @@
+{
+  "@@locale": "en",
+  "notesInFolder": "{count, plural, =0{No notes in {folder}} =1{One note in {folder}} other{{count} notes in {folder}}}",
+  "@notesInFolder": {
+    "placeholders": {
+      "count": {"type": "int"},
+      "folder": {"type": "String"}
+    }
+  }
+}
