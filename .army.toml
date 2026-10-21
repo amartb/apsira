@@ -1,0 +1,62 @@
+# .army.toml — Apsira ecosystem repo (brand, briefs, shared Dart packages). Template: project-agents/shared/templates/army.toml.
+# The charter (README.md) and docs/decisions.md win over this file.
+kind = "dev"
+protect_main = true
+keystone = false                 # Apsira is not KEYSTONE (charter §1.1, D-APK-004)
+autonomous = true
+lane = "apsira"
+ledger_dir = ".army/sessions"    # gitignored; packages' build/ dirs are Dart's
+reports_dir = "docs/sessions"
+incidents_dir = "docs/incidents"
+decisions_dir = "docs"           # the ecosystem log is docs/decisions.md (D-APK-nnn); no per-decision files
+runbooks_dir = "docs/runbooks"
+attribution = "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_012QPZgKUvRFMfnLpv63c3ep"
+e2e = false
+formatter_excludes_ledger = true
+branch_types = ["phase", "fix", "docs", "chore"]
+commit_types = ["feat", "fix", "docs", "test", "refactor", "chore", "style", "perf"]
+gate_setup = "bash -c 'for p in packages/*/; do [ -f \"$p/pubspec.yaml\" ] && (cd \"$p\" && (flutter pub get --offline || flutter pub get)); done; true'"
+
+# Merge gates are static per package and run only when that package changed (paths). Each `requires` keeps a gate
+# `unavailable` until the package exists. The full check (tool/check.sh, verdict line `check: PASS`) runs only when a
+# validator sets APSIRA_FULL_CHECK=1 at a checkpoint or at the unit's end.
+shared_files = ["docs/decisions.md", "packages/README.md", "**/README.md", "tool/check.sh", "**/CHANGELOG.md"]
+gates = [
+  { name = "format", cmd = "dart format --output=none --set-exit-if-changed packages", proves = "formatting", paths = ["packages/**/*.dart"], requires = ["file:packages/apsira_core/pubspec.yaml"] },
+  { name = "core",   cmd = "bash -c 'cd packages/apsira_core && dart analyze --fatal-infos && dart test'", proves = "apsira_core analyzes and its tests pass", paths = ["packages/apsira_core/**"], requires = ["file:packages/apsira_core/pubspec.yaml"], mem_gb = 1 },
+  { name = "tools",  cmd = "bash -c 'cd packages/apsira_tools && dart analyze --fatal-infos && dart test'", proves = "apsira_tools analyzes and its tests (RELAY's lint fixtures) pass", paths = ["packages/apsira_tools/**"], requires = ["file:packages/apsira_tools/pubspec.yaml"], mem_gb = 1 },
+  { name = "ui",     cmd = "bash -c 'cd packages/apsira_ui && flutter analyze && flutter test'", proves = "apsira_ui analyzes; tokens, contrast, type scale, fonts and brand provenance tests pass", paths = ["packages/apsira_ui/**", "apsira-brand/**"], requires = ["file:packages/apsira_ui/pubspec.yaml"], mem_gb = 3 },
+  { name = "check",  cmd = "bash -c 'set -o pipefail; mkdir -p .army; bash tool/check.sh 2>&1 | tee .army/check.log; grep -qx \"check: PASS\" .army/check.log'", proves = "every package: analyze + tests, version equals tag, sha256 of fonts and lockup against apsira-brand/", paths = [".army-never-at-merge"], requires = ["file:tool/check.sh", "env:APSIRA_FULL_CHECK"], mem_gb = 3 },
+]
+
+[assurance]
+critical = []
+subsystems = ["packages/apsira_core/**", "packages/apsira_ui/**", "packages/apsira_tools/**"]
+security = []
+security_review = false
+final_validation = "full"
+max_validations = 2
+max_tasks_per_validation = 6
+review_min = "none"
+agent_min_tasks = 3
+dedicated_min_size = "L"
+
+[identity]
+vision = "README.md"
+ecosystem = ["docs/decisions.md", "packages/README.md"]
+
+[network]
+allow = ["pub.dev", "storage.googleapis.com"]   # pub fetches for the packages' few dependencies (flutter_lucide, yaml, args, test)
+online = false
+
+[resources]
+max_lanes = 3
+max_files_per_task = 40          # a package is one task: its lib/, test/ and fixtures are many small files
+gate_mem_gb = 2
+stale_after_min = 45
+
+[models]
+default = ["opus", "sonnet"]
+
+[rules]
+extra = ["docs/agent-rules.md"]

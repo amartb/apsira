@@ -1,0 +1,5 @@
+.army/
+.dart_tool/
+build/
+pubspec.lock
+!packages/README.md
