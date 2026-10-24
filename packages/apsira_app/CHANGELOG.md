@@ -2,8 +2,12 @@
 
 ## 0.3.0 — 2026-10-24
 
-No change in behaviour. Its `apsira_core` and `apsira_ui` dependencies move to `ref: apsira-v0.3.0`. Migration: move every apsira `ref:` to
-`apsira-v0.3.0`.
+Its `apsira_core` and `apsira_ui` dependencies move to `ref: apsira-v0.3.0`. Migration:
+move every apsira `ref:` to `apsira-v0.3.0`.
+
+- `AboutPage` draws its rows as list tiles in cards unless the app passes `rowBuilder` (the
+  version and licences rows, as `AboutRow`) and `sectionBuilder` (the brand and rows
+  sections): LYCEUM keeps its kit's rows and cards. Without them it looks as in 0.2.0.
 
 ## 0.2.0 — 2026-10-24
 

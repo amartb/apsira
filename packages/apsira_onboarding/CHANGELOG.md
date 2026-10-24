@@ -23,6 +23,9 @@ the app's decision log.
   `markSeen` at adoption, pass `pathOf` for the layout R1 chose, and pass the Lucide bulb as
   `OneTimeTipCard.icon`. `FirstOpenFlow` becomes the app's own state over
   `FirstOpenFlow<FirstOpenStep>` (the tour step, the language and Show me more stay the app's).
+  Help's app bar wraps a title too long for one line and grows to hold it, where RELAY's
+  `tour_screen` cut "Recordatorios y repeticiones" with an ellipsis at large text; a title
+  that fits keeps the standard bar.
 - **VIATICUM:** the tour's words come from `ApsiraL10n` (Skip "Saltar", Done "Listo",
   "Step n of m"), its dots take `accentText` and its buttons RELAY's styles; pass
   `tapPathLabel: (p) => l.tourTapPath(p.join(', ${l.tourTapThen} '))`. `FirstOpenKeys`

@@ -62,19 +62,65 @@ class HelpScreen extends StatelessWidget {
 }
 
 /// Help's app bar: [title] on the ground, as Settings draws its own; none
-/// where the page heads itself (a how-to).
+/// where the page heads itself (a how-to). A title too long for one line
+/// (RELAY's "Recordatorios y repeticiones" at large text) wraps, and the bar
+/// grows to hold its lines, where RELAY's cut it with an ellipsis; a title
+/// that fits keeps the standard bar.
 PreferredSizeWidget helpAppBar(BuildContext context, String? title) {
   final t = ApsiraTheme.of(context);
+  final style = ApsiraTypography.h2.copyWith(color: t.ink);
   return AppBar(
     backgroundColor: t.ground,
     foregroundColor: t.ink,
     surfaceTintColor: t.ground,
     scrolledUnderElevation: 0,
+    toolbarHeight: title == null
+        ? null
+        : _titleBarHeight(context, title, style),
     title: title == null
         ? null
-        : Text(title, style: ApsiraTypography.h2.copyWith(color: t.ink)),
+        : Text(
+            title,
+            style: style,
+            softWrap: true,
+            overflow: TextOverflow.visible,
+          ),
   );
 }
+
+/// The bar's height for [title]: null (the standard bar) when it fits on one
+/// line, else its lines plus [_titleBarPadding] above and below. Measured as
+/// `AppBar` lays its title out: the text scale clamped at Material's title
+/// limit, the width less the leading button and the title spacing.
+double? _titleBarHeight(BuildContext context, String title, TextStyle style) {
+  final leading = ModalRoute.of(context)?.impliesAppBarDismissal ?? false;
+  final width =
+      MediaQuery.sizeOf(context).width -
+      (leading ? kToolbarHeight : 0) -
+      2 * NavigationToolbar.kMiddleSpacing -
+      // Measured a pixel narrower, so a title on the edge gets the taller
+      // bar rather than a second line in the standard one.
+      1;
+  final painter = TextPainter(
+    text: TextSpan(text: title, style: style),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context)
+        .clamp(maxScaleFactor: _titleMaxScale),
+  )..layout(maxWidth: width < 0 ? 0 : width);
+  final lines = painter.computeLineMetrics().length;
+  final height = painter.height;
+  painter.dispose();
+  if (lines <= 1) return null;
+  final tall = height + 2 * _titleBarPadding;
+  return tall > kToolbarHeight ? tall : kToolbarHeight;
+}
+
+/// Material's limit on an app bar title's text scale (`AppBar`'s
+/// `_kMaxTitleTextScaleFactor`).
+const double _titleMaxScale = 1.34;
+
+/// Space above and below a title of more than one line.
+const double _titleBarPadding = 8;
 
 /// A group: an optional [title] (a header) above a bordered card of
 /// [children] on `surface`, divided by `border` lines.

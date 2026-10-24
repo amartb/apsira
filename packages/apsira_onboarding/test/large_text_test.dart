@@ -51,4 +51,19 @@ void main() {
       host: host,
     );
   });
+
+  // T12's finding: RELAY's longest Spanish tour title
+  // (relay lib/app/l10n/app_es.arb `tourRemindersTitle` @ 09b28810) was cut
+  // by the app bar at large text.
+  testWidgets("the app bar holds RELAY's longest tour title", (tester) async {
+    await expectLayoutSound(
+      tester,
+      () => HelpTourScreen(
+        title: 'Recordatorios y repeticiones',
+        steps: sampleTour,
+        onClose: () {},
+      ),
+      host: host,
+    );
+  });
 }

@@ -10,10 +10,13 @@
 // as "Step n", and worked examples (typed text in the monospace face, taps
 // in the body face, and what you get, each read as one sentence), safe at
 // large text; the paths are /help/tour/<id> and /help/howto/<id>.
+import 'dart:async';
+
 import 'package:apsira_onboarding/apsira_onboarding.dart';
 import 'package:apsira_test/apsira_test.dart';
 import 'package:apsira_ui/apsira_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/host.dart';
@@ -235,6 +238,54 @@ void main() {
       await tester.tap(byKey('tour/skip'));
       await tester.pumpAndSettle();
       expect(closed, 1);
+    });
+
+    // T12's finding: RELAY's longest Spanish tour title (relay
+    // lib/app/l10n/app_es.arb `tourRemindersTitle` @ 09b28810) was cut by
+    // the app bar at large text; under a back button it wraps and the bar
+    // grows to hold it.
+    testWidgets('a long title wraps under the back button, the bar holds it', (
+      tester,
+    ) async {
+      tester.view
+        ..devicePixelRatio = 3
+        ..physicalSize = const Size(360, 780) * 3;
+      addTearDown(tester.view.reset);
+      await pumpHome(tester, const Scaffold(), textScale: 2);
+      unawaited(
+        tester
+            .state<NavigatorState>(find.byType(Navigator))
+            .push(
+              MaterialPageRoute<void>(
+                builder: (_) => HelpTourScreen(
+                  title: 'Recordatorios y repeticiones',
+                  steps: steps(3),
+                  onClose: () {},
+                ),
+              ),
+            ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(BackButton), findsOneWidget);
+      final title = find.descendant(
+        of: find.text('Recordatorios y repeticiones'),
+        matching: find.byType(RichText),
+      );
+      final paragraph = tester.renderObject<RenderParagraph>(title);
+      expect(paragraph.didExceedMaxLines, isFalse, reason: 'no ellipsis');
+      final bar = tester.getRect(find.byType(AppBar));
+      final text = tester.getRect(title);
+      expect(bar.height, greaterThan(kToolbarHeight));
+      expect(text.top, greaterThanOrEqualTo(bar.top));
+      expect(text.bottom, lessThanOrEqualTo(bar.bottom));
+    });
+
+    testWidgets('a title that fits keeps the standard bar', (tester) async {
+      await _pump(
+        tester,
+        HelpTourScreen(title: 'Backups', steps: steps(3), onClose: () {}),
+      );
+      expect(tester.getSize(find.byType(AppBar)).height, kToolbarHeight);
     });
 
     testWidgets('a tour with no steps yet is its bar alone', (tester) async {

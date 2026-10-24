@@ -706,4 +706,6 @@ becomes Decided on review), Superseded.
 - **Consequences:** `apsira_onboarding` depends on `apsira_app`, `apsira_core`, `apsira_l10n`, `apsira_ui` and
   `flutter`. RELAY's intro moves from 5 s to 4.5 s and its tips become per install (the stored
   `tips_dismissed` ids are written once as flags in its adoption); VIATICUM's tour dots read "Step n of m" and
-  take RELAY's `accentText`. Each change is a line in the app's decision log at adoption.
+  take RELAY's `accentText`. Help's app bar wraps a title too long for one line and grows to hold it (T12's
+  finding: RELAY's `tour_screen` cut "Recordatorios y repeticiones" with an ellipsis at large text); a title
+  that fits keeps the standard bar. Each change is a line in the app's decision log at adoption.
