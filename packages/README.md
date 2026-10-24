@@ -5,13 +5,13 @@ The Dart packages the Apsira Flutter apps depend on, released together at one sh
 boundaries), D-APK-002 (tools scope), D-APK-003 (pinning by git ref), D-APK-006 (what v0.1
 settled), D-APK-007 (one version, one tag, edges between packages), D-APK-009 (adoption in
 every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`), D-APK-012 (the shared strings),
-D-APK-013 (the `apsira_ui` 0.3 component themes), D-APK-015 (`apsira_storage`), D-APK-016
-(the app lock) and D-APK-017 (onboarding).
+D-APK-013 (the `apsira_ui` 0.3 component themes), D-APK-014 (its component kit), D-APK-015
+(`apsira_storage`), D-APK-016 (the app lock) and D-APK-017 (onboarding).
 
 | Package | Kind | Holds | Depends on |
 |---|---|---|---|
 | `apsira_core` | pure Dart | `Result`/`Failure`, the log model with `stackHash`, the `Clock` and `IdGen` ports with the monotonic UUIDv7, the FTS5 match builder, canonical JSON; `testing.dart` with `FakeClock` and `FakeIdGen` | `crypto` |
-| `apsira_ui` | Flutter | `ApsiraTheme` tokens, `ApsiraThemeData.build` (the shared menu, snack and button themes) and `buildFull`, `ApsiraComponentThemes`, settings rows and menu items, `ThemeModeSetting`, typography, shape, chrome icons, fonts, lockup, licences, provenance; `example/`, the consumer proof | `flutter`, `flutter_lucide`, `flutter_riverpod` |
+| `apsira_ui` | Flutter | `ApsiraTheme` tokens, `ApsiraThemeData.build` (the shared menu, snack and button themes) and `buildFull`, `ApsiraComponentThemes`, settings rows and menu items, `ThemeModeSetting`, typography, shape, chrome icons, fonts, lockup, licences, provenance; the component kit (`lib/src/kit/`: layout, state, overlays, the undo snack, pills, search, drawer rows); `preview.dart` with the debug `ThemePreviewScreen`; `example/`, the consumer proof | `flutter`, `apsira_l10n`, `flutter_lucide`, `flutter_riverpod` |
 | `apsira_tools` | pure Dart, `bin/` | `layering_lint`, `l10n_check`, `coverage_gate`, `deps_check`, `manifest_check` + `tool/apsira_tools.yaml` config; the release and build script skeletons | `yaml` |
 | `apsira_test` | Flutter, dev | the Android font scaler, the large-text layout checker, the golden matrix with bundled fonts, the a11y pass, `prop_core`, pump helpers | `flutter`, `flutter_test`, `apsira_ui` |
 | `apsira_app` | Flutter plugin | error handlers, the rotating file log sink, the start-phase redirect, `RestartableRoot`, the startup-failure app, `SystemClock` + the zone channel, the `PendingPort` stub base, per-install flags, the About page; `testing.dart` with `MemoryLogSink` | `flutter`, `apsira_core`, `apsira_ui` |
@@ -19,7 +19,7 @@ D-APK-013 (the `apsira_ui` 0.3 component themes), D-APK-015 (`apsira_storage`), 
 | `apsira_l10n` | Flutter | `ApsiraL10n` (54 keys in English and Spanish, hand-written, its own delegate; any other language English), `AppLanguage`, `AppLanguageSetting` with the `LanguageStore` port | `flutter`, `flutter_riverpod` |
 | `apsira_lock` | Flutter plugin | RELAY's app lock: the `Authenticator` port and its `local_auth` adapter, hide in recent apps (`ScreenPrivacy`, FLAG_SECURE through its own Kotlin, `RecentsPrivacy`), `LockSettings` with the app's `LockSettingsStore`, `LockController`, `LockShield`, `LockCover`, `LockSettingsSection`; `testing.dart` with the fakes; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | `flutter`, `apsira_core`, `apsira_l10n`, `apsira_ui`, `flutter_riverpod`, `local_auth`, `local_auth_android` |
 | `apsira_onboarding` | Flutter | `FirstOpenIntro` (the app's mark a parameter), `LanguageStep`, `StepFrame`, `FirstOpenFlow<S>`, `TourPlayer` with `TourStepData`, the Help shell, the one-time tips and discovery pieces, `SeenFlags` (per install, over `InstallFlag`) | `flutter`, `apsira_app`, `apsira_l10n`, `apsira_ui` |
-| `apsira_storage` | Flutter plugin | the `BackupTarget` port and its SAF adapter, `StorageSpace` over the storage channel (`StorageModule.kt`, `apsira_storage/storage`), `DocumentPicker`, `Sharer` and `PhotoSource` with their adapters, `ImageMeta`; `testing.dart` with a fake per port | `flutter`, `apsira_core`, `saf_stream`, `saf_util`, `share_plus`, `image_picker` |
+| `apsira_storage` | Flutter plugin | the `BackupTarget` port and its SAF adapter, `StorageSpace` over the storage channel (`StorageModule.kt`, `apsira_storage/storage`), `DocumentPicker`, `Sharer` and `PhotoSource` with their adapters, `ImageMeta`; `testing.dart` with a fake per port | `flutter`, `apsira_core`, `saf_stream`, `saf_util`, `share_plus`, `image_picker` with RELAY's two pins beside it (`image_picker_android`, `image_picker_platform_interface`) |
 
 Each library is imported through its barrel (`package:apsira_core/apsira_core.dart`,
 `package:apsira_core/testing.dart`, `package:apsira_ui/apsira_ui.dart`, …); `src/` is private.
@@ -30,8 +30,8 @@ its package once at start, and its debug APK is the proof that the package's Kot
 compiles (the build is run by hand; each package README says how).
 
 Every extracted file names its source app, path and commit in a header comment
-(`// From relay lib/app/theme/relay_theme.dart @ 5f606e9`); v0.2 extracts from RELAY
-`09b28810`, VIATICUM `78d38e0` and LYCEUM `9f4ff27`.
+(`// From relay lib/app/theme/relay_theme.dart @ 5f606e9`); v0.1 extracts from RELAY
+`5f606e9`, v0.2 and v0.3 from RELAY `09b28810`, VIATICUM `78d38e0` and LYCEUM `9f4ff27`.
 
 ## Consuming
 
@@ -82,7 +82,9 @@ dependencies:
 ```
 
 and commits `pubspec_overrides.yaml` with a path override for the transitive closure of
-its apsira dependencies, and nothing else:
+its apsira dependencies and dev_dependencies, and nothing else. The package itself is left
+out: a dev_dependency that depends back on it (`apsira_ui`'s `apsira_test`) is satisfied by
+the root, and pub refuses an override of the root package:
 
 ```yaml
 dependency_overrides:
@@ -92,7 +94,8 @@ dependency_overrides:
 The override applies only when the package is the root, so inside this repository it
 resolves against its siblings, offline and before the tag exists; consumers never see
 it. In a package's `pubspec.yaml` a `path:` dependency is a defect. The one exception is
-each package's `example/` app, which depends on its package by `path: ../` (its
+each package's `example/` app, which depends on its package by `path: ../` (and
+`apsira_ui`'s also on `apsira_l10n` by `path: ../../apsira_l10n`, for the delegate; its
 `pubspec_overrides.yaml`, where it has one, resolves the package's apsira dependencies
 by `../../`): it is the consumer proof, inside the package, and never released. `bash tool/check.sh --release` checks the rules, over the packages only.
 
@@ -107,7 +110,7 @@ One version, one tag, for every package:
    printing `ok <step>` or `FAIL <step>`: the shared-tag rules (equal versions, each
    CHANGELOG section, a tag that exists carries that version in every package, every
    apsira dependency in the exact git form at `apsira-v<version>`, every override file
-   the transitive closure), `sha256sum -c` of `apsira_ui/lib/fonts` and `lib/brand`,
+   the transitive closure, the package itself excepted), `sha256sum -c` of `apsira_ui/lib/fonts` and `lib/brand`,
    `cmp` of the fonts and the lockup against `../apsira-brand/`, colour literals only in
    `colors.dart`, `dart format`; then `pub get`, analyze and tests for every package and
    every `example/` (from a clean `build/`).

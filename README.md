@@ -114,7 +114,9 @@ by path in a committed `pubspec.yaml` (the path consumers are the packages' own 
 apps, inside the packages themselves). Packages may depend on each other at the same tag. A package is done
 only when every app uses it (D-APK-009). What is app-specific stays in the app: its own
 `ThemeExtension`s, the ports no package holds (the shared ones live in their package:
-`Clock`/`IdGen` in `apsira_core`, `BackgroundJobs` in `apsira_jobs`, D-APK-011), its
+`Clock`/`IdGen` in `apsira_core`, `BackgroundJobs` in `apsira_jobs`, D-APK-011; `BackupTarget`,
+`StorageSpace`, `DocumentPicker`, `Sharer` and `PhotoSource` in `apsira_storage`, D-APK-015;
+`Authenticator`, `ScreenPrivacy` and `LockSettingsStore` in `apsira_lock`, D-APK-016), its
 components beyond `apsira_ui`'s kit, `apsira_onboarding` and `apsira_lock`, its own text
 beyond `apsira_l10n`'s keys, its icon art, its codegen. Packages never depend on `build_runner`.
 
@@ -182,7 +184,7 @@ The procedure that brought Lyceum Folio in (planning thread of 2026-10-21):
 |---|---|
 | `apsira-brand/` | The brand standard and every asset |
 | `folios/`, `tomes/` | Briefs, one per app |
-| `packages/` | `apsira_core`, `apsira_ui`, `apsira_tools`, `apsira_test`, `apsira_app`, `apsira_jobs` |
+| `packages/` | `apsira_core`, `apsira_ui`, `apsira_tools`, `apsira_test`, `apsira_app`, `apsira_jobs`, `apsira_l10n`, `apsira_onboarding`, `apsira_storage`, `apsira_lock` |
 | `docs/decisions.md` | The ecosystem's decision log (`D-APK-nnn`) |
 | `docs/agent-rules.md` | The non-negotiables every army brief for this repository carries |
 | `docs/sessions/` | Session briefs, analyses, reports and handoffs |

@@ -637,7 +637,8 @@ becomes Decided on review), Superseded.
     as soon as the app goes to the background, a clock that went backwards locks, a failed or cancelled prompt
     stays locked with a retry and no counter or back-off (never a lock-out), and the lock does not engage when
     the device cannot prompt, the authenticator throws, or the settings cannot be read within 2 s
-    (`lockSettingsReadBound`), each logged as `lock.notEngaged` with its code only.
+    (`lockSettingsReadBound`), each logged as `lock.notEngaged` with its code and, when one was thrown, the
+    error's type (never its message).
   - The settings record is RELAY's row unchanged, `{"enabled":false,"timeoutMinutes":5,"hideInRecents":false}`;
     a missing or mistyped field reads as its default. The package never chooses a key or a store: each app
     implements `LockSettingsStore` (`read`, `write`) over its own storage and keeps its keys (plan P-3), and
@@ -649,9 +650,9 @@ becomes Decided on review), Superseded.
     `LocalAuthExceptionCode`) live in the package (Q2): `local_auth ^3.0.2` and `local_auth_android ^2.3.0`,
     RELAY's pins. The prompt's title, hint and cancel are `ApsiraL10n`'s; its reason is the app's own text.
   - FLAG_SECURE goes through the package's own Kotlin on the channel `apsira_lock/screen_privacy`
-    (`ApsiraLockPlugin`, `ScreenPrivacyModule.kt`, about 25 lines, Q3): the plugin keeps the last state asked
-    for and sets it again on every activity it attaches to, and the Dart side applies it again on every return
-    from the background, as RELAY's `RecentsPrivacy` does. No window-manager plugin.
+    (`ApsiraLockPlugin.kt` and `ScreenPrivacyModule.kt`, about 60 lines of code, Q3): the plugin keeps the last
+    state asked for and sets it again on every activity it attaches to, and the Dart side applies it again on
+    every return from the background, as RELAY's `RecentsPrivacy` does. No window-manager plugin.
   - The gate is `LockShield`, RELAY's `LockGate` without go_router: the app passes its exemption
     (`isExempt`, with the listenable that says when it changes); RELAY's crossing, router and exempt-route
     widgets stay in RELAY. The cover is `LockCover`, the Settings rows `LockSettingsSection` on `apsira_ui`'s
@@ -703,9 +704,9 @@ becomes Decided on review), Superseded.
   `tips_dismissed` setting: it travels in a backup, which C1 rules out. Third-party onboarding packages
   (`introduction_screen`, `showcaseview`): the apps' own widgets already do this on tokens, and AC-12.5 allows
   apsira packages only.
-- **Consequences:** `apsira_onboarding` depends on `apsira_app`, `apsira_core`, `apsira_l10n`, `apsira_ui` and
-  `flutter`. RELAY's intro moves from 5 s to 4.5 s and its tips become per install (the stored
-  `tips_dismissed` ids are written once as flags in its adoption); VIATICUM's tour dots read "Step n of m" and
-  take RELAY's `accentText`. Help's app bar wraps a title too long for one line and grows to hold it (T12's
-  finding: RELAY's `tour_screen` cut "Recordatorios y repeticiones" with an ellipsis at large text); a title
-  that fits keeps the standard bar. Each change is a line in the app's decision log at adoption.
+- **Consequences:** `apsira_onboarding` depends on `apsira_app`, `apsira_l10n`, `apsira_ui` and `flutter`, and on
+  `apsira_core` through `apsira_app`. RELAY's intro moves from 5 s to 4.5 s and its tips become per install (the
+  stored `tips_dismissed` ids are written once as flags in its adoption); VIATICUM's tour dots read "Step n of m"
+  and take RELAY's `accentText`. Help's app bar wraps a title too long for one line and grows to hold it (T12's
+  finding: RELAY's `tour_screen` cut "Recordatorios y repeticiones" with an ellipsis at large text); a title that
+  fits keeps the standard bar. Each change is a line in the app's decision log at adoption.
