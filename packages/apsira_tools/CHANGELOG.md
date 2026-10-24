@@ -79,7 +79,13 @@ with its own paths and keeps the items the README lists under "Stays in
 VIATICUM".
 
 Replace `tool/build_apk.sh` and `tool/release/local_release.sh` with the README's
-wrappers. Tests that pinned VIATICUM's `build_apk.sh` exit codes 2 (no SDK) and 64
+wrappers. The release wrapper refuses in a session (exit 3) before it runs `dart`:
+RELAY's and VIATICUM's check the markers themselves, LYCEUM's sources the
+`tool/release/session_guard.sh` it keeps for `operator_acts.sh`. A failing
+`script_path` exits 1. `local_release.sh --help` names the app's signing values and
+steps from its settings, as LYCEUM's own help did. A test that counted the stub calls
+of a run now sees `dart run apsira_tools:script_path local_release` first (as for
+`build_apk`), and a stub that fails every `dart` call fails that one. Tests that pinned VIATICUM's `build_apk.sh` exit codes 2 (no SDK) and 64
 (usage) now expect 1 and 2.
 
 ## 0.1.0 — 2026-10-21

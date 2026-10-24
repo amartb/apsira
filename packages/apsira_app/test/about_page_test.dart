@@ -44,6 +44,8 @@ Future<void> _pump(
   WidgetTester tester,
   String lang, {
   Brightness brightness = Brightness.dark,
+  AboutRowBuilder? rowBuilder,
+  AboutSectionBuilder? sectionBuilder,
 }) async {
   final s = _strings[lang]!;
   await tester.pumpWidget(
@@ -65,6 +67,8 @@ Future<void> _pump(
         tagline: s.tagline,
         mark: const SizedBox(key: Key('mark'), width: 48, height: 48),
         rows: [ListTile(title: Text(s.privacy))],
+        rowBuilder: rowBuilder,
+        sectionBuilder: sectionBuilder,
       ),
     ),
   );
@@ -139,4 +143,95 @@ void main() {
     expect(page.applicationName, 'LYCEUM');
     expect(page.applicationVersion, '1.0.1');
   });
+
+  testWidgets('by default the rows are list tiles in two cards', (
+    tester,
+  ) async {
+    await _pump(tester, 'en');
+    expect(find.byType(Card), findsNWidgets(2));
+    expect(find.byType(ListTile), findsNWidgets(3));
+  });
+
+  testWidgets("a row builder draws the page's own rows in the app's kit", (
+    tester,
+  ) async {
+    final s = _strings['en']!;
+    final built = <AboutRowKind>[];
+    await _pump(
+      tester,
+      'en',
+      rowBuilder: (context, row) {
+        built.add(row.kind);
+        return _KitRow(row);
+      },
+    );
+    expect(built, [AboutRowKind.version, AboutRowKind.licences]);
+    final version = find.byKey(const Key('kit/version'));
+    expect(
+      find.descendant(of: version, matching: find.text(s.versionLabel)),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: version, matching: find.text('1.0.1')),
+      findsOneWidget,
+    );
+    // Only the app's own row stays a ListTile: the page drew none.
+    expect(find.byType(ListTile), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('kit/licences')),
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byKey(const Key('kit/licences')));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<LicensePage>(find.byType(LicensePage)).applicationName,
+      'LYCEUM',
+    );
+  });
+
+  testWidgets("a section builder draws the brand and the rows in the app's "
+      'cards', (tester) async {
+    final s = _strings['en']!;
+    await _pump(
+      tester,
+      'en',
+      sectionBuilder: (context, section, children) =>
+          Column(key: Key('kit/${section.name}'), children: children),
+    );
+    expect(find.byType(Card), findsNothing);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('kit/brand')),
+        matching: find.byKey(const Key('about/brand')),
+      ),
+      findsOneWidget,
+    );
+    for (final text in [s.versionLabel, s.privacy, s.licencesLabel]) {
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('kit/rows')),
+          matching: find.text(text),
+        ),
+        findsOneWidget,
+        reason: text,
+      );
+    }
+  });
+}
+
+/// A stand-in for an app's kit row (LYCEUM's `EntityRow`).
+class _KitRow extends StatelessWidget {
+  const _KitRow(this.row);
+
+  final AboutRow row;
+
+  @override
+  Widget build(BuildContext context) => InkWell(
+    key: Key('kit/${row.kind.name}'),
+    onTap: row.onTap,
+    child: Column(
+      children: [Text(row.title), if (row.value case final value?) Text(value)],
+    ),
+  );
 }

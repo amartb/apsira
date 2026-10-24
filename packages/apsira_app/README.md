@@ -30,11 +30,16 @@ adoption lane deletes; paths are under the app's root.
 | `ZoneModule.kt`, `ApsiraAppPlugin.kt` (Android) | L `ZoneModule.kt` (the channel half of R's) | `ZoneModule.kt` and its `register` line in `MainActivity.kt`; its receiver half is `apsira_jobs`' `ZoneResync.kt` (D-APK-011) | the same | `ZoneModule.kt` and its line in `MainActivity.kt` |
 | `PendingPort` (`pending()`, `pendingResult()`, `portPending`) | R `lib/data/platform/pending_ports.dart`; V's `Result` stubs | the base class in `lib/data/platform/pending_ports.dart` (its stubs stay) | the same | the same |
 | `InstallFlag({directory, path})`, `isSet()`, `set()` | V `lib/app/services/first_open_service.dart` | — (its flag is in `app_meta`) | the file logic of `FirstOpenService` (`path: 'first_open/done.json'`) | — |
-| `AboutPage({title, versionLabel, licencesLabel, appName, version, developedByLabel, apsiraLabsLabel, tagline, mark, rows})` | L `lib/features/settings/ui/about_page.dart` | — | — | `lib/features/settings/ui/about_page.dart` (its tour and privacy rows passed as `rows`) |
+| `AboutPage({title, versionLabel, licencesLabel, appName, version, developedByLabel, apsiraLabsLabel, tagline, mark, rows, rowBuilder, sectionBuilder})`, `AboutRow`, `AboutRowKind`, `AboutSection` | L `lib/features/settings/ui/about_page.dart` | — | — | `lib/features/settings/ui/about_page.dart` (its tour and privacy rows passed as `rows`; its `EntityRow`, `GroupCard` and `LyceumCard` through the builders) |
 | `MemoryLogSink` (`testing.dart`) | R `test/app/error_handlers_test.dart` | the tests' memory sinks | the same | the same |
 
 ## Behaviour notes
 
+- **`AboutPage` draws its own rows and cards in Material by default** (list tiles, two
+  `Card`s). `rowBuilder` draws the version and licences rows from an `AboutRow` (its
+  `kind`, `title`, `value`, `onTap`) and `sectionBuilder` the brand and rows sections
+  around their children, so an app keeps its kit's look: LYCEUM's icon-box rows in its
+  group card.
 - **The zone channel is on the UI engine only**, as RELAY's `MainActivity` registers it.
   `ApsiraAppPlugin` is `ActivityAware`: it sets the handler in `onAttachedToActivity` and
   clears it in `onDetachedFromActivity`. A background engine attaches to no activity, so it

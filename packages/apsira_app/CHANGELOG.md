@@ -13,7 +13,9 @@ app files it replaces.
 - `startRedirect` with `StartPhase` and `StartRoutes`: RELAY's and LYCEUM's redirects in
   one pure function, with the app's routes as its targets.
 - `RestartableRoot`, `StartupFailureApp`, `AboutPage`, `ZoneModule.kt`: LYCEUM @ `9f4ff27`,
-  every string a parameter.
+  every string a parameter. `AboutPage` draws its rows as list tiles in cards unless the
+  app passes `rowBuilder` (the version and licences rows, as `AboutRow`) and
+  `sectionBuilder` (the brand and rows sections): LYCEUM keeps its kit's rows and cards.
 - `InstallFlag`: VIATICUM's `FirstOpenService` file logic, the path verbatim.
 - `testing.dart`: `MemoryLogSink`.
 

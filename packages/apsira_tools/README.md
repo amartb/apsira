@@ -97,7 +97,9 @@ RELAY's linter rules. An app includes it with
 (D-APK-011). An app keeps its script paths as small wrappers: each sets the
 settings and runs the package's file, which
 `dart run apsira_tools:script_path <name>` prints (exit 2 for an unknown name). Each
-script's `--help` lists every setting and its default.
+script's `--help` lists every setting and its default; `local_release.sh --help`
+also names, from the wrapper's settings, the app's signing values and each step
+down to the `gh release create` line, as LYCEUM's own script did.
 
 | Script | Does | Exit |
 |---|---|---|
@@ -112,19 +114,35 @@ stand for what only a real run knows. The tests run every app's settings below i
 dry run and against stub tools, and assert the lines each app's own scripts run at
 the commits D-APK-011 names.
 
-One wrapper per app, its `tool/release/local_release.sh`:
+One wrapper per app, its `tool/release/local_release.sh`. It refuses in a session
+(exit 3) before it runs `dart`, so not even `script_path` runs there: RELAY and
+VIATICUM check `session_guard.sh`'s markers in the wrapper itself; LYCEUM sources
+the `tool/release/session_guard.sh` it keeps for `operator_acts.sh` (the same
+list; without it the wrapper refuses). A failing `script_path` exits 1, as a
+failed input does in the script.
 
 ```bash
 #!/usr/bin/env bash
 # RELAY: release key, verify_fingerprint.dart, commit-count versionCode (D-090).
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+# Never in a session (D-APK-011), before dart runs: session_guard.sh's markers.
+in_session=""
+for marker in CLAUDECODE AI_AGENT CODESPACES CLOUD_SHELL ARMY_TREE ARMY_TASK \
+  $(compgen -v CLAUDE_CODE_ || true); do
+  [ -z "${!marker:-}" ] || in_session="$marker set"
+done
+[ "${HOME:-}" != /home/user ] || in_session="HOME is /home/user"
+if [ -n "$in_session" ]; then
+  echo "local_release: refused ($in_session): this looks like a Claude Code, agent or cloud session. The release key never enters one (D-APK-011, D-090); run this on your own computer." >&2
+  exit 3
+fi
 export APSIRA_APP=Relay APSIRA_APP_ID=relay APSIRA_GUARD_RECORD=D-090 \
   APSIRA_KEY_PREFIX=RELAY \
   APSIRA_FINGERPRINT_CHECK='dart run tool/release/verify_fingerprint.dart' \
   APSIRA_MANIFEST_CHECK='dart run tool/privacy/manifest_check.dart --manifest' \
   APSIRA_VERSION_CODE=commit-count APSIRA_NOTES=issues
-script="$(dart run apsira_tools:script_path local_release)"
+script="$(dart run apsira_tools:script_path local_release)" || exit 1
 exec bash "$script" "$@"
 ```
 
@@ -133,12 +151,23 @@ exec bash "$script" "$@"
 # VIATICUM: the SDK debug key (D-059), tool/check.sh before the build.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+# Never in a session (D-APK-011), before dart runs: session_guard.sh's markers.
+in_session=""
+for marker in CLAUDECODE AI_AGENT CODESPACES CLOUD_SHELL ARMY_TREE ARMY_TASK \
+  $(compgen -v CLAUDE_CODE_ || true); do
+  [ -z "${!marker:-}" ] || in_session="$marker set"
+done
+[ "${HOME:-}" != /home/user ] || in_session="HOME is /home/user"
+if [ -n "$in_session" ]; then
+  echo "local_release: refused ($in_session): this looks like a Claude Code, agent or cloud session. The release key never enters one (D-APK-011, docs/building.md §3); run this on your own computer." >&2
+  exit 3
+fi
 export APSIRA_APP=Viaticum APSIRA_APP_ID=viaticum APSIRA_SIGNING=debug-key \
   APSIRA_GUARD_RECORD='docs/building.md §3' APSIRA_SIGNING_DOC='docs/building.md §3' \
   APSIRA_MANIFEST_CHECK='dart run tool/privacy/manifest_check.dart' \
   APSIRA_VERSION_CODE=version-dart APSIRA_RELEASE_CHECK='bash tool/check.sh' \
   APSIRA_NOTES=issues
-script="$(dart run apsira_tools:script_path local_release)"
+script="$(dart run apsira_tools:script_path local_release)" || exit 1
 exec bash "$script" "$@"
 ```
 
@@ -147,20 +176,28 @@ exec bash "$script" "$@"
 # LYCEUM: release key with its certificate SHA-256, CHANGELOG notes (D-004).
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+# Never in a session (D-004), before dart runs: the guard operator_acts.sh
+# sources too; without it a session cannot be ruled out.
+. tool/release/session_guard.sh 2> /dev/null || {
+  echo "local_release: refused: tool/release/session_guard.sh is missing, so a session cannot be ruled out (D-004)." >&2
+  exit 3
+}
+refuse_in_session local_release
 export APSIRA_APP=LYCEUM APSIRA_APP_ID=lyceum APSIRA_GUARD_RECORD=D-004 \
   APSIRA_KEY_PREFIX=LYCEUM \
   APSIRA_KEY_FINGERPRINT=5782212c870dd120e1b480f434a39c06ec9b69171f6dbe920ba29afe5540fc6a \
   APSIRA_VERSION_CODE=version-dart APSIRA_VERSION_DEFINE=LYCEUM_VERSION \
   APSIRA_NOTES=changelog
-script="$(dart run apsira_tools:script_path local_release)"
+script="$(dart run apsira_tools:script_path local_release)" || exit 1
 exec bash "$script" "$@"
 ```
 
 `tool/build_apk.sh` is the same wrapper from `..` with `build_apk`: RELAY sets its
 `APSIRA_MANIFEST_CHECK`, VIATICUM its `APSIRA_MANIFEST_CHECK` and
 `APSIRA_APK_CHECKS='dart run tool/privacy/apk_plugins_check.dart'`, LYCEUM nothing.
-The wrapper's `dart run` reads only the package config; the guard still runs before
-the release script reads its arguments, settings or any key.
+`build_apk.sh` releases nothing and reads no key, so its wrapper has no guard. The
+package's `local_release.sh` checks the markers again, before it reads its arguments,
+settings or any key.
 
 ## Tests
 
@@ -169,4 +206,5 @@ for byte (each directory's `README.md` names the source), except `viaticum/`, wh
 proves each v0.2 key with one passing and one failing case. The layering suite pins
 RELAY's 21 findings in the violations fixture. `test/scripts/` runs the scripts in a
 scratch app root with stub `flutter`, `dart`, `gh`, `gradlew` and `apksigner`, in a
-clean environment.
+clean environment. `wrapper_test.dart` runs the release wrappers above as written,
+with each session marker and a `dart` that fails if called.

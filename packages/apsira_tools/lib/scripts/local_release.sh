@@ -86,6 +86,54 @@ out of your shell history; they are never printed).
 EOF
 }
 
+# app_help — the release these settings make, step by step, as an app's own
+# script's --help named it (LYCEUM's @ 9f4ff27): only --help prints it, and
+# it validates nothing, so settings the run would refuse still print.
+app_help() {
+  local app="${APSIRA_APP:-<app>}" id="${APSIRA_APP_ID:-<id>}" fl prefix
+  local signing="${APSIRA_SIGNING:-release-key}" define="" notes
+  read -r -a fl <<<"${APSIRA_FLAVOURS:-dev prod}"
+  local prod_flavour="${fl[1]:-prod}"
+  [ -z "${APSIRA_VERSION_DEFINE:-}" ] || define=" --dart-define=$APSIRA_VERSION_DEFINE=<x.y.z>"
+  echo
+  echo "$app's release, from its wrapper's settings:"
+  if [ "$signing" = release-key ]; then
+    prefix="${APSIRA_KEY_PREFIX:-<prefix>}"
+    echo "  signing      ${prefix}_KEYSTORE_PATH (outside the repository),"
+    echo "               ${prefix}_KEYSTORE_PASSWORD, ${prefix}_KEY_ALIAS, ${prefix}_KEY_PASSWORD"
+  else
+    echo "  signing      the SDK debug key (~/.android/debug.keystore)"
+  fi
+  if [ "${APSIRA_VERSION_CODE:-commit-count}" = version-dart ]; then
+    echo "  versionCode  dart run tool/release/version.dart <tag>"
+  else
+    echo "  versionCode  git rev-list --count HEAD, or --build-number <n>"
+  fi
+  if [ "${APSIRA_NOTES:-issues}" = changelog ]; then
+    notes="notes-<x.y.z>.md"
+    echo "  notes        dart run tool/release/changelog.dart <tag>, before the build"
+  else
+    notes="CHANGELOG-<x.y.z>.md"
+  fi
+  [ -z "${APSIRA_RELEASE_CHECK:-}" ] ||
+    echo "  check        $APSIRA_RELEASE_CHECK (its last line: check: PASS)"
+  echo "  build        flutter build apk --flavor $prod_flavour --release --build-name <x.y.z>"
+  echo "               --build-number <versionCode>$define"
+  echo "  manifest     ${APSIRA_MANIFEST_CHECK:-dart run apsira_tools:manifest_check --manifest}"
+  echo "               build/app/intermediates/merged_manifests/${prod_flavour}Release"
+  if [ "$signing" = release-key ] && [ -n "${APSIRA_FINGERPRINT_CHECK:-}" ]; then
+    echo "  certificate  $APSIRA_FINGERPRINT_CHECK <apk> --apksigner <apksigner>"
+  elif [ "$signing" = release-key ]; then
+    echo "  certificate  apksigner verify --print-certs (newest build-tools): one signer,"
+    echo "               SHA-256 ${APSIRA_KEY_FINGERPRINT:-<APSIRA_KEY_FINGERPRINT>}"
+  fi
+  [ "${APSIRA_NOTES:-issues}" = changelog ] ||
+    echo "  notes        dart run tool/release/changelog.dart --tag <tag> --issues <file>"
+  echo "  files        build/release/<tag>/$id-<x.y.z>.apk and its .sha256"
+  echo "  publish      gh release create <tag> --verify-tag --title \"$app <x.y.z>\""
+  echo "               --notes-file build/release/<tag>/$notes <the files>"
+}
+
 die() {
   echo "local_release: $1" >&2
   exit "${2:-1}"
@@ -100,6 +148,7 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     -h | --help)
       usage
+      app_help
       exit 0
       ;;
     --dry-run) dry=true ;;

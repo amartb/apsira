@@ -212,6 +212,62 @@ void main() {
     expect(box.calls, isEmpty);
   });
 
+  // What LYCEUM's own --help named (lyceum tool/release/local_release.sh @
+  // 9f4ff27), from each app's settings: its signing values, its steps and
+  // the publish command.
+  final helpNames = {
+    relay: [
+      'RELAY_KEYSTORE_PATH',
+      'RELAY_KEYSTORE_PASSWORD',
+      'RELAY_KEY_ALIAS',
+      'RELAY_KEY_PASSWORD',
+      'dart run tool/release/verify_fingerprint.dart',
+      'git rev-list --count HEAD',
+      'gh release create',
+    ],
+    viaticum: [
+      'the SDK debug key',
+      'bash tool/check.sh',
+      'dart run tool/release/version.dart',
+      'gh release create',
+    ],
+    lyceum: [
+      'LYCEUM_KEYSTORE_PATH',
+      'LYCEUM_KEYSTORE_PASSWORD',
+      'LYCEUM_KEY_ALIAS',
+      'LYCEUM_KEY_PASSWORD',
+      'tool/release/version.dart',
+      '--dart-define=LYCEUM_VERSION=<x.y.z>',
+      'apksigner verify --print-certs',
+      lyceumDigest,
+      'tool/release/changelog.dart',
+      'gh release create',
+      '--notes-file',
+    ],
+  };
+  for (final MapEntry(key: app, value: names) in helpNames.entries) {
+    test("--help names ${app.name}'s values and steps from its settings", () {
+      final box = Sandbox();
+      final result = box.run('local_release', [
+        '--help',
+      ], box.env(app.settings));
+      expect(result.exitCode, 0, reason: out(result));
+      for (final name in names) {
+        expect('${result.stdout}', contains(name));
+      }
+      expect('${result.stderr}', isEmpty);
+      expect(box.calls, isEmpty);
+    });
+  }
+
+  test('--help with settings it would refuse still exits 0', () {
+    final box = Sandbox();
+    final result = box.run('local_release', [
+      '--help',
+    ], box.env({'APSIRA_APP': 'X', 'APSIRA_SIGNING': 'none'}));
+    expect(result.exitCode, 0, reason: out(result));
+  });
+
   group('usage and settings errors (exit 2)', () {
     final cases = <String, (List<String>, Map<String, String>)>{
       'no tag': ([], lyceum.settings),
