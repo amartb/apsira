@@ -28,6 +28,7 @@ becomes Decided on review), Superseded.
 | D-APK-011 | The Tier-1 set at `apsira-v0.2.0` and how each drift is resolved: monotonic UUIDv7, RELAY's FTS rule, `stackHash` with `crypto`, `apsira_jobs`, the session-guard union, the zone channel, one copy of the release scripts | Decided |
 | D-APK-012 | Shared strings: `apsira_l10n`'s key table and its wording, one rule for app phrases, `AppLanguage` and `AppLanguageSetting`; Flutter's `MaterialLocalizations` rejected | Decided |
 | D-APK-013 | `apsira_ui` 0.3: `build()` carries the shared component set (menus, `highlightColor`, the snack theme, `accentText` text and outlined buttons, R-10), every app VIATICUM included; LYCEUM's other sub-themes are builders and `buildFull`; settings rows, menu items and `ThemeModeSetting` | Decided |
+| D-APK-015 | `apsira_storage`: the backup, storage-space, document-picker, share and photo ports with their adapters and fakes, one storage channel `apsira_storage/storage`; `FolderAccess`, the crop and the media stores stay per app | Decided |
 
 ---
 
@@ -530,3 +531,50 @@ becomes Decided on review), Superseded.
 - **Consequences:** every golden with a light `TextButton` or `OutlinedButton` moves (its label is `accentText`),
   in all three apps; VIATICUM's snack and menu goldens move. Each app's adoption names the goldens it
   re-approves and cites R-10 or this entry. `apsira_ui` gains `flutter_riverpod` (R-1).
+
+## D-APK-015 — `apsira_storage`: the storage ports, their adapters, one storage channel
+
+- **Status:** Decided (2026-10-24: operator ruling R-1, Q2-a, ledger `2026-10-24-packages-v0-3`).
+- **Context:** the storage adapters exist two or three times: RELAY's `BackupTarget` and `SafBackupTarget` (LYCEUM's
+  copy differs only in comments), three `StorageModule.kt` on three channels (`relay/storage`, `viaticum/storage`,
+  `lyceum/storage`), three `Sharer`s, two `DocumentPicker`s of different shapes (RELAY, VIATICUM), two
+  `PhotoSource`s (RELAY; LYCEUM's with a crop and scaled capture) and two free-space readers (VIATICUM's
+  `FreeSpaceChannel`, LYCEUM's `StorageSpace`). Q2-a puts each adapter beside its port, in the package that carries
+  the plugin.
+- **Decision:** `apsira_storage` 0.3.0, a Flutter plugin, holds:
+  - **`BackupTarget`** with `SafBackupTarget` and its `SafPlugins`/`PluginSaf` seam, RELAY's unchanged. Its
+    `freeBytes` asks a `StorageSpace` (the channel one by default), still null on any error.
+  - **One channel, `apsira_storage/storage`.** `StorageModule.kt` is VIATICUM's body with the channel renamed:
+    `freeBytes` (RELAY's, a tree URI of Android's external storage provider) and `appFreeBytes` (StatFs of
+    `filesDir`). `ApsiraStoragePlugin` registers it when an activity attaches, so only the UI engine has it, as
+    each app's `MainActivity` did. `StorageSpace { freeBytes(treeUri); appFreeBytes(); }` and
+    `ChannelStorageSpace` answer null when the module cannot measure, errs or is missing, and never throw.
+  - **`DocumentPicker`** is the union, with RELAY's names where both apps have one: RELAY's
+    `pickOne({maxBytes})` → `PickedDocument {name, bytes}` and its `documentTooLarge` code, beside VIATICUM's
+    `pick({mimeTypes})` and `readAll(doc, {maxBytes})`. VIATICUM's `PickedDocument {uri, name, sizeBytes}` is
+    `DocumentRef`, and its `documentTooLarge` failure is `DocumentPicker.tooLarge`. `documentUnreadable` is one
+    failure in both apps. `SafDocumentPicker` reads through RELAY's seam (`PickSafPlugins`): 64 KiB chunks
+    pulled one at a time, stopping at the first chunk past the cap. A picker that cannot open is a cancel, and
+    any read error is `documentUnreadable`.
+  - **`Sharer`** and `SharePlusSharer`, RELAY's (VIATICUM's is the same).
+  - **`PhotoSource`** and `ImagePickerPhotoSource`, RELAY's: no resizing or re-encoding (RELAY D-017), the type and
+    upright size from the file's first bytes (`ImageMeta`, which moves with it from RELAY's domain), the system
+    photo picker, `recoverLost`. An optional `PhotoSizing` for the camera and the gallery (null by default, which
+    is RELAY's behaviour) carries LYCEUM's scaled capture.
+  - **`package:apsira_storage/testing.dart`:** `FakeBackupTarget`, `FakeStorageSpace`, `FakeDocumentPicker`,
+    `FakeSharer` and `FakePhotoSource`, the apps' fakes unioned.
+  - **Dependencies:** `apsira_core`, `saf_stream ^4.0.2`, `saf_util ^3.1.1`, `share_plus ^13.3.1`,
+    `image_picker ^1.2.4`, and `image_picker_android ^0.8.13+25` with `image_picker_platform_interface ^2.11.2` at
+    RELAY's pins, which its adapter imports to turn on the system photo picker.
+  - **Per app:** VIATICUM's `FolderAccess` (folders and files of its own shape), LYCEUM's crop on `image_cropper`
+    and every media store (D-APK-010 C3).
+- **Alternatives rejected:** ports and fakes only, adapters per app (Q2-b: two or three adapter copies stay); one
+  channel per app (three Kotlin copies stay); VIATICUM's picker shape alone (RELAY's holiday-pack import moves);
+  `ImageMeta` left in RELAY's domain (the adapter could not be shared).
+- **Consequences:** each app deletes its `StorageModule.kt`, its `MainActivity` line and its copies of the ports,
+  adapters and fakes. RELAY: the channel name only. VIATICUM: `FreeSpaceChannel` becomes `ChannelStorageSpace`
+  (`folderFreeBytes` → `freeBytes`), `PickedDocument` becomes `DocumentRef`, `documentTooLarge` becomes `tooLarge`, and
+  its reads take 64 KiB chunks instead of 1 MiB. A picker that cannot open is now a cancel, and a read error other
+  than a `PlatformException` is now `documentUnreadable`. LYCEUM: `share_plus` 12 → 13; `PhotoSource` gains
+  `recoverLost` and loses `crop`, which stays a LYCEUM port; photos come with their upright size, and the gallery
+  opens the system photo picker. Each change is a line in the app's decision log at adoption.

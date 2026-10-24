@@ -6,6 +6,12 @@ boundaries), D-APK-002 (tools scope), D-APK-003 (pinning by git ref), D-APK-006 
 settled), D-APK-007 (one version, one tag, edges between packages), D-APK-009 (adoption in
 every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`) and D-APK-012 (the shared strings).
 
+The Dart packages the Apsira Flutter apps depend on, released together at one shared tag
+`apsira-vX.Y.Z`. Decided in `../docs/decisions.md`: D-APK-001 (the first set and its
+boundaries), D-APK-002 (tools scope), D-APK-003 (pinning by git ref), D-APK-006 (what v0.1
+settled), D-APK-007 (one version, one tag, edges between packages), D-APK-009 (adoption in
+every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`) and D-APK-015 (`apsira_storage`).
+
 | Package | Kind | Holds | Depends on |
 |---|---|---|---|
 | `apsira_core` | pure Dart | `Result`/`Failure`, the log model with `stackHash`, the `Clock` and `IdGen` ports with the monotonic UUIDv7, the FTS5 match builder, canonical JSON; `testing.dart` with `FakeClock` and `FakeIdGen` | `crypto` |
@@ -15,12 +21,13 @@ every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`) and D-APK-012 (the sha
 | `apsira_app` | Flutter plugin | error handlers, the rotating file log sink, the start-phase redirect, `RestartableRoot`, the startup-failure app, `SystemClock` + the zone channel, the `PendingPort` stub base, per-install flags, the About page; `testing.dart` with `MemoryLogSink` | `flutter`, `apsira_core`, `apsira_ui` |
 | `apsira_jobs` | Flutter plugin | the `BackgroundJobs` port, `JobConstraints`, the WorkManager adapter (keep/replace policy) and its fake, the zone-change resync receiver (`ZoneResync.kt`); RELAY and VIATICUM only | `flutter`, `workmanager` |
 | `apsira_l10n` | Flutter | `ApsiraL10n` (54 keys in English and Spanish, hand-written, its own delegate; any other language English), `AppLanguage`, `AppLanguageSetting` with the `LanguageStore` port | `flutter`, `flutter_riverpod` |
+| `apsira_storage` | Flutter plugin | the `BackupTarget` port and its SAF adapter, `StorageSpace` over the storage channel (`StorageModule.kt`, `apsira_storage/storage`), `DocumentPicker`, `Sharer` and `PhotoSource` with their adapters, `ImageMeta`; `testing.dart` with a fake per port | `flutter`, `apsira_core`, `saf_stream`, `saf_util`, `share_plus`, `image_picker` |
 
 Each library is imported through its barrel (`package:apsira_core/apsira_core.dart`,
 `package:apsira_core/testing.dart`, `package:apsira_ui/apsira_ui.dart`, …); `src/` is private.
 `apsira_ui/example/` is an app that depends on `apsira_ui` as a consumer does; its tests
 prove the package-qualified fonts, licences and lockup load from a consumer's bundle.
-`apsira_app/example/` and `apsira_jobs/example/` are the plugins' consumer apps: each calls
+`apsira_app/example/`, `apsira_jobs/example/` and `apsira_storage/example/` are the plugins' consumer apps: each calls
 its package once at start, and its debug APK is the proof that the package's Kotlin
 compiles (the build is run by hand; each package README says how).
 

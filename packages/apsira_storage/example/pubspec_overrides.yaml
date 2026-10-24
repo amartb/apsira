@@ -1,0 +1,5 @@
+# apsira_storage pins apsira_core by the shared tag; inside the repository
+# the example resolves it from its directory, as the package's own
+# pubspec_overrides.yaml does (D-APK-007).
+dependency_overrides:
+  apsira_core: { path: ../../apsira_core }
