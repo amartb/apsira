@@ -391,6 +391,9 @@ becomes Decided on review), Superseded.
     `HOME=/home/user`. RELAY's guard missed the army's two.
   - **The zone channel** (`ZoneModule.kt`, channel `apsira_app/zone`) is registered on the UI engine only, as
     RELAY does; background engines receive the zone as job input.
+  - **`PendingPort`** is RELAY's base with VIATICUM's `Result` stubs (`pendingResult()`, `portPending`). Its
+    `pending()` message is `portPending: <port>: the platform implementation lands with <task>`: RELAY's text after
+    VIATICUM's prefix, which every app's tests accept.
   - **`ZoneChangeReceiver` and `enqueueResync`** belong in `apsira_jobs`, never `apsira_notify` (ruling R-3). They
     move in Phase 1 if `androidx.work` compiles from `apsira_jobs` with no artifact new to either APK (T6 branch 1);
     otherwise they stay a named exception in RELAY and VIATICUM until Phase 3, destined for `apsira_jobs`

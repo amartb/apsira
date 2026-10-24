@@ -1,0 +1,4 @@
+<!-- The plugin declares nothing: the zone channel needs no permission,
+     service or receiver (the zone receiver is apsira_jobs', ruling R-3). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+</manifest>
