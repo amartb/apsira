@@ -162,7 +162,7 @@ The procedure that brought Lyceum Folio in (planning thread of 2026-10-21):
 | VIATICUM | folio | `amartb/viaticum` | P5 in progress; exchange contract with Vellum built on Vellum's side |
 | QUIRE | tome | `amartb/quire` | M6 merged (app shell and editor); Typst PDF pipeline live |
 | PRISM | tome | — | brief only |
-| LYCEUM | folio | `amartb/lyceum-folio` → `amartb/lyceum` | transformation planned; P0 kickoff written |
+| LYCEUM | folio | `amartb/lyceum` | v1.0.0 released privately (2026-10-24); the creative hub, offline, RELAY v2's look |
 | the central app | — | — | direction stated (§4); not planned |
 
 ## 9. Repository map
