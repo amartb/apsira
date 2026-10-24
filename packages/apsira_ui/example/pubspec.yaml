@@ -1,9 +1,10 @@
 # The consumer proof (plan P-6): an app that depends on apsira_ui as every
 # Apsira app does, so its bundle holds the package's fonts, licences and
-# lockup under packages/apsira_ui/. A path dependency inside the repository,
-# never a consumer's pin.
+# lockup under packages/apsira_ui/, and shows the ThemePreview (D-APK-014).
+# Path dependencies inside the repository, never a consumer's pin;
+# pubspec_overrides.yaml resolves apsira_ui's own git pin of apsira_l10n.
 name: apsira_ui_example
-description: "Consumes apsira_ui and proves its fonts, licences and lockup load."
+description: "Consumes apsira_ui: its fonts, licences and lockup load, and the ThemePreview shows the tokens and the kit."
 publish_to: none
 version: 0.1.0
 
@@ -12,9 +13,13 @@ environment:
   flutter: ">=3.47.0"
 
 dependencies:
+  apsira_l10n:
+    path: ../../apsira_l10n
   apsira_ui:
     path: ../
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
 dev_dependencies:

@@ -6,7 +6,9 @@ package shares one tag, `apsira-vX.Y.Z` (D-APK-007); 0.1.0 was `apsira_ui-v0.1.0
 ## 0.3.0 — 2026-10-24
 
 The theme carries the shared component themes; settings rows, menu items and the
-theme-mode setting join the package (D-APK-013). New dependency: `flutter_riverpod ^3.1.0`.
+theme-mode setting join the package (D-APK-013), then the component kit and the
+ThemePreview (D-APK-014). New dependencies: `flutter_riverpod ^3.1.0` and `apsira_l10n`
+(git form, the kit's default labels); `apsira_test` as a dev dependency.
 
 - **`ApsiraThemeData.build`** adds the shared set: `highlightColor` (`tint`), the four menu
   themes (RELAY's), `snackBarTheme` (RELAY's call-site styling) and the R-10 fix.
@@ -21,18 +23,37 @@ theme-mode setting join the package (D-APK-013). New dependency: `flutter_riverp
   `initialThemeModeProvider`, `themeModeOptions` and RELAY's storage names.
 - `ApsiraSchemeColors.transparent`; the `components.png` golden. `token_sheet.png` is
   unchanged.
+- **The kit** (`lib/src/kit/`, exported by `apsira_ui.dart`): `CardSlice`, `CardPart`,
+  `GroupHeader`, `GroupCard`, `PageTitle`, `SectionHeader`, `OverlineLabel`, `EmptyState`,
+  `showApsiraSheet`/`ApsiraSheet`/`SheetHandle`, `showApsiraDialog`/`ApsiraDialog`,
+  `confirmDestructive`, `confirmAction`, `destructiveButtonStyle`, `showUndoSnack`,
+  `FilterPill`, `AddFilterPill`, `TagPill`, `StatusDot`, `FamilyPill`, `SearchFilterBar`,
+  `ActiveFilterPills`, `PillButtons`, `IconBox`, `DrawerItem`, `DrawerHeaderBlock`. Each
+  draws its surface from the tokens, under `build` as under `buildFull`.
+- **`package:apsira_ui/preview.dart`**: `ThemePreviewScreen`, every token, family, type
+  style, shape, spacing value and kit sample in both themes; `example/` opens it.
 
-**Migration.** Every app moves the pin to `ref: apsira-v0.3.0`.
+**Migration.** Every app moves the pin to `ref: apsira-v0.3.0`. An app that uses the kit adds
+`ApsiraL10n.delegate` to its `localizationsDelegates` (its default labels).
 - **RELAY:** `relay_theme.dart` calls `ApsiraThemeData.build` and drops its own menu themes
   and `highlightColor`; `RelayMenuItem`/`RelayMenuButtons` → `ApsiraMenuItem`/
   `ApsiraMenuButtons`, its settings rows → the package's (options become `SettingsOption`s),
   and `theme_mode_provider.dart` → `ThemeModeSetting` with a store on `theme_mode`. The
   call-site snack styling may go: the theme draws the same snack. Re-approve the goldens
-  with a light text or outlined button (R-10).
+  with a light text or outlined button (R-10). Adopting the kit: `list_widgets.dart` →
+  `CardSlice`/`GroupCard`, `empty_state.dart` → `EmptyState` (its 14 empty states take
+  LYCEUM's card: re-approve those goldens citing D-APK-014), the 8 undo-snack helpers →
+  `showUndoSnack`, its `ThemePreview` → `ThemePreviewScreen`.
 - **VIATICUM:** its snacks and its four menus take the shared look (Q4-a); re-approve those
-  goldens and the R-10 ones, citing D-APK-013.
+  goldens and the R-10 ones, citing D-APK-013. Adopting the kit: `_Group`/`_Row` →
+  `GroupCard`/`CardSlice`, `showUndoSnack` → the package's with `persist: false` and its
+  `undoFailedMessage`; its state roles and `room` set stay its own tokens.
 - **LYCEUM:** `lyceum_theme.dart` calls `ApsiraThemeData.buildFull` and keeps only its module
-  colours and `actionIconTheme` on top; the copied menu and button themes go.
+  colours and `actionIconTheme` on top; the copied menu and button themes go. Adopting
+  the kit: `app/theme/kit/**` and the drawer parts go; `LyceumSheet`/`showLyceumSheet` →
+  `ApsiraSheet`/`showApsiraSheet` (likewise the dialog), `StatusPill` → `FamilyPill`, and
+  `LyceumModule`/`LyceumStatus` map once to `ApsiraFamily` (`IconBox(family:)`,
+  `filled: true` for a status); the ambient module scope stays in LYCEUM.
 
 ## 0.2.0 — 2026-10-24
 

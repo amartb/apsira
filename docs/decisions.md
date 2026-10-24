@@ -28,6 +28,7 @@ becomes Decided on review), Superseded.
 | D-APK-011 | The Tier-1 set at `apsira-v0.2.0` and how each drift is resolved: monotonic UUIDv7, RELAY's FTS rule, `stackHash` with `crypto`, `apsira_jobs`, the session-guard union, the zone channel, one copy of the release scripts | Decided |
 | D-APK-012 | Shared strings: `apsira_l10n`'s key table and its wording, one rule for app phrases, `AppLanguage` and `AppLanguageSetting`; Flutter's `MaterialLocalizations` rejected | Decided |
 | D-APK-013 | `apsira_ui` 0.3: `build()` carries the shared component set (menus, `highlightColor`, the snack theme, `accentText` text and outlined buttons, R-10), every app VIATICUM included; LYCEUM's other sub-themes are builders and `buildFull`; settings rows, menu items and `ThemeModeSetting` | Decided |
+| D-APK-014 | `apsira_ui` 0.3's component kit: layout, empty state, sheet and dialog, undo snack, pills and search bar, icon box, drawer chrome, `ThemePreviewScreen`; LYCEUM's kit unless named; every kit widget draws its own surface from the tokens | Decided |
 | D-APK-015 | `apsira_storage`: the backup, storage-space, document-picker, share and photo ports with their adapters and fakes, one storage channel `apsira_storage/storage`; `FolderAccess`, the crop and the media stores stay per app | Decided |
 | D-APK-016 | `apsira_lock`: RELAY's app lock as the shared one (off by default, 5 minutes, 0 = at once, never a lock-out, a backwards clock locks), its `lock` row unchanged, `local_auth` in the package, FLAG_SECURE through the package's own Kotlin; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | Decided |
 | D-APK-017 | `apsira_onboarding`: the intro with the app's mark as a parameter, the language step, the step frame and flow, the tour player, the Help shell, the discovery pieces; seen flags per install through `InstallFlag`; routes stay in each app | Decided |
@@ -533,6 +534,48 @@ becomes Decided on review), Superseded.
 - **Consequences:** every golden with a light `TextButton` or `OutlinedButton` moves (its label is `accentText`),
   in all three apps; VIATICUM's snack and menu goldens move. Each app's adoption names the goldens it
   re-approves and cites R-10 or this entry. `apsira_ui` gains `flutter_riverpod` (R-1).
+
+## D-APK-014 — `apsira_ui` 0.3: the component kit
+
+- **Status:** Decided (2026-10-24; plan P-1 and ruling R-3 of the packages-v0-3 session).
+- **Context:** the three apps draw the same group cards, empty states, sheets, dialogs, undo snacks, pills, search
+  bar, icon tiles and drawer rows from the same tokens, each in its own copy: RELAY (`09b28810`)
+  `list_widgets.dart`, `empty_state.dart` and 8 undo-snack helpers; LYCEUM (`9f4ff27`) `app/theme/kit/**` and
+  `app_drawer_item.dart`/`app_drawer_parts.dart`, already ported from RELAY; VIATICUM (`78d38e0`) `_Group`/`_Row`
+  and `showUndoSnack`. LYCEUM's sheet and dialog take their surface from `bottomSheetTheme`/`dialogTheme`, which
+  only `buildFull` sets (D-APK-013).
+- **Decision:**
+  - `package:apsira_ui/apsira_ui.dart` exports the kit (`lib/src/kit/`), each file naming its source. Layout:
+    `CardSlice` and `CardPart` (RELAY's, with LYCEUM's `dividerIndent` and `CardPart.at`), `GroupHeader`,
+    `GroupCard`, `PageTitle`, `SectionHeader`, `OverlineLabel`. State: `EmptyState`, LYCEUM's card with RELAY's
+    `actionLabel`/`onAction`/`actionKey` in place of an action widget, the action drawn as the tonal pill.
+    Overlays: `showApsiraSheet`, `ApsiraSheet`, `SheetHandle`, `showApsiraDialog`, `ApsiraDialog`,
+    `confirmDestructive`, `confirmAction`, `destructiveButtonStyle`. Feedback: `showUndoSnack`, RELAY's (hide the
+    current snack, the message, *Undo* for 5 s) with VIATICUM's failure snack when `onUndo` returns false and an
+    `undoFailedMessage` is given; `persist` is Flutter's default unless the caller passes it (VIATICUM passes
+    false). Pills: `FilterPill`, `AddFilterPill` (RELAY), `TagPill`, `StatusDot`, `FamilyPill` (LYCEUM's
+    `StatusPill`), `SearchFilterBar`, `ActiveFilterPills`, `PillButtons`. Rows: `IconBox`, `DrawerItem`,
+    `DrawerHeaderBlock`.
+  - **Surfaces from tokens:** a kit widget draws its own surface (colour, shape, border, scrim) from
+    `ApsiraTheme`; it never relies on a sub-theme only `buildFull` sets, so it renders the same under `build` and
+    `buildFull`.
+  - **Names** are unprefixed, but for `ApsiraSheet` and `ApsiraDialog` (a bare `Dialog` is Flutter's). LYCEUM's `LyceumModule` and `LyceumStatus` become `ApsiraFamily`: `StatusPill` is `FamilyPill`
+    (RELAY has its own `StatusPill`), `IconBox(family:)` is the module's accent and `filled: true` the status
+    fill; LYCEUM's ambient module scope stays in LYCEUM. Parameter shapes and `CardPart`'s values
+    (`first`, `middle`, `last`, `only`) are the sources', which RELAY and LYCEUM share.
+  - Default labels come from `ApsiraL10n` (`commonCancel`, `commonDelete`, `commonConfirm`, `commonUndo`,
+    `commonSearch`, `commonFilter`, `commonClear`, `commonClearAll`); every other visible string is a parameter.
+    `apsira_ui` depends on `apsira_l10n` in the git form (D-APK-007) and takes `apsira_test` as a dev
+    dependency for the large-text check; `tool/check.sh` leaves a package out of its own override closure.
+  - `package:apsira_ui/preview.dart` exports `ThemePreviewScreen`, RELAY's debug screen on the Apsira tokens,
+    with a kit section; keys `themePreview/<dark|light>/<kind>/<name>`. VIATICUM's state roles and `room` set
+    are VIATICUM's tokens and stay in VIATICUM. Its labels are token names for developers, not user copy.
+- **Alternatives rejected:** each app keeps its kit (the drift this phase removes); LYCEUM's names kept with
+  its prefix (`LyceumSheet`, `showLyceumSheet`); sheets and dialogs left to `buildFull`'s sub-themes (they
+  would draw Material's default surface under `build`).
+- **Consequences:** RELAY's 14 empty states take LYCEUM's card when RELAY adopts the kit, and their goldens
+  are re-approved citing this entry; LYCEUM's sheets and dialogs look as they do. Each app's adoption maps its
+  module or status to `ApsiraFamily` once and names the goldens it re-approves.
 
 ## D-APK-015 — `apsira_storage`: the storage ports, their adapters, one storage channel
 

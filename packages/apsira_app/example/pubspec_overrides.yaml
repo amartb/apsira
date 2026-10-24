@@ -3,4 +3,5 @@
 # package's own pubspec_overrides.yaml does (D-APK-007).
 dependency_overrides:
   apsira_core: { path: ../../apsira_core }
+  apsira_l10n: { path: ../../apsira_l10n }
   apsira_ui: { path: ../../apsira_ui }

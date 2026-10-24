@@ -81,6 +81,9 @@ apsira_deps() {
 
 # closure <package dir> — every apsira package it resolves: its dependencies and
 # dev_dependencies, then their dependencies, transitively; sorted, one per line.
+# The package itself is left out: a dev_dependency that depends back on it
+# (apsira_ui's apsira_test) is satisfied by the root, and pub refuses an
+# override of the root package (D-APK-014).
 closure() {
   local queue=() seen=" " name
   while read -r _ name _; do queue+=("$name"); done \
@@ -94,7 +97,7 @@ closure() {
     while read -r _ dep _; do queue+=("$dep"); done \
       < <(apsira_deps "packages/$name/pubspec.yaml" '^dependencies$')
   done
-  printf '%s\n' $seen | sed '/^$/d' | sort
+  printf '%s\n' $seen | sed "/^$/d;/^${1##*/}\$/d" | sort
 }
 
 # versions_equal — every packages/*/pubspec.yaml carries the same version:.

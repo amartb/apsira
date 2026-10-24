@@ -3,9 +3,10 @@
 The Apsira visual language as a Flutter package: the colour tokens (`ApsiraTheme`, light
 and dark) and the Material `ThemeData` built from them with its component themes, the type
 scale, radii, sizes and spacing, the chrome icons, the settings rows and menu items, the
-theme-mode setting, and the brand files every app ships: Archivo Expanded, Archivo and
+theme-mode setting, the component kit, the debug ThemePreview, and the brand files every app ships: Archivo Expanded, Archivo and
 JetBrains Mono, the reversed Apsira Labs lockup and their licences. Extracted from RELAY
-`5f606e9` and `09b28810` and LYCEUM `9f4ff27` (D-APK-001, D-APK-013); every extracted file
+`5f606e9` and `09b28810`, LYCEUM `9f4ff27` and VIATICUM `78d38e0` (D-APK-001, D-APK-013,
+D-APK-014); every extracted file
 names its source.
 
 ## Consuming
@@ -18,7 +19,9 @@ dependencies:
     git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_ui }
 ```
 
-`import 'package:apsira_ui/apsira_ui.dart';` is the whole public surface.
+`import 'package:apsira_ui/apsira_ui.dart';` is the public surface; the debug ThemePreview
+is `package:apsira_ui/preview.dart`. The kit's default labels are `apsira_l10n`'s, so the
+app adds `ApsiraL10n.delegate` to its `localizationsDelegates`.
 
 ## The per-app theme file
 
@@ -80,6 +83,35 @@ ProviderScope(
 `setMode` writes through the store; a failed write puts the previous mode back and
 rethrows. Stored names are `dark`, `light` and `system`; anything else reads as dark.
 
+## The component kit (D-APK-014)
+
+LYCEUM's kit unless named, each file under `lib/src/kit/` naming its source. Every widget
+draws its own surface (colour, shape, border, scrim) from `ApsiraTheme`, so it looks the
+same under `build` and `buildFull`.
+
+| Group | Widgets |
+|---|---|
+| Layout | `CardSlice`, `CardPart` (`first`, `middle`, `last`, `only`; `CardPart.at`), `GroupHeader`, `GroupCard`, `PageTitle`, `SectionHeader`, `OverlineLabel` |
+| State | `EmptyState` (`actionLabel`/`onAction`/`actionKey`, the action as the tonal pill) |
+| Overlays | `showApsiraSheet`, `ApsiraSheet`, `SheetHandle`, `showApsiraDialog`, `ApsiraDialog`, `confirmDestructive`, `confirmAction`, `destructiveButtonStyle` |
+| Feedback | `showUndoSnack` (RELAY's; VIATICUM's failure snack, `persist`) |
+| Pills | `FilterPill`, `AddFilterPill`, `TagPill`, `StatusDot`, `FamilyPill`, `SearchFilterBar`, `ActiveFilterPills`, `PillButtons` |
+| Rows | `IconBox` (`family:`, `filled:`), `DrawerItem`, `DrawerHeaderBlock` |
+
+```dart
+if (await confirmDestructive(context, title: l10n.deleteNoteTitle)) delete(note);
+showUndoSnack(ScaffoldMessenger.of(context),
+    message: l10n.noteDeleted, onUndo: () => repo.restore(note),
+    undoFailedMessage: l10n.undoFailed);
+```
+
+`confirmDestructive` resolves true on confirm and false on cancel or a barrier tap. *Undo*
+calls `onUndo` once; a false result shows `undoFailedMessage` when one is given. Default
+labels (cancel, delete, confirm, undo, search, filter, clear, clear all) are `ApsiraL10n`'s;
+every other visible string is a parameter. `ThemePreviewScreen` shows every token, family,
+type style, shape, spacing value and kit sample in both themes, keyed
+`themePreview/<dark|light>/<kind>/<name>`; an app shows it in development builds only.
+
 ## The brand: `ApsiraBrand`
 
 ```dart
@@ -104,10 +136,12 @@ this repository, byte for byte against `../../apsira-brand/`.
 | `lib/src/component_themes.dart` | `ApsiraComponentThemes`: the shared set and LYCEUM's sub-themes |
 | `lib/src/settings.dart`, `theme_mode.dart` | Settings rows and menu items; `ThemeModeSetting` and its store |
 | `lib/src/typography.dart`, `shape.dart`, `icons.dart`, `brand.dart` | Type scale, shape, chrome glyphs, lockup and licences |
+| `lib/src/kit/`, `lib/src/preview/` | The component kit; `ThemePreviewScreen` |
+| `test/kit/` | The kit's ported tests, each sound at EN/ES × 100/200 % text (`expectLayoutSound`) |
 | `lib/fonts/`, `lib/brand/`, `lib/licenses/` | The bundled files and their `SHA256SUMS` |
 | `test/goldens/token_sheet.png` | Every token as a swatch: a value change moves it |
 | `test/goldens/components.png` | The shared set, light and dark: buttons, an open menu, a snack |
-| `example/` | A consumer app whose test proves the qualified fonts, licences and lockup load |
+| `example/` | A consumer app whose tests prove the qualified fonts, licences and lockup load and open the ThemePreview, dark and light |
 
 `flutter analyze && flutter test` here; `cd example && rm -rf build && flutter pub get && flutter test` (a stale `build/unit_test_assets` makes the font test lie)
 for the consumer proof. RELAY test groups not carried are listed in `CHANGELOG.md` 0.1.0.
