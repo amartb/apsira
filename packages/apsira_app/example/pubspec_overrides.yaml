@@ -1,0 +1,6 @@
+# apsira_app pins apsira_core and apsira_ui by the shared tag; inside the
+# repository the example resolves them from their directories, as the
+# package's own pubspec_overrides.yaml does (D-APK-007).
+dependency_overrides:
+  apsira_core: { path: ../../apsira_core }
+  apsira_ui: { path: ../../apsira_ui }

@@ -1,0 +1,30 @@
+# The Android compile proof (task F1, ruling R-9): an app that depends on
+# apsira_jobs as RELAY and VIATICUM do, so its debug build compiles the
+# package's Kotlin (ApsiraJobsPlugin.kt, ZoneResync.kt) against
+# workmanager_android's androidx.work. A path dependency inside the
+# repository, never a consumer's pin.
+name: apsira_jobs_example
+description: "Consumes apsira_jobs and proves its Android half compiles."
+publish_to: none
+version: 0.2.0
+
+environment:
+  sdk: ^3.13.0
+  flutter: ">=3.47.0"
+
+dependencies:
+  apsira_jobs:
+    path: ../
+  flutter:
+    sdk: flutter
+  # The dispatcher answers WorkManager's runs through the plugin, as RELAY's
+  # and VIATICUM's do; apsira_jobs already brings it, so nothing new.
+  workmanager: ^0.10.10
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true

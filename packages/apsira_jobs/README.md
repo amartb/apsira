@@ -66,5 +66,17 @@ The Android build adds no artifact to either APK. It names the `workmanager_andr
 project and `androidx.work:work-runtime:2.11.2`, the version `workmanager_android` 0.10.9
 pins. Both are already in each app's closure. `ApsiraJobsPlugin` registers nothing: the
 Flutter tool builds a plugin's Android half only when the pubspec names a plugin class. A
-Dart test pins the job name, the input key and the manifest. The Kotlin compiles only
-inside an app's build, so RELAY's debug build is its proof.
+Dart test pins the job name, the input key and the manifest.
+
+## Checks
+
+From this directory: `flutter analyze` and `flutter test`. The Kotlin compiles only inside
+an app's build, so `example/` is that app: it depends on this package by path and schedules
+one job through `WorkManagerBackgroundJobs` at start, and its debug build compiles
+`ApsiraJobsPlugin.kt` and `ZoneResync.kt` against `workmanager_android`'s `androidx.work`
+(task F1). `tool/check.sh` runs the example's analyze and smoke test; the build is run by
+hand, under a build lease, from `example/`:
+
+```sh
+flutter build apk --debug && rm -rf build
+```

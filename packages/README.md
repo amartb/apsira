@@ -19,6 +19,9 @@ Each library is imported through its barrel (`package:apsira_core/apsira_core.da
 `package:apsira_core/testing.dart`, `package:apsira_ui/apsira_ui.dart`, …); `src/` is private.
 `apsira_ui/example/` is an app that depends on `apsira_ui` as a consumer does; its tests
 prove the package-qualified fonts, licences and lockup load from a consumer's bundle.
+`apsira_app/example/` and `apsira_jobs/example/` are the plugins' consumer apps: each calls
+its package once at start, and its debug APK is the proof that the package's Kotlin
+compiles (the build is run by hand; each package README says how).
 
 Every extracted file names its source app, path and commit in a header comment
 (`// From relay lib/app/theme/relay_theme.dart @ 5f606e9`); v0.2 extracts from RELAY

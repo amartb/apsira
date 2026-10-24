@@ -54,6 +54,10 @@ adoption lane deletes; paths are under the app's root.
 
 ## Checks
 
-From this directory: `flutter analyze` and `flutter test` (the `app` gate). The Kotlin is
-not compiled here, since there is no APK in this repository. The tests check its source
-instead, and the adoption lanes' debug build proves it compiles (plan R-3).
+From this directory: `flutter analyze` and `flutter test` (the `app` gate). The tests
+check the Kotlin's source; `example/` compiles it. That app depends on this package by path
+(its `pubspec_overrides.yaml` resolves `apsira_core` and `apsira_ui` from their
+directories) and reads the zone into `SystemClock` at start; its debug build compiles
+`ApsiraAppPlugin.kt` and `ZoneModule.kt` (task F1). `tool/check.sh` runs the example's
+analyze and smoke test; the build is run by hand, under a build lease, from `example/`:
+`flutter build apk --debug && rm -rf build`.

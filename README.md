@@ -106,8 +106,8 @@ D-APK-007 and D-APK-011 in `docs/decisions.md`):
 
 Every package carries one version and the set one shared tag, `apsira-vX.Y.Z`
 (`apsira-v0.2.0`; D-APK-007): apps pin every package by git reference to that tag, never
-by path in a committed `pubspec.yaml` (the one path consumer is `apsira_ui/example`, inside
-the package itself). Packages may depend on each other at the same tag. A package is done
+by path in a committed `pubspec.yaml` (the path consumers are the packages' own `example/`
+apps, inside the packages themselves). Packages may depend on each other at the same tag. A package is done
 only when every app uses it (D-APK-009). What is app-specific stays in the app: its own
 `ThemeExtension`s, the ports no package holds (the shared ones live in their package:
 `Clock`/`IdGen` in `apsira_core`, `BackgroundJobs` in `apsira_jobs`, D-APK-011), its
