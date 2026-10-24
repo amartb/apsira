@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What Android's own backup copies while the Backups screen's "Android
+     backup" switch is on (D-116); RelayBackupAgent copies nothing while it
+     is off. Everything in app-private storage is copied, as the platform
+     default was (D-099), except three directories: logs/, the local
+     diagnostics log, which never leaves the phone (D-050), and restore/,
+     the staging copy of a restore in progress (architecture §10.2), which
+     only that restore reads; and export/, the exports' last-run record
+     (P7-09, D-132), device state that no backup carries. The same rules
+     hold for the cloud backup and for a device-to-device transfer. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="logs/" />
+        <exclude domain="file" path="restore/" />
+        <exclude domain="file" path="export/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="logs/" />
+        <exclude domain="file" path="restore/" />
+        <exclude domain="file" path="export/" />
+    </device-transfer>
+</data-extraction-rules>

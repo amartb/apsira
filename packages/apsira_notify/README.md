@@ -9,7 +9,8 @@ Dependencies: `apsira_app` and `apsira_core` (the git form at the shared tag, wi
 committed `pubspec_overrides.yaml`, D-APK-007) and RELAY's patched
 `flutter_local_notifications` 22.3.2, vendored in
 `../third_party/flutter_local_notifications` (its `RELAY_PATCH.md`) and named in the same
-git form. There is no `app_settings` (ruling R-2, Q4-c).
+git form, and `timezone` (the alarm scheduler's `TZDateTime`). There is no `app_settings`
+(ruling R-2, Q4-c).
 
 ```yaml
 dependencies:
@@ -100,6 +101,50 @@ app's own path (VIATICUM `reminders/permission_asked.json`). `ReminderAccess` is
 started, falling back to the app-details page. No activity is a `PlatformException`
 (`noActivity`); anywhere but Android an `UnsupportedError`.
 
+## Alarms: the per-install registry
+
+D-APK-022. The alarms this install armed are a file under app storage, never the database,
+so a restored database never re-arms a stale alarm and another phone's alarms never ring
+here.
+
+| Path under app storage | What | Written by |
+|---|---|---|
+| `AlarmRegistry.defaultPath` = `alarms/registry.json` | `{nextPlatformId, alarms[], pendingCancels[]}`, VIATICUM 1.0.0's format | the app's engine, whole (`.tmp`, flush, rename) |
+| `alarms/fired.jsonl` (`AlarmRegistry.firedName`) | one line per fire | the alarm's engine, appended (`markFired`) |
+| `SnoozeStore.defaultPath` = `alarms/snoozes.json` | the snoozes made from a notification | whole, like the registry |
+
+```dart
+final registry = AlarmRegistry(getApplicationSupportDirectory);
+final sync = AlarmSync(scheduler, registry,
+    snoozes: SnoozeStore(getApplicationSupportDirectory),
+    lateGrace: Duration.zero); // LYCEUM's notification alarms; null on the alarm manager
+final report = await sync.resync(wanted: wantedAlarms, now: clock.nowUtc());
+```
+
+- **`resync({wanted, now})`** applies the snoozes (one stands in for its alarm's time while
+  the alarm is wanted and the snooze is ahead; the rest are pruned), leaves out what fired
+  at that instant and, with `lateGrace`, what is older, takes the window (`planAlarms`:
+  `reminderWindowSize` = 100 nearest), cancels every registry entry outside it and every
+  pending code before it unregisters them, then registers the whole window and calls
+  `schedule` for **every** alarm in it. A copied or stale registry costs a no-op cancel,
+  never an unarmed alarm. `AlarmSyncReport` counts `scheduled`, `cancelled` and `refused`.
+- **`snooze(alarm, until: …)`** writes the snooze and arms it at once (the +10 min action);
+  Done is the app dropping the alarm from `wanted` (and `SnoozeStore.clear`).
+- **`ScheduledAlarm(alarmId, atUtc, content)`**: `content` is the fire's (VIATICUM's
+  `channel`, `title`, `body`), stored in the registry, never logged; `alarmId`, `atUtcMs`
+  and `platformId` are the registry's own keys.
+- **Platform ids** come from the registry: kept by an alarm id while it stays registered,
+  never handed out twice. RELAY's old request codes go to `addPendingCancels` once.
+- **Adapters:** `FlnAlarmScheduler(notificationOf: …, ready: …)` here (LYCEUM's
+  `zonedSchedule`, `exactAllowWhileIdle`, a past time skipped, the notification under the
+  platform id; its `cancel` leaves a notification already showing), and
+  `AlarmManagerScheduler` in `apsira_jobs` (RELAY, VIATICUM).
+
+**Consumer requirement:** `data_extraction_rules.xml` excludes `alarms/` (or both paths)
+in `<cloud-backup>` and `<device-transfer>`, and `full_backup_content` too when the app has
+one. The adoption runs `expectExcludedFromDeviceBackup(rules, fullBackupContent: …, paths:
+alarmInstallPaths)` from `testing.dart` on the app's own files.
+
 ## What it holds, and what each app deletes
 
 Sources: RELAY `09b28810`, VIATICUM `78d38e0`, LYCEUM `9f4ff27`; each file names its
@@ -114,13 +159,23 @@ source in its header. Paths are under the app's root; the adoption lane confirms
 | `NotificationPermissionFlow`, `ReminderAccess` | R `lib/app/services/notification_permission_service.dart`; V's asked flag | `access`, `askForReminder` (the late-delivery card stays) | `ask`, `asked` (its due stream stays) | — |
 | `SystemSettings`, `ChannelSystemSettings`, `ApsiraNotifyPlugin.kt`, `NotifySettingsModule.kt` | R's `app_settings` calls | `app_settings` (the notifier, the battery card, the recorder's `openAppDetails`) | — | — |
 | `FakeNotifier`, `FakeSystemSettings` (`testing.dart`) | R `test/fakes/fake_notifier.dart` | that file | `test/fakes/fake_notifier.dart` | `test/fakes/fake_notifier.dart` |
+| `AlarmScheduler`, `ScheduledAlarm`, `RegisteredAlarm`, `FiredAlarm` | R and V `lib/core/ports/alarm_scheduler.dart` | that file | that file | — |
+| `AlarmRegistry` | V `AlarmStore` in `lib/data/platform/alarm_manager_scheduler.dart` | `registered_alarms` (schema v12) | `AlarmStore`, `AlarmRegistry` | the ids of `isPlannedAlertId` |
+| `SnoozeStore` | new (R-4) | — | — | — |
+| `AlarmSync`, `AlarmSyncReport` | V `lib/app/services/reminder_sync_service.dart` (its diff and queue) | the alarm half of its reminder sync | the alarm half of `ReminderSyncService` | the cancel-and-schedule loop of `lib/app/services/reminder_service.dart` |
+| `reminderWindowSize`, `nearestFires`, `planAlarms` | R `lib/domain/reminders/window.dart` | those and `requestCodeFor` | `nearestAlarms`, `planWindow` | the window of `plannedAlerts` |
+| `FlnAlarmScheduler` | L `lib/data/platform/notification_service.dart` | — | — | `schedule`, `cancel`, `scheduledIds` |
+| `FakeAlarmScheduler`, `expectExcludedFromDeviceBackup` (`testing.dart`) | R and V `test/fakes/fake_alarm_scheduler.dart`; V's rules check | that fake | that fake and the check | — |
 | `../third_party/flutter_local_notifications` | R `packages/flutter_local_notifications` | the copy and its override | the published 22.3.2 | the published 21.0.0 |
 
 ## Checks
 
 From this directory: `flutter analyze` and `flutter test` (the `notify` gate): the crash
-matrix (KP-N1…N3), RELAY's notifier, permission and `fln_public_version_test.dart`,
-VIATICUM's channel and tap cases, the settings channel against a mock. Mocked channels
+matrices (KP-N1…N3, `test/alarms/` KP-A1…A9), RELAY's notifier, permission and `fln_public_version_test.dart`,
+VIATICUM's channel and tap cases, the settings channel against a mock; the registry (a
+VIATICUM 1.0.0 `registry.json` fixture), the snooze store, RELAY's window, the sync,
+`FlnAlarmScheduler` against the plugin's channel, and the backup-rules check on VIATICUM's
+and RELAY's real `data_extraction_rules.xml`. Mocked channels
 cannot see a mismatch between the Dart, Kotlin and Java halves, so `example/`'s debug build
 compiles them: run by hand, under a build lease, from `example/`:
 `flutter build apk --debug && rm -rf build`.

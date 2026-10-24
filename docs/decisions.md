@@ -36,6 +36,7 @@ becomes Decided on review), Superseded.
 | D-APK-019 | `apsira_exchange`: LYCEUM's envelope (C2) for every export, the apps' old shapes read as `LegacyShape`s, the `sqlite_master` dump and LYCEUM's loader with the apps' parts as parameters, one `validate_examples.py` | Decided |
 | D-APK-020 | `apsira_zip`: RELAY's streaming ZIP writer, CRC-32 and one-pass reader, the apps' parts as hooks (entry names, an entry check, extraction, the keep limit); refusals as `ZipRefusal`, mapped by each app; consumers RELAY and LYCEUM | Decided |
 | D-APK-021 | `apsira_notify`: RELAY's notifier with app-defined channels (no channel id moves), at most three actions, the lock-screen public version, the permission flow with a per-install asked flag, the package's own settings intents; RELAY's patched `flutter_local_notifications` moves to `packages/third_party/` | Decided |
+| D-APK-022 | The per-install alarm registry: VIATICUM's `alarms/registry.json` in `apsira_notify` with a per-install `SnoozeStore`, `AlarmSync` (re-arms every wanted alarm, cancels only what the registry names), RELAY's window; `FlnAlarmScheduler` (LYCEUM) and `AlarmManagerScheduler` in `apsira_jobs` (Q1-c); every consumer excludes `alarms/` from Android's backup | Decided |
 
 ---
 
@@ -929,3 +930,63 @@ becomes Decided on review), Superseded.
   taps read from `responses` (a tap with no payload is one it ignores). LYCEUM moves from the plugin's 21.0.0 to
   the vendored 22.3.2, keeps its channel id, and gains the three actions and the public version in its
   adoption. Upgrading the plugin re-applies the patch here, as `RELAY_PATCH.md` describes.
+
+## D-APK-022 — The per-install alarm registry
+
+- **Status:** Decided (2026-10-24: D-APK-010 C4, part 2; rulings R-1 (Q1-c) and R-4 (Q2-b-install) of the
+  packages-v0-4 session). The notifier, part 1, is D-APK-021.
+- **Context:** VIATICUM `78d38e0` keeps the alarms it set in a per-install registry (`alarms/registry.json`,
+  `{nextPlatformId, alarms[]}`, written whole through a `.tmp`, flushed and renamed; `fired.jsonl` appended by
+  the fire's engine), outside the database and Android's backup, so a restored database never re-arms a stale
+  alarm: its sync diffs the wanted alarms against the registry, never the database. RELAY `09b28810` keeps them
+  in its database (`registered_alarms`, FNV request codes) and cancels everything after a cold start; its window
+  (`reminderWindowSize = 100`, `nearestFires`, `planAlarms`) plans what is armed. LYCEUM `9f4ff27` schedules
+  through the notification plugin's `zonedSchedule` and cancels whatever the plugin reports pending. A registry
+  copied to another phone (a device transfer without the exclusion) names alarms that phone never set.
+- **Decision:**
+  - **The registry is VIATICUM's**, in `apsira_notify`: `AlarmRegistry(storage, {path})` with
+    `defaultPath = 'alarms/registry.json'` and the fire record `fired.jsonl` beside it, VIATICUM's path and format
+    kept, so a VIATICUM 1.0.0 registry reads unchanged. An entry is `{alarmId, atUtcMs, platformId}` plus the
+    alarm's own `content` fields (VIATICUM's `channel`, `title`, `body`); `pendingCancels` is written only when
+    it holds codes. Platform ids come from the registry (`nextPlatformId`, never handed out twice; an alarm id
+    keeps its platform id while it stays registered) and replace RELAY's FNV codes; RELAY's v12 step hands its
+    old codes over once with `addPendingCancels`, and the next resync cancels them before it arms anything.
+  - **A per-install `SnoozeStore`** (`defaultPath = 'alarms/snoozes.json'`, the same file discipline) holds the
+    snoozes made from a notification (LYCEUM's +10 min and Snooze…, R-4). A snooze stands in for its alarm's time
+    while the alarm is wanted and the snooze is ahead; one whose alarm is no longer wanted (Done, a foreign file)
+    or whose time has passed is pruned by the next resync.
+  - **`AlarmSync.resync({wanted, now})`** applies the snoozes, leaves out what fired at that very instant
+    (`fired.jsonl`) and, with a `lateGrace`, what is older than it (LYCEUM's notification alarms: zero), takes
+    the window (`planAlarms`: the 100 nearest, ties by id), then (1) cancels on the platform every registry entry
+    outside the window and every pending code, and only then unregisters them; (2) registers the whole window in
+    one write and only then calls `schedule` for **every** alarm in it, unchanged ones included (both platforms
+    replace by id). The registry decides only what to cancel, so neither a crash nor a copied file can leave a
+    wanted alarm unarmed: a copied registry costs a no-op cancel, never a silent reminder (P-7). A refused alarm
+    is cancelled and unregistered and counted in `AlarmSyncReport.refused`. Write-ahead both ways: registered
+    before the platform call, unregistered after its cancel. Resyncs of one `AlarmSync` run one at a time.
+  - **The port** is RELAY's `AlarmScheduler` (`canScheduleExact`, `schedule` answering false when refused,
+    `cancel(platformId)`, `openBatteryOptimisationSettings`), its `schedule` taking the `RegisteredAlarm` so the
+    platform id is the registry's. Two adapters: `FlnAlarmScheduler` in `apsira_notify` (LYCEUM's
+    `zonedSchedule`, `exactAllowWhileIdle`, past times skipped, the notification built by the app for the
+    registry's id and posted with `LocalNotifier.detailsOf`; its `cancel` cancels only a pending alarm, so a
+    reminder already showing stays), and `AlarmManagerScheduler` in **`apsira_jobs`** (Q1-c; RELAY's and
+    VIATICUM's `android_alarm_manager_plus ^5.1.2`, exact, waking, allowed while idle, re-armed after a reboot,
+    with VIATICUM's `onAlarmFired`: record the fire, deliver, cancel the platform alarm, each step whatever the
+    one before did). `apsira_jobs` already serves only RELAY and VIATICUM and holds `ZoneResync.kt`, so LYCEUM's
+    APK gains no alarm-manager plugin; it gains the `apsira_notify` edge.
+  - **Consumer requirement:** the registry works only if Android's backup leaves it out. Every consumer excludes
+    `alarms/` (or each of `AlarmRegistry.defaultPath` and `SnoozeStore.defaultPath`) from `<cloud-backup>` and
+    `<device-transfer>` in `data_extraction_rules.xml`, and from `full_backup_content` when it has one.
+    `expectExcludedFromDeviceBackup` in `package:apsira_notify/testing.dart` is the check its adoption runs.
+- **Alternatives rejected:** RELAY's `registered_alarms` table as the registry (it travels in every backup and
+  export, which is what makes a restore re-arm another phone's alarms); a new `apsira_alarms` package (Q1-a: a
+  second RELAY-and-VIATICUM-only package beside `apsira_jobs`); the alarm-manager adapter in `apsira_notify`
+  (Q1-b: the plugin in LYCEUM's APK); snoozes in each app's database (Q2-b-data: a schema step in LYCEUM and a
+  snooze that a restore brings back); keeping a registered alarm without a `schedule` call when it looks
+  unchanged (VIATICUM's diff: a copied or stale registry would then hide an unarmed alarm).
+- **Consequences:** VIATICUM's registry, fire record and folder carry over; its sync passes its wanted alarms
+  (its `lateGrace` stays its own) and its fire entry calls `onAlarmFired`. RELAY drops `registered_alarms` in
+  schema v12, hands its codes to `addPendingCancels` once and excludes `alarms/` (its rules lack it today).
+  LYCEUM's alerts move to `FlnAlarmScheduler` with ids from the registry (its 10000+ ids are cancelled once by
+  its adoption), gains the snooze store, and excludes `alarms/`. A background snooze and a resync of the app's
+  engine may write the same files at once; each write is whole, and the next resync re-derives the schedule.

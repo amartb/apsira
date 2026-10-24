@@ -19,8 +19,10 @@ dependencies:
 ```
 
 `package:apsira_jobs/apsira_jobs.dart` is the public surface; `package:apsira_jobs/testing.dart`
-holds `FakeBackgroundJobs`. It depends on `flutter` and `workmanager: ^0.10.10` (the pin
-both apps already have), and on no apsira package.
+holds `FakeBackgroundJobs`. It depends on `flutter`, `workmanager: ^0.10.10` and
+`android_alarm_manager_plus: ^5.1.2` (the pins both apps already have), and on
+`apsira_notify` at the shared tag (D-APK-022), whose closure `pubspec_overrides.yaml`
+resolves here.
 
 ## The policy
 
@@ -68,9 +70,41 @@ pins. Both are already in each app's closure. `ApsiraJobsPlugin` registers nothi
 Flutter tool builds a plugin's Android half only when the pubspec names a plugin class. A
 Dart test pins the job name, the input key and the manifest.
 
+## The alarm-manager scheduler
+
+`AlarmManagerScheduler(onFire, {alarmClock, canScheduleExact, settings})` is the
+`AlarmScheduler` of `apsira_notify`'s per-install registry (D-APK-022) on
+`android_alarm_manager_plus`: one exact alarm per `RegisteredAlarm`, under its platform id,
+waking, allowed while idle, re-armed by the plugin after a reboot; `schedule` answers false
+when the platform refuses; `cancel` is the only call that prunes the plugin's reboot list.
+It lives here, not in `apsira_notify`, so LYCEUM's APK never carries the plugin (ruling R-1,
+Q1-c). `AlarmSync` drives it; the app never calls it directly.
+
+```dart
+@pragma('vm:entry-point')
+Future<void> reminderAlarmFired(int platformId, Map<String, dynamic> params) async {
+  final firedUtc = DateTime.now().toUtc();
+  WidgetsFlutterBinding.ensureInitialized();
+  DartPluginRegistrant.ensureInitialized();
+  await onAlarmFired(platformId: platformId, params: params, firedUtc: firedUtc,
+      registry: AlarmRegistry(getApplicationSupportDirectory),
+      deliver: (alarm) => notifier.show(notificationFor(alarm)));
+}
+```
+
+`onAlarmFired` records the fire first (the next resync never arms it again at that
+instant), then delivers, then cancels the platform alarm; each step runs whatever the one
+before did, and params that are not an alarm's are a `FormatException` before anything.
+
+| Symbol | Source | Replaces in RELAY | in VIATICUM |
+|---|---|---|---|
+| `AlarmManagerScheduler` | R `lib/data/platform/alarm_manager_scheduler.dart` | that file | its `AlarmManagerScheduler` |
+| `onAlarmFired`, `alarmParams`, `alarmFromParams` | V `lib/data/platform/alarm_manager_scheduler.dart` | the fire entry's bookkeeping in `bootstrap.dart` | the same functions |
+
 ## Checks
 
-From this directory: `flutter analyze` and `flutter test`. The Kotlin compiles only inside
+From this directory: `flutter analyze` and `flutter test` (with `test/alarms/`: RELAY's and
+VIATICUM's scheduler cases against the plugin's channel, and the fire entry). The Kotlin compiles only inside
 an app's build, so `example/` is that app: it depends on this package by path and schedules
 one job through `WorkManagerBackgroundJobs` at start, and its debug build compiles
 `ApsiraJobsPlugin.kt` and `ZoneResync.kt` against `workmanager_android`'s `androidx.work`.

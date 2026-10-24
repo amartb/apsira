@@ -1,0 +1,11 @@
+# apsira_jobs pins apsira_notify, and through it apsira_app, apsira_core and the
+# vendored flutter_local_notifications, by the shared tag; inside the
+# repository they resolve from their directories, as the package's own
+# pubspec_overrides.yaml does (D-APK-007, D-APK-022).
+dependency_overrides:
+  apsira_app: { path: ../../apsira_app }
+  apsira_core: { path: ../../apsira_core }
+  apsira_l10n: { path: ../../apsira_l10n }
+  apsira_notify: { path: ../../apsira_notify }
+  apsira_ui: { path: ../../apsira_ui }
+  flutter_local_notifications: { path: ../../third_party/flutter_local_notifications }

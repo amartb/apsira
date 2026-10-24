@@ -7,7 +7,8 @@ description: >-
   own channels, at most three actions, the lock-screen public version), the
   permission flow with a per-install asked flag, and the settings intents
   (notifications, battery optimisation, app details) through the package's own
-  Kotlin.
+  Kotlin; and the per-install alarm registry, its snooze store, the alarm
+  sync with RELAY's window and the notification plugin's alarm scheduler.
 publish_to: none
 version: 0.4.0
 
@@ -27,6 +28,9 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_local_notifications: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/third_party/flutter_local_notifications } }
+  # FlnAlarmScheduler's zonedSchedule takes a TZDateTime (D-APK-022); the
+  # plugin already brings it, as it does to RELAY and LYCEUM.
+  timezone: ^0.11.2
 
 dev_dependencies:
   flutter_lints: ^6.0.0

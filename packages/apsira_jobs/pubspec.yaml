@@ -1,7 +1,7 @@
 # From viaticum pubspec.yaml @ 78d38e0 and relay pubspec.yaml @ 09b28810 (the
-# workmanager pin both apps already have).
+# workmanager and android_alarm_manager_plus pins both apps already have).
 name: apsira_jobs
-description: "Periodic background jobs for the Apsira apps: the BackgroundJobs port, JobConstraints, the WorkManager adapter and its fake, and the zone-change resync receiver."
+description: "Background work for the Apsira apps that run it: the BackgroundJobs port, JobConstraints, the WorkManager adapter and its fake, the zone-change resync receiver, and the AlarmManagerScheduler of apsira_notify's alarm registry."
 publish_to: none
 version: 0.4.0
 
@@ -10,9 +10,14 @@ environment:
   # The lowest Flutter any live consumer pins (docs/agent-rules.md).
   flutter: ">=3.47.0"
 
-# RELAY and VIATICUM only; LYCEUM does not depend on it (LYCEUM D-034, D-APK-011).
-# No apsira_* dependency.
+# RELAY and VIATICUM only; LYCEUM does not depend on it (LYCEUM D-034, D-APK-011),
+# so the alarm-manager plugin stays out of LYCEUM's APK (D-APK-022, ruling R-1 Q1-c).
+# apsira_notify (the AlarmScheduler port, the registry, SystemSettings) is named
+# in the git form at the shared tag; pubspec_overrides.yaml resolves its closure
+# here (D-APK-007).
 dependencies:
+  android_alarm_manager_plus: ^5.1.2
+  apsira_notify: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_notify } }
   flutter:
     sdk: flutter
   workmanager: ^0.10.10

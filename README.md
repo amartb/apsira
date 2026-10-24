@@ -103,7 +103,7 @@ D-APK-022 in `docs/decisions.md`):
 | `apsira_tools` | The layering lint, the l10n check, the coverage gate and the privacy guards, configured per app by `tool/apsira_tools.yaml`; the release and build script skeletons. |
 | `apsira_test` | The shared test support: font scaler, large-text layout checker, golden matrix, a11y pass, property testing. |
 | `apsira_app` | The app scaffolding every folio repeats: error handlers, file log, start redirect, restartable root, zone channel, per-install flags, About. |
-| `apsira_jobs` | The `BackgroundJobs` port and its WorkManager adapter, for the apps that run background jobs (RELAY, VIATICUM; D-APK-011). |
+| `apsira_jobs` | The `BackgroundJobs` port and its WorkManager adapter, and the alarm-manager adapter of the alarm registry, for the apps that run background work (RELAY, VIATICUM; D-APK-011, D-APK-022). |
 | `apsira_l10n` | The strings the shared widgets show, in English and Spanish, with their own delegate; `AppLanguage` and the language setting (D-APK-012). |
 | `apsira_onboarding` | The first-open intro, the language step, tours, the Help shell and the one-time tips (D-APK-017). |
 | `apsira_storage` | The backup target over the Storage Access Framework and the other storage ports with their Android adapters (D-APK-015). |

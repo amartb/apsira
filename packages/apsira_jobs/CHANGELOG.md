@@ -5,8 +5,16 @@ one tag, `apsira-vX.Y.Z` (D-APK-007).
 
 ## 0.4.0 — 2026-10-24
 
-No change in behaviour. Migration: move every apsira `ref:` to
-`apsira-v0.4.0`.
+Adds `AlarmManagerScheduler` (D-APK-022, ruling R-1 Q1-c), `apsira_notify`'s
+`AlarmScheduler` on `android_alarm_manager_plus ^5.1.2`: RELAY's adapter (exact, waking,
+allowed while idle, re-armed after a reboot, the alarm-clock fallback) under the
+registry's platform ids, with VIATICUM's fire entry `onAlarmFired` (record, deliver,
+cancel) and `alarmParams`/`alarmFromParams`. Depends on `apsira_notify` at the shared tag.
+
+Migration: move every apsira `ref:` to `apsira-v0.4.0`. RELAY and VIATICUM delete their
+`lib/data/platform/alarm_manager_scheduler.dart` and bind this one (VIATICUM passes its
+`exactAlarmsAllowed` as `canScheduleExact`); their fire entry calls `onAlarmFired` with an
+`AlarmRegistry` over app storage.
 
 ## 0.3.0 — 2026-10-24
 

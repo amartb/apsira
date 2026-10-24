@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What Android's own backup copies when ViaticumBackupAgent lets it
+     (D-071): a device-to-device transfer always, Google's cloud backup only
+     while the backup.cloud setting is on. App-private storage is copied,
+     the database and its pre-migration and safety copies included, except
+     four directories of files/: logs/, the local diagnostics log, which
+     never leaves the phone (07 §10); restore/, the staging copy of a
+     restore in progress, which only that restore reads (07 §6.2);
+     first_open/, the per-install flag that first open has run (D-065), so a
+     new phone shows it; backup/, the per-install backup folder grant,
+     which no other install holds (D-070); and alarms/, the reminder alarms
+     this install set (D-073), which another phone never set, so the
+     reminder resync sets them there afresh. The same rules hold for
+     both. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="logs/" />
+        <exclude domain="file" path="restore/" />
+        <exclude domain="file" path="first_open/" />
+        <exclude domain="file" path="backup/" />
+        <exclude domain="file" path="alarms/" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="logs/" />
+        <exclude domain="file" path="restore/" />
+        <exclude domain="file" path="first_open/" />
+        <exclude domain="file" path="backup/" />
+        <exclude domain="file" path="alarms/" />
+    </device-transfer>
+</data-extraction-rules>
