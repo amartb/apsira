@@ -4,7 +4,8 @@
 /// [ZoneChannel] (and its Android half, `ZoneModule.kt`), the [PendingPort]
 /// stub base, per-install [InstallFlag] files and the [AboutPage].
 ///
-/// Test helpers are in `package:apsira_app/testing.dart`.
+/// Test helpers are in `package:apsira_app/testing.dart`; a plain Dart
+/// process without Flutter imports `package:apsira_app/clock.dart`.
 library;
 
 export 'src/about_page.dart';

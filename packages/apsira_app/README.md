@@ -12,6 +12,15 @@ dependencies:
   apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_app } }
 ```
 
+## Entry libraries
+
+- `package:apsira_app/apsira_app.dart`: everything below, for the app. It reaches Flutter.
+- `package:apsira_app/clock.dart`: `SystemClock` alone, over `apsira_core`, for a plain
+  Dart process or isolate that cannot load `dart:ui`, such as RELAY's kill-during-typing
+  child (`test/support/kill_writer/`). Import it there instead of `src/`; the app keeps the
+  barrel, which exports the same class.
+- `package:apsira_app/testing.dart`: the test helpers.
+
 ## What it holds, and what each app deletes
 
 Sources: RELAY `09b28810`, VIATICUM `78d38e0`, LYCEUM `9f4ff27`. Each `lib/src` file
