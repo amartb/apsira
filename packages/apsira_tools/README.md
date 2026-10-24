@@ -18,6 +18,27 @@ and LYCEUM `9f4ff27`.
 Every command also takes `--config <file>` (default `tool/apsira_tools.yaml`) and exits
 2 on bad usage, including a config error.
 
+## Libraries
+
+An app's `tool/` wrapper that adds its own rules imports the checks as libraries,
+never `package:apsira_tools/src/…` (private; `implementation_imports` flags it).
+Each library re-exports its whole `src/` file, so a wrapper that re-exports a check
+keeps every symbol it had.
+
+| Library | Exports |
+|---|---|
+| `package:apsira_tools/config.dart` | `ApsiraToolsConfig` and its `LayeringConfig`, `L10nConfig`, `CoverageConfig`, `PrivacyConfig` |
+| `package:apsira_tools/coverage_gate.dart` | `runCoverageGate`, `parseLcov`, `evaluateDomainCoverage`, `FileCoverage`, `GateResult` |
+| `package:apsira_tools/deps_check.dart` | `runDepsCheck`, `checkDependencies`, `DependencyAllowlist`, `runtimeClosure` |
+| `package:apsira_tools/l10n_check.dart` | `runL10nCheck`, `checkArbDir`, `placeholdersIn`, `readConfig`, `scanHardCodedText`, `textCallLiterals`, `L10nProblem` |
+| `package:apsira_tools/layering_lint.dart` | `runLayeringLint`, `checkSource`, `checkLayering`, `layerOf`, `layeringRules`, `optionalRules`, `LayeringViolation`, `LayerKind` |
+| `package:apsira_tools/manifest_check.dart` | `runManifestCheck`, `checkManifest`, `usesPermissions`, `removedPermissions`, `parseDeclaredPermissions`, `forbiddenPermissions` |
+| `package:apsira_tools/apsira_tools.dart` | all six |
+
+Migration: an app replaces each `package:apsira_tools/src/<check>.dart` import or
+export with `package:apsira_tools/<check>.dart` (same `show`/`as`) and drops its
+`// ignore_for_file: implementation_imports`, in its Phase 2 adoption.
+
 ## Configuration
 
 `tool/apsira_tools.yaml` in the app replaces RELAY's constants. An absent or empty file
