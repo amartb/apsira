@@ -1,4 +1,6 @@
-// From relay test/core/log_test.dart @ 5f606e9
+// From relay test/core/log_test.dart @ 5f606e9; two bodies changed for
+// D-APK-011 (block IDs through LogValue.blockId, VIATICUM's stackHash after
+// the fields). VIATICUM's own cases are the last group.
 import 'package:apsira_core/apsira_core.dart';
 import 'package:test/test.dart';
 
@@ -79,7 +81,7 @@ void main() {
         'note.saved',
         fields: {
           'noteId': LogValue.id(noteId),
-          'blockId': LogValue.id('a1b2c3'),
+          'blockId': LogValue.blockId('a1b2c3'),
           'lines': LogValue.count(42),
           'took': LogValue.duration(const Duration(milliseconds: 37)),
           'source': LogValue.code('autosave'),
@@ -128,7 +130,10 @@ void main() {
         ...record.renderFields(),
         ...record.stackFrames,
       ].join('\n');
-      expect(record.renderFields(), ['errorType=_NoteError']);
+      expect(record.renderFields(), [
+        'errorType=_NoteError',
+        'stackHash=${record.stackHash}',
+      ]);
       expect(rendered, isNot(contains('flowers')));
       expect(record.stackFrames, isNotEmpty);
       expect(record.stackFrames.first, startsWith('#0'));
@@ -164,6 +169,90 @@ void main() {
       final log = Log([_BrokenSink(), sink], debugEnabled: false);
       expect(() => log.error('save.failed'), returnsNormally);
       expect(sink.records, hasLength(1));
+    });
+  });
+
+  // From viaticum test/core/log_test.dart @ 78d38e0: the UUID-only ID rule,
+  // typed fields and the stack hash.
+  group('VIATICUM: IDs and the stack hash', () {
+    test('a short lowercase word is not an ID: it could be content', () {
+      logWith().info(
+        'item.saved',
+        fields: {
+          'itemId': LogValue.id(noteId),
+          'shortWord': LogValue.id('legajo'),
+          'blockAsId': LogValue.id('a1b2c3'),
+        },
+      );
+      final rendered = sink.records.single.renderFields().join(' ');
+      expect(rendered, isNot(contains('legajo')));
+      expect(
+        rendered,
+        'itemId=$noteId shortWord=<redacted> blockAsId=<redacted>',
+      );
+    });
+
+    test('a block ID is six characters of a–z0–9, anything else redacted', () {
+      String render(String id) => LogValue.blockId(id).render();
+      expect(render('a1b2c3'), 'a1b2c3');
+      expect(render('zz9900'), 'zz9900');
+      for (final bad in ['A1b2c3', 'a1b2c', 'a1b2c3d', 'a-b2c3', noteId, '']) {
+        expect(render(bad), redacted, reason: bad);
+      }
+    });
+
+    test('a String value is rejected: fields take only LogValues', () {
+      final Object untyped = <String, Object>{'title': secret};
+      expect(
+        () => logWith().info(
+          'item.saved',
+          fields: untyped as Map<String, LogValue>,
+        ),
+        throwsA(isA<TypeError>()),
+      );
+      expect(sink.records, isEmpty);
+    });
+
+    test('an error with a stack carries a 16-hex stack hash', () {
+      logWith().error(
+        'item.saveFailed',
+        error: _NoteError(secret),
+        stack: StackTrace.current,
+      );
+      final record = sink.records.single;
+      expect(record.stackHash, matches(RegExp(r'^[0-9a-f]{16}$')));
+      expect(record.renderFields().last, 'stackHash=${record.stackHash}');
+    });
+
+    test('the stack hash is the same for the same frames only', () {
+      String? hashOf(String trace) => LogRecord(
+        LogLevel.error,
+        'item.saveFailed',
+        const {},
+        stack: StackTrace.fromString(trace),
+      ).stackHash;
+      const frames = '#0 f (package:viaticum/a.dart:1:1)\n#1 g (b.dart:2:2)';
+      expect(hashOf(frames), hashOf('Error: $secret\n$frames'));
+      expect(
+        hashOf(frames),
+        isNot(hashOf('#0 f (package:viaticum/a.dart:9:1)')),
+      );
+      expect(hashOf('no frames here'), isNull);
+      expect(
+        LogRecord(LogLevel.error, 'item.saveFailed', const {}).stackHash,
+        isNull,
+      );
+    });
+
+    test('the stack hash is the first 16 hex of sha256 of the frames', () {
+      final record = LogRecord(
+        LogLevel.error,
+        'item.saveFailed',
+        const {},
+        stack: StackTrace.fromString('#0 f (a.dart:1:1)\n#1 g (b.dart:2:2)'),
+      );
+      // The first 16 of sha256sum's ad4cda2d9d52ea91286e…422f for these frames.
+      expect(record.stackHash, 'ad4cda2d9d52ea91');
     });
   });
 }

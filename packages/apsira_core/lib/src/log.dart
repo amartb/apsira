@@ -1,13 +1,19 @@
-// From relay lib/core/log.dart @ 5f606e9
+// From relay lib/core/log.dart @ 5f606e9, with viaticum lib/core/log.dart @
+// 78d38e0's stack hash and UUID-only IDs (D-APK-011).
 /// Local, content-free logging (architecture §9.3, D-050).
 ///
 /// A record is an event name plus typed fields: IDs, counts, durations,
 /// stable codes, flags and error types. There is no free-text argument and an
-/// error is recorded by its type (and a [Failure]'s code), never by its
-/// `toString()`, which can carry note text. A value without the expected
+/// error is recorded by its type (and a [Failure]'s code) and its stack by a
+/// hash and its frame lines, never by its `toString()`, which can carry note
+/// text. A value without the expected
 /// shape is written as [redacted], so a mistake hides data instead of
 /// leaking it. Logging never throws.
 library;
+
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
 
 import 'result.dart';
 
@@ -23,10 +29,14 @@ final _eventShape = RegExp(r'^[a-z][a-zA-Z0-9]*(\.[a-z][a-zA-Z0-9]*)*$');
 /// Field keys and codes are lowerCamel identifiers.
 final _codeShape = RegExp(r'^[a-z][a-zA-Z0-9]*$');
 
-/// UUIDs (D-014) and task-line block IDs (6 × `a–z0–9`, data model §6.5).
+/// IDs are UUIDs (D-014). No shorter shape is accepted, since a short
+/// lowercase word could be content.
 final _idShape = RegExp(
-  r'^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|[a-z0-9]{6})$',
+  r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
 );
+
+/// RELAY's task-line block IDs: 6 × `a–z0–9` (data model §6.5).
+final _blockIdShape = RegExp(r'^[a-z0-9]{6}$');
 
 /// A stack frame line, as the VM and AOT runtimes print them (`#0 …`).
 final _frameShape = RegExp(r'^#\d+\s');
@@ -39,8 +49,12 @@ const int maxStackFrames = 30;
 sealed class LogValue {
   const LogValue();
 
-  /// A UUID or a block ID; anything else is [redacted].
+  /// A UUID; anything else is [redacted].
   factory LogValue.id(String id) = _Text.id;
+
+  /// A block ID (six characters of `a–z0–9`, RELAY's task lines); anything
+  /// else is [redacted].
+  factory LogValue.blockId(String id) = _Text.blockId;
 
   /// A stable lowerCamel code (a failure code, a source, a state); anything
   /// else is [redacted].
@@ -62,6 +76,8 @@ sealed class LogValue {
 
 final class _Text extends LogValue {
   _Text.id(String id) : text = _idShape.hasMatch(id) ? id : redacted;
+
+  _Text.blockId(String id) : text = _blockIdShape.hasMatch(id) ? id : redacted;
 
   _Text.code(String code) : text = _codeShape.hasMatch(code) ? code : redacted;
 
@@ -109,7 +125,9 @@ final class LogRecord {
     StackTrace? stack,
   }) : event = _eventShape.hasMatch(event) ? event : redacted,
        fields = Map.unmodifiable(fields),
-       stackFrames = List.unmodifiable(_frames(stack));
+       stackFrames = List.unmodifiable(_frames(stack)) {
+    stackHash = stackFrames.isEmpty ? null : _hash(stackFrames);
+  }
 
   final LogLevel level;
 
@@ -122,6 +140,11 @@ final class LogRecord {
   /// (an exception message a runtime printed into the trace) is dropped.
   final List<String> stackFrames;
 
+  /// The first 16 hex digits of the SHA-256 of [stackFrames], so the same
+  /// failure groups under one value across records and files; `null` when
+  /// there are no frames.
+  late final String? stackHash;
+
   static Iterable<String> _frames(StackTrace? stack) => stack == null
       ? const []
       : stack
@@ -131,11 +154,17 @@ final class LogRecord {
             .where(_frameShape.hasMatch)
             .take(maxStackFrames);
 
-  /// `key=value` pairs in insertion order; a key that is not lowerCamel is
-  /// written as [redacted].
+  static String _hash(List<String> frames) => sha256
+      .convert(utf8.encode(frames.join('\n')))
+      .toString()
+      .substring(0, 16);
+
+  /// `key=value` pairs in insertion order, then `stackHash` when there is a
+  /// stack; a key that is not lowerCamel is written as [redacted].
   List<String> renderFields() => [
     for (final MapEntry(:key, :value) in fields.entries)
       '${_codeShape.hasMatch(key) ? key : redacted}=${value.render()}',
+    if (stackHash case final hash?) 'stackHash=$hash',
   ];
 }
 
