@@ -1,0 +1,29 @@
+# The shared test support of the three apps, from their test/support/ trees
+# (RELAY 09b28810, VIATICUM 78d38e0, LYCEUM 9f4ff27); each lib/src file names
+# its source.
+name: apsira_test
+description: "Test support for the Apsira apps: Android 14 font scaling, the large-text layout check, the golden matrix and bundled fonts, the accessibility pass, property testing and the pump helpers."
+publish_to: none
+version: 0.2.0
+
+environment:
+  sdk: ^3.13.0
+  # The lowest Flutter any live consumer pins (docs/agent-rules.md).
+  flutter: ">=3.47.0"
+
+# A dev_dependency of the apps. flutter_test is a dependency, not a
+# dev_dependency: lib/ builds on it. apsira_ui is named in the git form at the
+# shared tag; pubspec_overrides.yaml resolves it here (D-APK-007).
+dependencies:
+  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_ui } }
+  flutter:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+
+flutter:
+  # The tests draw Material icons (Icons.add); the apps set it too.
+  uses-material-design: true

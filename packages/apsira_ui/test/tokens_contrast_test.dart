@@ -207,6 +207,16 @@ void main() {
           isEmpty,
         );
       });
+
+      // From viaticum test/critical/tokens_contrast_test.dart @ 78d38e0: the
+      // scheme the built ThemeData carries, the one stock widgets paint with,
+      // meets the same bar (VIATICUM checked it; RELAY checked the scheme
+      // before it went into the theme).
+      test('the ThemeData carries a ColorScheme that meets the on-pairs', () {
+        final scheme = ApsiraThemeData.build(theme).colorScheme;
+        expect(scheme.brightness, theme.brightness);
+        expect(failures(colorSchemePairs(scheme)), isEmpty);
+      });
     });
   }
 
