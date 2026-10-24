@@ -18,6 +18,8 @@ app files it replaces.
   `sectionBuilder` (the brand and rows sections): LYCEUM keeps its kit's rows and cards.
 - `InstallFlag`: VIATICUM's `FirstOpenService` file logic, the path verbatim.
 - `testing.dart`: `MemoryLogSink`.
+- `clock.dart`: `SystemClock` alone, with no Flutter library, for plain Dart processes
+  (RELAY's kill-during-typing child); the barrel exports it too.
 
 Migration for every app:
 
