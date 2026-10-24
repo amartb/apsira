@@ -9,7 +9,7 @@ storage directory in (`getApplicationSupportDirectory`), so the package does not
 
 ```yaml
 dependencies:
-  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_app } }
+  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_app } }
 ```
 
 ## Entry libraries

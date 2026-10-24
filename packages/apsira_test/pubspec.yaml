@@ -4,7 +4,7 @@
 name: apsira_test
 description: "Test support for the Apsira apps: Android 14 font scaling, the large-text layout check, the golden matrix and bundled fonts, the accessibility pass, property testing and the pump helpers."
 publish_to: none
-version: 0.3.0
+version: 0.4.0
 
 environment:
   sdk: ^3.13.0
@@ -15,7 +15,7 @@ environment:
 # dev_dependency: lib/ builds on it. apsira_ui is named in the git form at the
 # shared tag; pubspec_overrides.yaml resolves it here (D-APK-007).
 dependencies:
-  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_ui } }
+  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_ui } }
   flutter:
     sdk: flutter
   flutter_test:

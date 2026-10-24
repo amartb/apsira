@@ -5,7 +5,7 @@ description: >-
   SystemClock with the zone channel (and its Android half), PendingPort stubs,
   per-install flag files and the About page.
 publish_to: none
-version: 0.3.0
+version: 0.4.0
 
 environment:
   sdk: ^3.13.0
@@ -17,8 +17,8 @@ environment:
 # path_provider. apsira_* in the git form at the shared tag, with the committed
 # pubspec_overrides.yaml (D-APK-007).
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_core } }
-  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_ui } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
+  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_ui } }
   flutter:
     sdk: flutter
 

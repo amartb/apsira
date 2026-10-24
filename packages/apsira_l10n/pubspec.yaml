@@ -1,7 +1,7 @@
 name: apsira_l10n
 description: "The strings the shared Apsira widgets show, in English and Spanish: ApsiraL10n and its delegate, AppLanguage and the language setting."
 publish_to: none
-version: 0.3.0
+version: 0.4.0
 
 environment:
   sdk: ^3.13.0

@@ -32,6 +32,7 @@ becomes Decided on review), Superseded.
 | D-APK-015 | `apsira_storage`: the backup, storage-space, document-picker, share and photo ports with their adapters and fakes, one storage channel `apsira_storage/storage`; `FolderAccess`, the crop and the media stores stay per app | Decided |
 | D-APK-016 | `apsira_lock`: RELAY's app lock as the shared one (off by default, 5 minutes, 0 = at once, never a lock-out, a backwards clock locks), its `lock` row unchanged, `local_auth` in the package, FLAG_SECURE through the package's own Kotlin; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | Decided |
 | D-APK-017 | `apsira_onboarding`: the intro with the app's mark as a parameter, the language step, the step frame and flow, the tour player, the Help shell, the discovery pieces; seen flags per install through `InstallFlag`; routes stay in each app | Decided |
+| D-APK-020 | `apsira_zip`: RELAY's streaming ZIP writer, CRC-32 and one-pass reader, the apps' parts as hooks (entry names, an entry check, extraction, the keep limit); refusals as `ZipRefusal`, mapped by each app; consumers RELAY and LYCEUM | Decided |
 
 ---
 
@@ -710,3 +711,50 @@ becomes Decided on review), Superseded.
   and take RELAY's `accentText`. Help's app bar wraps a title too long for one line and grows to hold it (T12's
   finding: RELAY's `tour_screen` cut "Recordatorios y repeticiones" with an ellipsis at large text); a title that
   fits keeps the standard bar. Each change is a line in the app's decision log at adoption.
+
+## D-APK-020 — `apsira_zip`: RELAY's and LYCEUM's streaming ZIP
+
+- **Status:** Decided (2026-10-24: plan revision 2 of ledger `packages-v0-4`, ruling R-3). Its consumers are named
+  here under D-APK-009's rule: **RELAY and LYCEUM**.
+- **Context:** RELAY `09b28810` writes and verifies its backups with `data/files/backup_zip_writer.dart`,
+  `backup_zip_reader.dart` and `crc32.dart` (ruling R-15: `archive` deflates each entry in memory and gives no
+  back-pressure into SAF). LYCEUM `9f4ff27` ported the three for its export bundle: the writer and the CRC are
+  RELAY's but for the class name; the reader adds an entry-name policy (`isSafeEntryName`), a media-hash rule (a
+  media entry hashes to the sha256 its name carries), `ENOSPC` while extracting as a refusal, refusals that carry
+  import codes, and a 16 MiB keep limit where RELAY's is 1 MiB; RELAY's has an `extract` map and `sha256Where`.
+  VIATICUM has no zip: its backups and results are folders, and zipping them would change its backup format.
+- **Decision:** `apsira_zip` 0.4.0, pure Dart, holds RELAY's code, with the apps' parts as parameters:
+  - **The writer:** `ZipWriter` (RELAY's `BackupZipWriter`, renamed), `ZipEntry`, `ZipEntryInfo`, `ZipSummary`,
+    `ZipProfile`, `zipNameProblem`, `zip32Limit` and `RunningSha256`, unchanged: raw deflate with data
+    descriptors and UTF-8 names, ZIP64 where a size or an offset needs it, back-pressure through the stream.
+  - **The CRC-32:** RELAY's `Crc32` (slicing by 8) and `crc32(bytes)`.
+  - **The reader:** `verifyZip(bytes, {required keepLimit, …})`, RELAY's one-pass algorithm. The hooks, each
+    null by default: `nameAllowed` (LYCEUM's entry names), asked after `zipNameProblem` and before any byte of
+    the entry is read or extracted; `sha256Where`; `onEntry`, asked once an entry has checked out (`false` is
+    `rejected`: LYCEUM's media-hash rule); `extractWhere` with an `ExtractSink` (`FileExtractSink` for files),
+    flushed once the entry checks out. `keepLimit` has no default: each app passes its own (RELAY 1 MiB,
+    LYCEUM 16 MiB). `expectedSha256` as RELAY's.
+  - **Refusals:** `ZipRefusal` {`truncated`, `corrupt`, `crcMismatch`, `sizeMismatch`, `directoryMismatch`,
+    `unsafeName`, `entryTooLarge`, `digestMismatch`, `storageFull`, `rejected`}; `ZipRefused(refusal, {entry})`
+    is a `Failure` whose code is `zip` + the refusal (`zipTruncated`…), so RELAY's `ZipCode` names stay its
+    codes. `ENOSPC` (errno 28) while extracting is `storageFull` (LYCEUM's); any other write failure and any
+    error of the stream itself are rethrown. A refusal is never thrown.
+  - **Each app maps the refusals** with `mapFailure`: RELAY keeps the code as it is and maps `storageFull` to its
+    own storage failure (`rejected` cannot occur without `onEntry`); LYCEUM maps `truncated`, `crcMismatch`,
+    `sizeMismatch`, `digestMismatch` and `rejected` to `importChecksumMismatch`, `corrupt`,
+    `directoryMismatch`, `unsafeName` and `entryTooLarge` to `importNotABundle`, `storageFull` to
+    `importStorageFull`. The package's tests hold both tables, so no app's user-visible refusal changes.
+  - **Dependencies:** `apsira_core` (`Result`, `Failure`) and `crypto ^3.0.7` (core's pin); `archive ^4.5.2` as a
+    dev dependency only, RELAY's pin, the independent decoder of every archive the tests write.
+  - **The crash matrix** KP-Z1…Z6 (`test/crash_matrix_test.dart`): an archive cut at every byte, a byte flipped
+    at every offset, the writer cancelled mid-entry, unsafe names, `ENOSPC` from the sink, a wrong whole-archive
+    digest; each is a refusal, never `Ok`.
+- **Alternatives rejected:** LYCEUM's reader as the base, with its import codes in the package (the codes are
+  LYCEUM's, and RELAY's would move); a refusal-to-code map passed in (the same as the app's `mapFailure`, with
+  one more parameter); `archive` at run time (R-15: no back-pressure); VIATICUM as a consumer (its backups are
+  folders; an operator stop).
+- **Consequences:** RELAY: `BackupZipWriter` → `ZipWriter`, `verifyBackupZip` → `verifyZip` with
+  `keepLimit: 1 << 20`, its `extract` map and `extractWhere` → `extractWhere` with a `FileExtractSink`, and
+  `ENOSPC` while staging is a `storageFull` refusal instead of a thrown `FileSystemException`. LYCEUM:
+  `BundleZipWriter` → `ZipWriter`, `BundleZipRefused` → `ZipRefused` with its own mapping, `mediaHashMismatch`
+  → `rejected` from its `onEntry`, `keepLimit: 16 << 20`. Each is a line in the app's decision log at adoption.

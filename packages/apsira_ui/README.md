@@ -16,7 +16,7 @@ Pin by the shared tag, the same ref for every apsira package (D-APK-007, `../REA
 ```yaml
 dependencies:
   apsira_ui:
-    git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_ui }
+    git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_ui }
 ```
 
 `import 'package:apsira_ui/apsira_ui.dart';` is the public surface; the debug ThemePreview

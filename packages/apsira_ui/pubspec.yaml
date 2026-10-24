@@ -3,7 +3,7 @@
 name: apsira_ui
 description: "The Apsira visual language: tokens, theme, type scale, shape, chrome icons, fonts and the lockup."
 publish_to: none
-version: 0.3.0
+version: 0.4.0
 
 environment:
   sdk: ^3.13.0
@@ -14,7 +14,7 @@ environment:
 # pubspec_overrides.yaml (D-APK-007): the kit's default labels are
 # ApsiraL10n's (D-APK-014).
 dependencies:
-  apsira_l10n: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_l10n } }
+  apsira_l10n: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_l10n } }
   flutter:
     sdk: flutter
   flutter_lucide: ^1.59.0
@@ -25,7 +25,7 @@ dependencies:
 dev_dependencies:
   # expectLayoutSound for the kit's EN/ES large-text tests. apsira_test
   # depends on apsira_ui; as a dev_dependency the root package satisfies it.
-  apsira_test: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_test } }
+  apsira_test: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_test } }
   # sha256 of the brand files in test/brand_provenance_test.dart.
   crypto: ^3.0.7
   flutter_lints: ^6.0.0

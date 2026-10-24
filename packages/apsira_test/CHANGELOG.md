@@ -3,6 +3,11 @@
 One section per release, naming any migration a consumer must make. Every package shares
 one tag, `apsira-vX.Y.Z` (D-APK-007).
 
+## 0.4.0 — 2026-10-24
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.4.0`.
+
 ## 0.3.0 — 2026-10-24
 
 No change in behaviour. Its `apsira_ui` dependency moves to `ref: apsira-v0.3.0`. Migration: move every apsira `ref:` to

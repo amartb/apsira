@@ -1,0 +1,4 @@
+# One suite at a time: `dart test` runs suites as isolates of one process,
+# and the writer's 256 MiB streaming test measures that process's RSS
+# (RELAY ran it under `flutter test`, one process per file).
+concurrency: 1

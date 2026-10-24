@@ -8,7 +8,7 @@ description: >-
   fakes: the SAF backup folder, free space over one storage channel (and its
   Kotlin), the document picker, the share sheet and the photo source.
 publish_to: none
-version: 0.3.0
+version: 0.4.0
 
 environment:
   sdk: ^3.13.0
@@ -18,7 +18,7 @@ environment:
 # apsira_* in the git form at the shared tag, with the committed
 # pubspec_overrides.yaml (D-APK-007).
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_core } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
   flutter:
     sdk: flutter
   # ImagePickerPhotoSource: the camera and the photo picker, no permission.

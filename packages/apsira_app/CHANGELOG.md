@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0 — 2026-10-24
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.4.0`.
+
 ## 0.3.0 — 2026-10-24
 
 Its `apsira_core` and `apsira_ui` dependencies move to `ref: apsira-v0.3.0`. Migration:

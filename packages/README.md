@@ -6,7 +6,9 @@ boundaries), D-APK-002 (tools scope), D-APK-003 (pinning by git ref), D-APK-006 
 settled), D-APK-007 (one version, one tag, edges between packages), D-APK-009 (adoption in
 every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`), D-APK-012 (the shared strings),
 D-APK-013 (the `apsira_ui` 0.3 component themes), D-APK-014 (its component kit), D-APK-015
-(`apsira_storage`), D-APK-016 (the app lock) and D-APK-017 (onboarding).
+(`apsira_storage`), D-APK-016 (the app lock), D-APK-017 (onboarding) and, for Tier 3 at
+`apsira-v0.4.0`, D-APK-018 (`apsira_db`), D-APK-019 (`apsira_exchange`), D-APK-020
+(`apsira_zip`), D-APK-021 (`apsira_notify`) and D-APK-022 (its per-install alarm registry).
 
 | Package | Kind | Holds | Depends on |
 |---|---|---|---|
@@ -20,6 +22,10 @@ D-APK-013 (the `apsira_ui` 0.3 component themes), D-APK-014 (its component kit),
 | `apsira_lock` | Flutter plugin | RELAY's app lock: the `Authenticator` port and its `local_auth` adapter, hide in recent apps (`ScreenPrivacy`, FLAG_SECURE through its own Kotlin, `RecentsPrivacy`), `LockSettings` with the app's `LockSettingsStore`, `LockController`, `LockShield`, `LockCover`, `LockSettingsSection`; `testing.dart` with the fakes; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | `flutter`, `apsira_core`, `apsira_l10n`, `apsira_ui`, `flutter_riverpod`, `local_auth`, `local_auth_android` |
 | `apsira_onboarding` | Flutter | `FirstOpenIntro` (the app's mark a parameter), `LanguageStep`, `StepFrame`, `FirstOpenFlow<S>`, `TourPlayer` with `TourStepData`, the Help shell, the one-time tips and discovery pieces, `SeenFlags` (per install, over `InstallFlag`) | `flutter`, `apsira_app`, `apsira_l10n`, `apsira_ui` |
 | `apsira_storage` | Flutter plugin | the `BackupTarget` port and its SAF adapter, `StorageSpace` over the storage channel (`StorageModule.kt`, `apsira_storage/storage`), `DocumentPicker`, `Sharer` and `PhotoSource` with their adapters, `ImageMeta`; `testing.dart` with a fake per port | `flutter`, `apsira_core`, `saf_stream`, `saf_util`, `share_plus`, `image_picker` with RELAY's two pins beside it (`image_picker_android`, `image_picker_platform_interface`) |
+| `apsira_db` | Flutter | the database opener with its pre-migration snapshot and safe mode, the background database server, the restore swap with each app's `DatabaseLayout` and its step hook, the `VACUUM INTO` snapshot, the migration runner, `fsyncDirectory` (D-APK-018) | `flutter`, `apsira_core`, `drift`, `sqlite3` |
+| `apsira_exchange` | pure Dart | LYCEUM's export envelope (ruling C2) with the released legacy shapes, the `sqlite_master` dump and its loader; `tool/validate_examples.py` (D-APK-019) | `apsira_core`, `drift`, `sqlite3` |
+| `apsira_zip` | pure Dart | RELAY's streaming ZIP: `ZipWriter` (back-pressure, ZIP64), `Crc32`, `verifyZip` (one pass, a `ZipRefusal` for anything outside the profile; entry names, an entry check, extraction and the keep limit passed in by the app); RELAY and LYCEUM only (D-APK-020) | `apsira_core`, `crypto` |
+| `apsira_notify` | Flutter plugin | RELAY's notifier with app-defined channels, up to three actions and a public version, the permission flow per install, the settings intents in its own Kotlin, the per-install alarm registry; on the vendored notifications plugin in `packages/third_party/` (D-APK-021, D-APK-022) | `flutter`, `apsira_core`, `flutter_local_notifications` (vendored) |
 
 Each library is imported through its barrel (`package:apsira_core/apsira_core.dart`,
 `package:apsira_core/testing.dart`, `package:apsira_ui/apsira_ui.dart`, …); `src/` is private.
@@ -31,7 +37,7 @@ compiles (the build is run by hand; each package README says how).
 
 Every extracted file names its source app, path and commit in a header comment
 (`// From relay lib/app/theme/relay_theme.dart @ 5f606e9`); v0.1 extracts from RELAY
-`5f606e9`, v0.2 and v0.3 from RELAY `09b28810`, VIATICUM `78d38e0` and LYCEUM `9f4ff27`.
+`5f606e9`, v0.2 to v0.4 from RELAY `09b28810`, VIATICUM `78d38e0` and LYCEUM `9f4ff27`.
 
 ## Consuming
 
@@ -39,14 +45,14 @@ An app pins every apsira package it uses at the same shared tag:
 
 ```yaml
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_core } }
-  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_ui } }
-  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_app } }
-  apsira_l10n: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_l10n } }
-  apsira_onboarding: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_onboarding } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
+  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_ui } }
+  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_app } }
+  apsira_l10n: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_l10n } }
+  apsira_onboarding: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_onboarding } }
 dev_dependencies:
-  apsira_tools: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_tools } }
-  apsira_test: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_test } }
+  apsira_tools: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_tools } }
+  apsira_test: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_test } }
 ```
 
 Co-development only, never committed in an app: a gitignored `pubspec_overrides.yaml`
@@ -78,7 +84,7 @@ its own version:
 
 ```yaml
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_core } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
 ```
 
 and commits `pubspec_overrides.yaml` with a path override for the transitive closure of
