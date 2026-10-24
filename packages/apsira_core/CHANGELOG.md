@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 — 2026-10-24
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.3.0`.
+
 ## 0.2.0 — 2026-10-24
 
 The pieces the three apps copied or diverged on (D-APK-011). First dependency:

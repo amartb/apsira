@@ -31,6 +31,10 @@ gates = [
   { name = "test",   cmd = "bash -c 'cd packages/apsira_test && flutter analyze && flutter test'", proves = "apsira_test analyzes; the layout checker, golden matrix, font scaler and prop_core tests pass", paths = ["packages/apsira_test/**"], requires = ["file:packages/apsira_test/pubspec.yaml"], mem_gb = 3 },
   { name = "app",    cmd = "bash -c 'cd packages/apsira_app && flutter analyze && flutter test'", proves = "apsira_app analyzes; error handlers, log sink, start redirect, zone channel and install-flag tests pass", paths = ["packages/apsira_app/**"], requires = ["file:packages/apsira_app/pubspec.yaml"], mem_gb = 3 },
   { name = "jobs",   cmd = "bash -c 'cd packages/apsira_jobs && flutter analyze && flutter test'", proves = "apsira_jobs analyzes; the BackgroundJobs port, WorkManager policy and fake tests pass", paths = ["packages/apsira_jobs/**"], requires = ["file:packages/apsira_jobs/pubspec.yaml"], mem_gb = 3 },
+  { name = "l10n", cmd = "bash -c 'cd packages/apsira_l10n && flutter analyze && flutter test'", proves = "apsira_l10n analyzes; the D-APK-012 key table in en/es, the delegate and the language setting tests pass", paths = ["packages/apsira_l10n/**"], requires = ["file:packages/apsira_l10n/pubspec.yaml"], mem_gb = 3 },
+  { name = "onboarding", cmd = "bash -c 'cd packages/apsira_onboarding && flutter analyze && flutter test'", proves = "apsira_onboarding analyzes and its tests pass", paths = ["packages/apsira_onboarding/**"], requires = ["file:packages/apsira_onboarding/pubspec.yaml"], mem_gb = 3 },
+  { name = "storage", cmd = "bash -c 'cd packages/apsira_storage && flutter analyze && flutter test'", proves = "apsira_storage analyzes and its tests pass", paths = ["packages/apsira_storage/**"], requires = ["file:packages/apsira_storage/pubspec.yaml"], mem_gb = 3 },
+  { name = "lock", cmd = "bash -c 'cd packages/apsira_lock && flutter analyze && flutter test'", proves = "apsira_lock analyzes and its tests pass", paths = ["packages/apsira_lock/**"], requires = ["file:packages/apsira_lock/pubspec.yaml"], mem_gb = 3 },
   { name = "check-rules", cmd = "bash tool/test/shared_tag_check_test.sh", proves = "tool/check.sh's shared-tag release rules: six broken trees fail, one passes, an untagged git dependency resolves offline through its override", paths = ["tool/**"], requires = ["file:tool/test/shared_tag_check_test.sh"], mem_gb = 1 },
   { name = "release-sh", cmd = "bash tool/test/release_sh_test.sh", proves = "tool/release.sh refuses in a session and on every unmet precondition; --dry-run prints the check, tag and push", paths = ["tool/**"], requires = ["file:tool/test/release_sh_test.sh"], mem_gb = 1 },
   { name = "check",  cmd = "bash -c 'set -o pipefail; mkdir -p .army; bash tool/check.sh 2>&1 | tee .army/check.log; grep -qx \"check: PASS\" .army/check.log'", proves = "every package and example: analyze + tests; the shared-tag rules (one version, CHANGELOG sections, the git form at apsira-v<version>, overrides = transitive closure); sha256 of fonts and brand", paths = [".army-never-at-merge"], requires = ["file:tool/check.sh", "env:APSIRA_FULL_CHECK"], mem_gb = 3 },
@@ -38,7 +42,7 @@ gates = [
 
 [assurance]
 critical = []
-subsystems = ["packages/apsira_core/**", "packages/apsira_ui/**", "packages/apsira_tools/**", "packages/apsira_test/**", "packages/apsira_app/**", "packages/apsira_jobs/**"]
+subsystems = ["packages/apsira_core/**", "packages/apsira_ui/**", "packages/apsira_tools/**", "packages/apsira_test/**", "packages/apsira_app/**", "packages/apsira_jobs/**", "packages/apsira_l10n/**", "packages/apsira_onboarding/**", "packages/apsira_storage/**", "packages/apsira_lock/**"]
 security = []
 security_review = false
 final_validation = "full"

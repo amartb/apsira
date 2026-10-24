@@ -3,6 +3,11 @@
 One section per release, naming any migration a consumer must make. Every package shares
 one tag, `apsira-vX.Y.Z` (D-APK-007).
 
+## 0.3.0 — 2026-10-24
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.3.0`.
+
 ## 0.2.0 — 2026-10-24
 
 First release (D-APK-011): VIATICUM `78d38e0`'s `BackgroundJobs` port and WorkManager

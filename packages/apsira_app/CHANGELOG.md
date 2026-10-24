@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.0 — 2026-10-24
+
+No change in behaviour. Its `apsira_core` and `apsira_ui` dependencies move to `ref: apsira-v0.3.0`. Migration: move every apsira `ref:` to
+`apsira-v0.3.0`.
+
 ## 0.2.0 — 2026-10-24
 
 First release (D-APK-011): the app shell RELAY, VIATICUM and LYCEUM each carried, as one

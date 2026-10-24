@@ -1,10 +1,10 @@
 # Apsira shared packages
 
-Six Dart packages the Apsira Flutter apps depend on, released together at one shared tag
+Seven Dart packages the Apsira Flutter apps depend on, released together at one shared tag
 `apsira-vX.Y.Z`. Decided in `../docs/decisions.md`: D-APK-001 (the first set and its
 boundaries), D-APK-002 (tools scope), D-APK-003 (pinning by git ref), D-APK-006 (what v0.1
 settled), D-APK-007 (one version, one tag, edges between packages), D-APK-009 (adoption in
-every app) and D-APK-011 (the Tier-1 set at `apsira-v0.2.0`).
+every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`) and D-APK-012 (the shared strings).
 
 | Package | Kind | Holds | Depends on |
 |---|---|---|---|
@@ -14,6 +14,7 @@ every app) and D-APK-011 (the Tier-1 set at `apsira-v0.2.0`).
 | `apsira_test` | Flutter, dev | the Android font scaler, the large-text layout checker, the golden matrix with bundled fonts, the a11y pass, `prop_core`, pump helpers | `flutter`, `flutter_test`, `apsira_ui` |
 | `apsira_app` | Flutter plugin | error handlers, the rotating file log sink, the start-phase redirect, `RestartableRoot`, the startup-failure app, `SystemClock` + the zone channel, the `PendingPort` stub base, per-install flags, the About page; `testing.dart` with `MemoryLogSink` | `flutter`, `apsira_core`, `apsira_ui` |
 | `apsira_jobs` | Flutter plugin | the `BackgroundJobs` port, `JobConstraints`, the WorkManager adapter (keep/replace policy) and its fake, the zone-change resync receiver (`ZoneResync.kt`); RELAY and VIATICUM only | `flutter`, `workmanager` |
+| `apsira_l10n` | Flutter | `ApsiraL10n` (54 keys in English and Spanish, hand-written, its own delegate; any other language English), `AppLanguage`, `AppLanguageSetting` with the `LanguageStore` port | `flutter`, `flutter_riverpod` |
 
 Each library is imported through its barrel (`package:apsira_core/apsira_core.dart`,
 `package:apsira_core/testing.dart`, `package:apsira_ui/apsira_ui.dart`, …); `src/` is private.
@@ -33,12 +34,13 @@ An app pins every apsira package it uses at the same shared tag:
 
 ```yaml
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_core } }
-  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_ui } }
-  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_app } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_core } }
+  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_ui } }
+  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_app } }
+  apsira_l10n: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_l10n } }
 dev_dependencies:
-  apsira_tools: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_tools } }
-  apsira_test: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_test } }
+  apsira_tools: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_tools } }
+  apsira_test: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_test } }
 ```
 
 Co-development only, never committed in an app: a gitignored `pubspec_overrides.yaml`
@@ -51,6 +53,8 @@ In the app:
 // lib/app/theme/<app>_theme.dart — the only per-app theme file
 final theme = ApsiraThemeData.build(ApsiraTheme.dark, extensions: [MyAppRoles.dark]);
 Image(image: ApsiraBrand.lockupReversed);                 // first open / About
+MaterialApp(localizationsDelegates: [...AppLocalizations.localizationsDelegates,
+    ApsiraL10n.delegate], …);                              // the shared strings
 ```
 
 ```sh
@@ -68,7 +72,7 @@ its own version:
 
 ```yaml
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_core } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_core } }
 ```
 
 and commits `pubspec_overrides.yaml` with a path override for the transitive closure of

@@ -4,7 +4,7 @@ description: >-
   and manifest privacy checks) for every Apsira Flutter app, configured per app
   by tool/apsira_tools.yaml, and the build and release scripts of RELAY,
   VIATICUM and LYCEUM in one copy.
-version: 0.2.0
+version: 0.3.0
 publish_to: none
 
 environment:

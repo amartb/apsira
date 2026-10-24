@@ -26,6 +26,7 @@ becomes Decided on review), Superseded.
 | D-APK-009 | A package is done only when RELAY, VIATICUM and LYCEUM use it through a patch release; adoption runs in adoption lanes under each app's own rules | Decided |
 | D-APK-010 | Policy for what the packages carry: device state per install (C1), LYCEUM's export envelope (C2), media layout per app (C3), RELAY's notifications with VIATICUM's alarm registry (C4) | Decided |
 | D-APK-011 | The Tier-1 set at `apsira-v0.2.0` and how each drift is resolved: monotonic UUIDv7, RELAY's FTS rule, `stackHash` with `crypto`, `apsira_jobs`, the session-guard union, the zone channel, one copy of the release scripts | Decided |
+| D-APK-012 | Shared strings: `apsira_l10n`'s key table and its wording, one rule for app phrases, `AppLanguage` and `AppLanguageSetting`; Flutter's `MaterialLocalizations` rejected | Decided |
 
 ---
 
@@ -432,3 +433,61 @@ becomes Decided on review), Superseded.
   `IdGen` that are shared live in their package (`BackgroundJobs` in `apsira_jobs`); the charter §5 says so.
   RELAY gains `keep`/`replace` and the `stackHash=` suffix; LYCEUM's ids become monotonic; VIATICUM keeps
   `stackHash`. Each is a line in the app's decision log at adoption.
+
+## D-APK-012 — Shared strings: `apsira_l10n`, its wording and `AppLanguage`
+
+- **Status:** Decided (2026-10-24: operator ruling R-1, plan revision 2 of ledger `packages-v0-3`). Builds D-APK-008.
+- **Context:** the Tier-2 widgets (the kit, onboarding, lock, the settings rows) need the same forty-odd words in
+  every app, and the apps' Spanish has drifted: "Eliminar" and "Borrar", "Listo" and "Hecho", "Añadir" and
+  "Agregar", "Seguir el sistema" and "Según el sistema" (RELAY `09b28810`, VIATICUM `78d38e0`, LYCEUM `9f4ff27`).
+- **Decision:** `apsira_l10n` 0.3.0 holds `ApsiraL10n` (its own delegate, `en` and `es`, any other language
+  English), `AppLanguage` (RELAY's enum) and `AppLanguageSetting` (VIATICUM's hand-written `Notifier`, with a
+  `LanguageStore` port: a failed write restores the previous choice and rethrows). Each app keeps its own storage
+  key (RELAY `settings.locale_override`, VIATICUM `ui.language`, LYCEUM `locale`) in its `LanguageStore`. The keys,
+  English and Spanish, and the source of each choice (R RELAY, V VIATICUM, L LYCEUM):
+
+  | Keys | en | es | Source |
+  |---|---|---|---|
+  | commonOk, commonCancel, commonConfirm | OK · Cancel · Confirm | Aceptar · Cancelar · Confirmar | L / R+L / L |
+  | commonYes, commonNo, commonSave, commonEdit | Yes · No · Save · Edit | Sí · No · Guardar · Editar | all |
+  | commonDelete | Delete | Eliminar | R, L (V's "Borrar" goes) |
+  | commonClear, commonClearAll | Clear · Clear all | Borrar · Borrar todo | L: "Borrar" clears, never deletes |
+  | commonUndo, commonClose, commonBack, commonNext, commonContinue | Undo · Close · Back · Next · Continue | Deshacer · Cerrar · Atrás · Siguiente · Continuar | all |
+  | commonDone | Done | Listo | R, L (a finish button) |
+  | commonAdd | Add | Añadir | R, V (L's "Agregar") |
+  | commonSkip | Skip | Saltar | R, V (L's "Omitir") |
+  | commonNotNow, commonDismiss, commonSearch, commonFilter | Not now · Dismiss · Search · Filter | Ahora no · Descartar · Buscar · Filtrar | all |
+  | commonRetry | Try again | Reintentar | R (L's "Retry") |
+  | settingsTitle, aboutTitle, helpTitle, tipGotIt | Settings · About · Help · Got it | Ajustes · Acerca de · Ayuda · Entendido | R, V (L's "Configuración") |
+  | languageLabel, languageEnglish, languageSpanish, languageFollowPhone | Language · English · Español · Follow phone | Idioma · English · Español · Seguir el teléfono | R = V |
+  | firstOpenLanguageTitle | Choose your language / Elige tu idioma | (the same) | R = V |
+  | themeLabel, themeDark, themeLight | Theme · Dark · Light | Tema · Oscuro · Claro | all |
+  | themeSystem | Follow system | Seguir el sistema | R (V's "Según el sistema", L's "Predeterminado del sistema") |
+  | tourProgress(current, total) | Step {current} of {total} | Paso {current} de {total} | R (V "Page", L "Card") |
+  | tourStart | Start | Empezar | V |
+  | firstOpenDevelopedBy, firstOpenApsiraLabs, firstOpenIntroSkipHint | Developed by · Apsira Labs · Tap to skip | Desarrollado por · Apsira Labs · Toca para saltar | R = V |
+  | lockPromptTitle(app) | Unlock {app} | Desbloquear {app} | R = L |
+  | lockPromptHint, lockUnlockButton | Confirm it's you · Unlock | Confirma que eres tú · Desbloquear | R = L |
+  | lockRetryMessage | Not unlocked. Try again. | No se ha desbloqueado. Inténtalo de nuevo. | R = L |
+  | lockCoverMessage | Unlock to continue. | Desbloquea para continuar. | R (L's `lockScreenMessage`) |
+  | lockSettingsTitle, lockSettingsSubline | App lock · Biometrics or the screen lock | Bloqueo de la app · Biometría o el bloqueo de pantalla | R |
+  | lockAfter, lockImmediately, lockAfterMinutes(n) | Lock after · Immediately · 1 minute / {n} minutes | Bloquear tras · Inmediatamente · 1 minuto / {n} minutos | R |
+  | lockHideInRecents, lockHideInRecentsSubline | Hide in recent apps · Also blocks screenshots | Ocultar en apps recientes · También impide hacer capturas de pantalla | R |
+  | failureUnknown | Something went wrong. Try again. | Algo ha fallado. Inténtalo de nuevo. | R = L |
+
+  **The app-phrase rule.** One wording per shared concept, in the Spain register of RELAY and VIATICUM. An app's
+  wording changes only on the keys it drops onto an `ApsiraL10n` key in its adoption, each named in its decision
+  log. Every key it keeps is app text and stays as it is, whatever its wording: LYCEUM keeps "Omitir la
+  introducción", "Omitir presentación", "Omitir por ahora", "Agregar nuevo" and any "Configuración" it does not
+  drop; RELAY keeps `reminderActionDone` "Hecho" and its "Hecha(s)" statuses; VIATICUM keeps "Listo para recoger"
+  and its mark-done actions. The lock prompt's reason and every line that names the app stay app text, passed in.
+- **Alternatives rejected:** Flutter's `MaterialLocalizations`, which every app already loads: it holds eight of
+  these keys with the same Spanish (Atrás, Eliminar, Cancelar, Cerrar, Continuar, Buscar, Guardar, and
+  `okButtonLabel` "ACEPTAR", in capitals), but no lock, tour, theme or language string; its OK is upper case, and
+  its wording is Flutter's to change, so the shared widgets read one source. gen-l10n output committed in the
+  package (generated code, D-APK-001): `ApsiraL10nEn` and `ApsiraL10nEs` are hand-written, the plurals in Dart,
+  without `intl`. Constructor parameters for good (D-APK-008's rejection).
+- **Consequences:** `apsira_l10n` depends on `flutter` and `flutter_riverpod` ^3.1.0 only. An app adds
+  `ApsiraL10n.delegate` beside its own delegates; a package widget in an app without it throws a `FlutterError`
+  naming the delegate, never an English fallback. A new shared string is a key added here in both languages,
+  with its source, in a new decision.

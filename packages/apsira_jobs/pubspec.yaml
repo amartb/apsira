@@ -3,7 +3,7 @@
 name: apsira_jobs
 description: "Periodic background jobs for the Apsira apps: the BackgroundJobs port, JobConstraints, the WorkManager adapter and its fake, and the zone-change resync receiver."
 publish_to: none
-version: 0.2.0
+version: 0.3.0
 
 environment:
   sdk: ^3.13.0

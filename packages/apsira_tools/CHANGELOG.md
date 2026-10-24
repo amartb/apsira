@@ -1,5 +1,10 @@
 # Changelog — apsira_tools
 
+## 0.3.0 — 2026-10-24
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.3.0`.
+
 ## 0.2.0 — 2026-10-24
 
 ### VIATICUM's deltas as configuration (D-APK-002)

@@ -93,25 +93,30 @@ versioned export/import bundle that the central app can consume later.
 ## 5. Shared code
 
 `packages/` holds the Dart packages every Flutter app depends on (decisions D-APK-001,
-D-APK-007 and D-APK-011 in `docs/decisions.md`):
+D-APK-007, D-APK-011 and, for Tier 2, D-APK-012 to D-APK-017 in `docs/decisions.md`):
 
 | Package | Holds |
 |---|---|
 | `apsira_core` | `Result`/`Failure`, the log model, the `Clock` and `IdGen` ports (a monotonic UUIDv7), the FTS5 match builder, canonical JSON. Pure Dart; its one dependency is `crypto`, for the log's `stackHash` (D-APK-011). |
-| `apsira_ui` | The Apsira tokens as a `ThemeExtension`, the `ThemeData` builder, type scale, shape, chrome icons, the fonts, the lockup, their licences and provenance. |
+| `apsira_ui` | The Apsira tokens as a `ThemeExtension`, the `ThemeData` builder with its component and menu themes, type scale, shape, chrome icons, the fonts, the lockup, their licences and provenance; the component kit (layout, state views, overlays, the undo snack, pills, search, the drawer chrome) and the settings rows. |
 | `apsira_tools` | The layering lint, the l10n check, the coverage gate and the privacy guards, configured per app by `tool/apsira_tools.yaml`; the release and build script skeletons. |
 | `apsira_test` | The shared test support: font scaler, large-text layout checker, golden matrix, a11y pass, property testing. |
 | `apsira_app` | The app scaffolding every folio repeats: error handlers, file log, start redirect, restartable root, zone channel, per-install flags, About. |
 | `apsira_jobs` | The `BackgroundJobs` port and its WorkManager adapter, for the apps that run background jobs (RELAY, VIATICUM; D-APK-011). |
+| `apsira_l10n` | The strings the shared widgets show, in English and Spanish, with their own delegate; `AppLanguage` and the language setting (D-APK-012). |
+| `apsira_onboarding` | The first-open intro, the language step, tours, the Help shell and the one-time tips (D-APK-017). |
+| `apsira_storage` | The backup target over the Storage Access Framework and the other storage ports with their Android adapters (D-APK-015). |
+| `apsira_lock` | The app lock: the authenticator, the lock controller, the lock cover, hiding from recent apps and its settings section (D-APK-016). |
 
 Every package carries one version and the set one shared tag, `apsira-vX.Y.Z`
-(`apsira-v0.2.0`; D-APK-007): apps pin every package by git reference to that tag, never
+(`apsira-v0.3.0`; D-APK-007): apps pin every package by git reference to that tag, never
 by path in a committed `pubspec.yaml` (the path consumers are the packages' own `example/`
 apps, inside the packages themselves). Packages may depend on each other at the same tag. A package is done
 only when every app uses it (D-APK-009). What is app-specific stays in the app: its own
 `ThemeExtension`s, the ports no package holds (the shared ones live in their package:
 `Clock`/`IdGen` in `apsira_core`, `BackgroundJobs` in `apsira_jobs`, D-APK-011), its
-components, its icon art, its codegen. Packages never depend on `build_runner`.
+components beyond `apsira_ui`'s kit, `apsira_onboarding` and `apsira_lock`, its own text
+beyond `apsira_l10n`'s keys, its icon art, its codegen. Packages never depend on `build_runner`.
 
 ## 6. How an app is built
 
