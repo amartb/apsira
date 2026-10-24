@@ -1,0 +1,87 @@
+{
+  "format": "viaticum.package",
+  "format_version": "1.0",
+  "artifact_id": "9d4c7e12-6a3b-4c58-8e21-000000000012",
+  "produced_at": "2026-10-20T10:30:00Z",
+  "producer": {
+    "app": "vellum",
+    "app_version": "0.9.0"
+  },
+  "trip": {
+    "vellum_trip_id": "3e8b1d27-5c90-4f6a-b4d3-000000000001",
+    "version": 0,
+    "title": "Villanueva y Santa Prueba — prueba corta",
+    "date_hint": {
+      "start": "2026-11-09",
+      "end": "2026-11-10"
+    }
+  },
+  "archives": [
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "slug": "amve",
+      "name": "Archivo Municipal de Villanueva del Ejemplo",
+      "short_name": "AMVE",
+      "city": "Villanueva del Ejemplo",
+      "province": "Ejemplo",
+      "country": "España",
+      "address": "Plaza Mayor 1"
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "slug": "adsp",
+      "name": "Archivo Diocesano de Santa Prueba",
+      "city": "Santa Prueba",
+      "country": "España",
+      "pares_code": "ES.00000.ADSP"
+    }
+  ],
+  "items": [
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000101",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 12, leg. 3",
+      "title": "Libro de acuerdos del concejo",
+      "priority": 1,
+      "fondo": "Ayuntamiento",
+      "seccion": "Gobierno",
+      "serie": "Actas capitulares",
+      "date_text": "1712-1718",
+      "research_question": "¿Cuándo se acordó el nuevo pósito?",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000001",
+        "title": "El pósito de Villanueva"
+      },
+      "request_hint": "on_site"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000102",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 40, exp. 7",
+      "title": "Padrón de vecinos",
+      "priority": 2,
+      "fondo": "Ayuntamiento",
+      "serie": "Padrones",
+      "date_text": "1753"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000103",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "signatura": "Leg. 221/4",
+      "title": "",
+      "priority": 3,
+      "description": "Expediente matrimonial sin título en el catálogo.",
+      "source_url": "https://catalogo.example.org/adsp/221-4"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000104",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "signatura": "Libro 9",
+      "title": "Libro de bautismos",
+      "priority": 2,
+      "fondo": "Parroquia de San Prueba",
+      "date_text": "1690-1725",
+      "request_hint": "advance"
+    }
+  ]
+}

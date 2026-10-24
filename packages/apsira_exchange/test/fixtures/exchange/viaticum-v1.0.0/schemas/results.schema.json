@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:viaticum:exchange:1.0:results",
+  "title": "VIATICUM results (viaticum.results) 1.0 — results.json",
+  "description": "05 §2 and §6.2-§6.7: the results.json of a results bundle. Unknown keys are ignored; an optional field that is null is absent (05 §2.1). The bundle's folder, its MANIFEST.sha256 and the photo files are checked by the bundle reader (05 §6.1, §9.1); that each photo's file is named by its own viaticum_id with an extension matching its media_type is checked by tool/exchange/validate_examples.py.",
+  "type": "object",
+  "required": ["format", "format_version", "artifact_id", "produced_at", "producer", "trip", "items"],
+  "properties": {
+    "format": { "const": "viaticum.results" },
+    "format_version": { "$ref": "#/$defs/formatVersion" },
+    "artifact_id": { "$ref": "#/$defs/uuid" },
+    "produced_at": { "$ref": "#/$defs/instant" },
+    "producer": { "$ref": "#/$defs/producer" },
+    "trip": { "$ref": "#/$defs/trip" },
+    "archives_new": {
+      "description": "Archives with origin phone that an item or to-do refers to; identity only (05 §6.3).",
+      "type": ["array", "null"],
+      "items": { "$ref": "#/$defs/archiveNew" }
+    },
+    "items": {
+      "description": "Every item of the trip, excluded ones included, exactly once (05 §6.4).",
+      "type": "array",
+      "items": { "$ref": "#/$defs/item" }
+    },
+    "research_todos": {
+      "type": ["array", "null"],
+      "items": { "$ref": "#/$defs/todo" }
+    }
+  },
+  "$defs": {
+    "formatVersion": {
+      "description": "MAJOR.MINOR; this schema reads major 1, any minor (05 §10).",
+      "type": "string",
+      "pattern": "^1\\.[0-9]+$"
+    },
+    "uuid": {
+      "description": "Lowercase canonical UUID, any version (05 §2.2).",
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "uuidOrNull": { "anyOf": [{ "$ref": "#/$defs/uuid" }, { "type": "null" }] },
+    "instant": {
+      "description": "ISO 8601 in UTC with Z, milliseconds optional (05 §2.2). The calendar check (no 30 February) is the reader's.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]{1,3})?Z$"
+    },
+    "date": {
+      "description": "A floating calendar date, YYYY-MM-DD (05 §2.2). The calendar check is the reader's.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+    },
+    "key": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "text": { "type": ["string", "null"] },
+    "nonBlank": { "type": "string", "pattern": "\\S" },
+    "zoneOrNull": {
+      "description": "An IANA zone name (05 §4.2).",
+      "anyOf": [
+        { "type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_+-]*(/[A-Za-z0-9_+-]+)*$" },
+        { "type": "null" }
+      ]
+    },
+    "relevance": { "enum": ["none", "some", "key", null] },
+    "producer": {
+      "type": "object",
+      "required": ["app", "app_version"],
+      "properties": {
+        "app": { "enum": ["vellum", "viaticum"] },
+        "app_version": { "type": "string" }
+      }
+    },
+    "archiveRef": {
+      "description": "{vellum_id} when VELLUM knows the archive, else {viaticum_id} (05 §6.2).",
+      "type": "object",
+      "properties": {
+        "vellum_id": { "$ref": "#/$defs/uuidOrNull" },
+        "viaticum_id": { "$ref": "#/$defs/uuidOrNull" }
+      },
+      "anyOf": [
+        { "required": ["vellum_id"], "properties": { "vellum_id": { "$ref": "#/$defs/uuid" } } },
+        { "required": ["viaticum_id"], "properties": { "viaticum_id": { "$ref": "#/$defs/uuid" } } }
+      ]
+    },
+    "idRef": {
+      "type": "object",
+      "required": ["viaticum_id"],
+      "properties": { "viaticum_id": { "$ref": "#/$defs/uuid" } }
+    },
+    "trip": {
+      "description": "05 §6.2. revision starts at 1 and increases with each export.",
+      "type": "object",
+      "required": ["viaticum_id", "revision", "title", "start_date", "end_date", "phase", "archive_days"],
+      "properties": {
+        "viaticum_id": { "$ref": "#/$defs/uuid" },
+        "vellum_trip_id": { "$ref": "#/$defs/uuidOrNull" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "title": { "type": "string" },
+        "start_date": { "$ref": "#/$defs/date" },
+        "end_date": { "$ref": "#/$defs/date" },
+        "phase": { "enum": ["underway", "handover", "closed"] },
+        "last_package": {
+          "type": ["object", "null"],
+          "required": ["artifact_id", "version"],
+          "properties": {
+            "artifact_id": { "$ref": "#/$defs/uuid" },
+            "version": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "archive_days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["date", "archive_ref"],
+            "properties": {
+              "date": { "$ref": "#/$defs/date" },
+              "archive_ref": { "$ref": "#/$defs/archiveRef" }
+            }
+          }
+        }
+      }
+    },
+    "archiveNew": {
+      "type": "object",
+      "required": ["viaticum_id", "name"],
+      "properties": {
+        "viaticum_id": { "$ref": "#/$defs/uuid" },
+        "name": { "$ref": "#/$defs/nonBlank" },
+        "short_name": { "$ref": "#/$defs/text" },
+        "city": { "$ref": "#/$defs/text" },
+        "province": { "$ref": "#/$defs/text" },
+        "country": { "$ref": "#/$defs/text" },
+        "address": { "$ref": "#/$defs/text" },
+        "tz": { "$ref": "#/$defs/zoneOrNull" }
+      }
+    },
+    "photo": {
+      "description": "05 §6.6: only linked photos; the file is photos/<viaticum_id>.<ext>.",
+      "type": "object",
+      "required": ["viaticum_id", "file", "media_type", "sha256", "bytes", "taken_at", "sequence"],
+      "properties": {
+        "viaticum_id": { "$ref": "#/$defs/uuid" },
+        "file": {
+          "type": "string",
+          "pattern": "^photos/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.[a-z0-9]+$"
+        },
+        "media_type": { "enum": ["image/jpeg", "image/heic"] },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "bytes": { "type": "integer", "minimum": 0 },
+        "taken_at": { "$ref": "#/$defs/instant" },
+        "sequence": { "type": "integer", "minimum": 0 },
+        "folio_hint": { "$ref": "#/$defs/text" }
+      }
+    },
+    "photos": { "type": ["array", "null"], "items": { "$ref": "#/$defs/photo" } },
+    "subEntry": {
+      "type": "object",
+      "required": ["viaticum_id", "kind"],
+      "properties": {
+        "viaticum_id": { "$ref": "#/$defs/uuid" },
+        "kind": { "enum": ["expediente", "folios"] },
+        "label": { "$ref": "#/$defs/text" },
+        "folio_from": { "$ref": "#/$defs/text" },
+        "folio_to": { "$ref": "#/$defs/text" },
+        "notes": { "$ref": "#/$defs/text" },
+        "relevance": { "$ref": "#/$defs/relevance" },
+        "photos": { "$ref": "#/$defs/photos" }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": ["viaticum_id", "origin", "archive", "excluded", "outcome"],
+      "properties": {
+        "viaticum_id": { "$ref": "#/$defs/uuid" },
+        "vellum_id": { "$ref": "#/$defs/uuidOrNull" },
+        "origin": { "enum": ["vellum", "phone"] },
+        "archive": { "$ref": "#/$defs/archiveRef" },
+        "catalogue": {
+          "description": "For origin phone: a new lead for VELLUM (D-010).",
+          "type": ["object", "null"],
+          "required": ["signatura"],
+          "properties": {
+            "signatura": { "type": "string" },
+            "fondo": { "$ref": "#/$defs/text" },
+            "seccion": { "$ref": "#/$defs/text" },
+            "serie": { "$ref": "#/$defs/text" },
+            "title": { "$ref": "#/$defs/text" },
+            "date_text": { "$ref": "#/$defs/text" }
+          }
+        },
+        "removed_from_package": { "type": ["boolean", "null"] },
+        "priority_override": { "enum": ["must", "demote", null] },
+        "excluded": { "type": "boolean" },
+        "outcome": { "enum": ["consulted", "partial", "not_consulted"] },
+        "reason": {
+          "description": "A reason code of 05 §8.1: restricted, conservation, mis_referenced, missing, not_delivered, out_of_time, deprioritised. Any key is accepted: a later minor may add codes, which a reader shows as other and keeps verbatim (05 §10).",
+          "anyOf": [{ "$ref": "#/$defs/key" }, { "type": "null" }]
+        },
+        "relevance": { "$ref": "#/$defs/relevance" },
+        "notes": { "$ref": "#/$defs/text" },
+        "consulted_on": { "type": ["array", "null"], "items": { "$ref": "#/$defs/date" } },
+        "sub_entries": { "type": ["array", "null"], "items": { "$ref": "#/$defs/subEntry" } },
+        "photos": { "$ref": "#/$defs/photos" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "origin": { "const": "vellum" } }, "required": ["origin"] },
+          "then": { "required": ["vellum_id"], "properties": { "vellum_id": { "$ref": "#/$defs/uuid" } } }
+        },
+        {
+          "if": { "properties": { "origin": { "const": "phone" } }, "required": ["origin"] },
+          "then": { "required": ["catalogue"], "properties": { "catalogue": { "type": "object" } } }
+        },
+        {
+          "if": { "properties": { "outcome": { "const": "not_consulted" } }, "required": ["outcome"] },
+          "then": { "required": ["reason"], "properties": { "reason": { "$ref": "#/$defs/key" } } }
+        }
+      ]
+    },
+    "todo": {
+      "description": "05 §6.7 (D-027).",
+      "type": "object",
+      "required": ["viaticum_id", "kind", "text"],
+      "properties": {
+        "viaticum_id": { "$ref": "#/$defs/uuid" },
+        "kind": { "enum": ["new_lead", "follow_up"] },
+        "text": { "type": "string" },
+        "signatura": { "$ref": "#/$defs/text" },
+        "archive": { "anyOf": [{ "$ref": "#/$defs/archiveRef" }, { "type": "null" }] },
+        "item": { "anyOf": [{ "$ref": "#/$defs/idRef" }, { "type": "null" }] },
+        "converted_item": { "anyOf": [{ "$ref": "#/$defs/idRef" }, { "type": "null" }] }
+      }
+    }
+  }
+}

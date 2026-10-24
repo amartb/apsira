@@ -1,0 +1,114 @@
+{
+  "format": "viaticum.package",
+  "format_version": "1.0",
+  "artifact_id": "9d4c7e12-6a3b-4c58-8e21-000000000003",
+  "produced_at": "2026-10-20T12:00:00Z",
+  "producer": {
+    "app": "vellum",
+    "app_version": "0.9.0"
+  },
+  "trip": {
+    "vellum_trip_id": "3e8b1d27-5c90-4f6a-b4d3-000000000003",
+    "version": 1,
+    "title": "Reimportación — todos los casos",
+    "date_hint": {
+      "start": "2026-12-01",
+      "end": "2026-12-04"
+    }
+  },
+  "archives": [
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "slug": "amve",
+      "name": "Archivo Municipal de Villanueva del Ejemplo",
+      "short_name": "AMVE",
+      "city": "Villanueva del Ejemplo",
+      "province": "Ejemplo",
+      "country": "España",
+      "address": "Plaza Mayor 1"
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "slug": "adsp",
+      "name": "Archivo Diocesano de Santa Prueba",
+      "city": "Santa Prueba",
+      "country": "España",
+      "pares_code": "ES.00000.ADSP"
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000805",
+      "slug": "apse",
+      "name": "Archivo Parroquial de San Ejemplo",
+      "city": "San Ejemplo",
+      "country": "España"
+    }
+  ],
+  "items": [
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000301",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 1, leg. 1",
+      "title": "Sin cambios",
+      "priority": 2,
+      "fondo": "Ayuntamiento"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000302",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 2, leg. 1",
+      "title": "Cambia el catálogo",
+      "priority": 3,
+      "description": "Descripción antigua."
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000303",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 3, leg. 1",
+      "title": "Cambia el catálogo bajo trabajo hecho",
+      "priority": 2
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000304",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 4, leg. 1",
+      "title": "Cambia de archivo, sin trabajo",
+      "priority": 2
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000305",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 5, leg. 1",
+      "title": "Cambia de archivo, con pedido",
+      "priority": 1
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000306",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "signatura": "Leg. 6",
+      "title": "Desaparece, sin estado en el teléfono",
+      "priority": 4
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000307",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "signatura": "Leg. 7",
+      "title": "Desaparece, con estado en el teléfono",
+      "priority": 2
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000308",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000805",
+      "signatura": "Libro 8",
+      "title": "Sin cambios en otro archivo",
+      "priority": 5
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000309",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "signatura": "Leg. 9",
+      "title": "Sin cambios",
+      "priority": 3,
+      "request_hint": "advance"
+    }
+  ]
+}

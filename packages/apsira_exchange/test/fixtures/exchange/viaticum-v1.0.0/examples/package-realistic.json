@@ -1,0 +1,646 @@
+{
+  "format": "viaticum.package",
+  "format_version": "1.0",
+  "artifact_id": "9d4c7e12-6a3b-4c58-8e21-000000000002",
+  "produced_at": "2026-10-20T11:00:00Z",
+  "producer": {
+    "app": "vellum",
+    "app_version": "0.9.1"
+  },
+  "trip": {
+    "vellum_trip_id": "3e8b1d27-5c90-4f6a-b4d3-000000000002",
+    "version": 3,
+    "title": "Villanueva, Santa Prueba, Tamarán y la capital — noviembre",
+    "date_hint": {
+      "start": "2026-11-09",
+      "end": "2026-11-20"
+    },
+    "research_statement": "Abastos y pósitos en la segunda mitad del siglo XVIII: acuerdos, cuentas y pleitos."
+  },
+  "archives": [
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "slug": "amve",
+      "name": "Archivo Municipal de Villanueva del Ejemplo",
+      "short_name": "AMVE",
+      "city": "Villanueva del Ejemplo",
+      "province": "Ejemplo",
+      "country": "España",
+      "address": "Plaza Mayor 1"
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "slug": "adsp",
+      "name": "Archivo Diocesano de Santa Prueba",
+      "city": "Santa Prueba",
+      "country": "España",
+      "pares_code": "ES.00000.ADSP"
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567803",
+      "slug": "ait",
+      "name": "Archivo Insular de Tamarán",
+      "short_name": "AIT",
+      "city": "Villa de Tamarán",
+      "province": "Islas de Ejemplo",
+      "country": "España",
+      "tz": "Atlantic/Canary"
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "slug": "ahpe",
+      "name": "Archivo Histórico Provincial de Ejemplo",
+      "short_name": "AHPE",
+      "city": "Ciudad de Ejemplo",
+      "province": "Ejemplo",
+      "country": "España",
+      "address": "Calle del Archivo 7",
+      "pares_code": "ES.00001.AHPE"
+    }
+  ],
+  "items": [
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000201",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 10, leg. 1",
+      "title": "Cuentas del pósito, 1750",
+      "priority": 1,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Cuentas del pósito",
+      "date_text": "1750-1751",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      }
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000202",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 11, leg. 2",
+      "title": "Actas capitulares, 1753",
+      "priority": 3,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Actas capitulares",
+      "date_text": "1753-1754",
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000203",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 12, leg. 3",
+      "title": "Abastos, 1756",
+      "priority": 5,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Abastos",
+      "date_text": "1756-1757",
+      "description": "Cuadernillo cosido; faltan los últimos folios según el catálogo."
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000204",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 13, leg. 4",
+      "title": "Cuentas del pósito, 1759",
+      "priority": 2,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Cuentas del pósito",
+      "date_text": "1759-1760",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      }
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000205",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 14, leg. 5",
+      "title": "Actas capitulares, 1762",
+      "priority": 4,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Actas capitulares",
+      "date_text": "1762-1763"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000206",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 15, leg. 1",
+      "title": "Abastos, 1765",
+      "priority": 1,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Abastos",
+      "date_text": "1765-1766",
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?",
+      "source_url": "https://catalogo.example.org/amve/6"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000207",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 16, leg. 2",
+      "title": "Cuentas del pósito, 1768",
+      "priority": 3,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Cuentas del pósito",
+      "date_text": "1768-1769",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      }
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000208",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 17, leg. 3",
+      "title": "",
+      "priority": 5,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Actas capitulares",
+      "date_text": "1771-1772",
+      "description": "Cuadernillo cosido; faltan los últimos folios según el catálogo."
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000209",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 18, leg. 4",
+      "title": "Abastos, 1774",
+      "priority": 2,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Abastos",
+      "date_text": "1774-1775"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000020a",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 19, leg. 5",
+      "title": "Cuentas del pósito, 1777",
+      "priority": 4,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Cuentas del pósito",
+      "date_text": "1777-1778",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      },
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000020b",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 20, leg. 1",
+      "title": "Actas capitulares, 1780",
+      "priority": 1,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Actas capitulares",
+      "date_text": "1780-1781"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000020c",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 21, leg. 2",
+      "title": "Abastos, 1783",
+      "priority": 3,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Abastos",
+      "date_text": "1783-1784",
+      "source_url": "https://catalogo.example.org/amve/12"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000020d",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 22, leg. 3",
+      "title": "Cuentas del pósito, 1786",
+      "priority": 5,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Cuentas del pósito",
+      "date_text": "1786-1787",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      },
+      "description": "Cuadernillo cosido; faltan los últimos folios según el catálogo."
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000020e",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "signatura": "Caja 23, leg. 4",
+      "title": "Actas capitulares, 1789",
+      "priority": 2,
+      "fondo": "Ayuntamiento",
+      "seccion": "Hacienda",
+      "serie": "Actas capitulares",
+      "date_text": "1789-1790",
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000020f",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "signatura": "Caja 10, leg. 1",
+      "title": "Visitas pastorales, 1750",
+      "priority": 1,
+      "fondo": "Obispado",
+      "seccion": "Gobierno",
+      "serie": "Visitas pastorales",
+      "date_text": "1750-1751",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      }
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000210",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "signatura": "Caja 11, leg. 2",
+      "title": "Expedientes matrimoniales, 1753",
+      "priority": 3,
+      "fondo": "Obispado",
+      "seccion": "Gobierno",
+      "serie": "Expedientes matrimoniales",
+      "date_text": "1753-1754",
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000211",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "signatura": "Caja 12, leg. 3",
+      "title": "Visitas pastorales, 1756",
+      "priority": 5,
+      "fondo": "Obispado",
+      "seccion": "Gobierno",
+      "serie": "Visitas pastorales",
+      "date_text": "1756-1757",
+      "description": "Cuadernillo cosido; faltan los últimos folios según el catálogo."
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000212",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "signatura": "Caja 13, leg. 4",
+      "title": "Expedientes matrimoniales, 1759",
+      "priority": 2,
+      "fondo": "Obispado",
+      "seccion": "Gobierno",
+      "serie": "Expedientes matrimoniales",
+      "date_text": "1759-1760",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      }
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000213",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "signatura": "Caja 14, leg. 5",
+      "title": "Visitas pastorales, 1762",
+      "priority": 4,
+      "fondo": "Obispado",
+      "seccion": "Gobierno",
+      "serie": "Visitas pastorales",
+      "date_text": "1762-1763"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000214",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "signatura": "Caja 15, leg. 1",
+      "title": "Expedientes matrimoniales, 1765",
+      "priority": 1,
+      "fondo": "Obispado",
+      "seccion": "Gobierno",
+      "serie": "Expedientes matrimoniales",
+      "date_text": "1765-1766",
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?",
+      "source_url": "https://catalogo.example.org/adsp/6"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000215",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "signatura": "Caja 16, leg. 2",
+      "title": "Visitas pastorales, 1768",
+      "priority": 3,
+      "fondo": "Obispado",
+      "seccion": "Gobierno",
+      "serie": "Visitas pastorales",
+      "date_text": "1768-1769",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      }
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000216",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "signatura": "Caja 17, leg. 3",
+      "title": "",
+      "priority": 5,
+      "fondo": "Obispado",
+      "seccion": "Gobierno",
+      "serie": "Expedientes matrimoniales",
+      "date_text": "1771-1772",
+      "description": "Cuadernillo cosido; faltan los últimos folios según el catálogo."
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000217",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "signatura": "Caja 18, leg. 4",
+      "title": "Visitas pastorales, 1774",
+      "priority": 2,
+      "fondo": "Obispado",
+      "seccion": "Gobierno",
+      "serie": "Visitas pastorales",
+      "date_text": "1774-1775"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000218",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "signatura": "Caja 19, leg. 5",
+      "title": "Expedientes matrimoniales, 1777",
+      "priority": 4,
+      "fondo": "Obispado",
+      "seccion": "Gobierno",
+      "serie": "Expedientes matrimoniales",
+      "date_text": "1777-1778",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      },
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000219",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567803",
+      "signatura": "Caja 10, leg. 1",
+      "title": "Registros de entrada de grano, 1750",
+      "priority": 1,
+      "fondo": "Cabildo",
+      "seccion": "Abastos",
+      "serie": "Registros de entrada de grano",
+      "date_text": "1750-1751",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      }
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000021a",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567803",
+      "signatura": "Caja 11, leg. 2",
+      "title": "Correspondencia, 1753",
+      "priority": 3,
+      "fondo": "Cabildo",
+      "seccion": "Abastos",
+      "serie": "Correspondencia",
+      "date_text": "1753-1754",
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000021b",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567803",
+      "signatura": "Caja 12, leg. 3",
+      "title": "Registros de entrada de grano, 1756",
+      "priority": 5,
+      "fondo": "Cabildo",
+      "seccion": "Abastos",
+      "serie": "Registros de entrada de grano",
+      "date_text": "1756-1757",
+      "description": "Cuadernillo cosido; faltan los últimos folios según el catálogo."
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000021c",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567803",
+      "signatura": "Caja 13, leg. 4",
+      "title": "Correspondencia, 1759",
+      "priority": 2,
+      "fondo": "Cabildo",
+      "seccion": "Abastos",
+      "serie": "Correspondencia",
+      "date_text": "1759-1760",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      },
+      "request_hint": "on_site"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000021d",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567803",
+      "signatura": "Caja 14, leg. 5",
+      "title": "Registros de entrada de grano, 1762",
+      "priority": 4,
+      "fondo": "Cabildo",
+      "seccion": "Abastos",
+      "serie": "Registros de entrada de grano",
+      "date_text": "1762-1763"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000021e",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567803",
+      "signatura": "Caja 15, leg. 1",
+      "title": "Correspondencia, 1765",
+      "priority": 1,
+      "fondo": "Cabildo",
+      "seccion": "Abastos",
+      "serie": "Correspondencia",
+      "date_text": "1765-1766",
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?",
+      "source_url": "https://catalogo.example.org/ait/6"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000021f",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567803",
+      "signatura": "Caja 16, leg. 2",
+      "title": "Registros de entrada de grano, 1768",
+      "priority": 3,
+      "fondo": "Cabildo",
+      "seccion": "Abastos",
+      "serie": "Registros de entrada de grano",
+      "date_text": "1768-1769",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      }
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000220",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567803",
+      "signatura": "Caja 17, leg. 3",
+      "title": "",
+      "priority": 5,
+      "fondo": "Cabildo",
+      "seccion": "Abastos",
+      "serie": "Correspondencia",
+      "date_text": "1771-1772",
+      "description": "Cuadernillo cosido; faltan los últimos folios según el catálogo.",
+      "request_hint": "on_site"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000221",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 300/1",
+      "title": "Ejecutorias, 1750",
+      "priority": 1,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Ejecutorias",
+      "date_text": "1750-1751",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      },
+      "request_hint": "advance"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000222",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 301/2",
+      "title": "Pleitos, 1753",
+      "priority": 3,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Pleitos",
+      "date_text": "1753-1754",
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000223",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 302/3",
+      "title": "Ejecutorias, 1756",
+      "priority": 5,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Ejecutorias",
+      "date_text": "1756-1757",
+      "description": "Cuadernillo cosido; faltan los últimos folios según el catálogo.",
+      "request_hint": "advance"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000224",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 303/4",
+      "title": "Pleitos, 1759",
+      "priority": 2,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Pleitos",
+      "date_text": "1759-1760",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      }
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000225",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 304/5",
+      "title": "Ejecutorias, 1762",
+      "priority": 4,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Ejecutorias",
+      "date_text": "1762-1763",
+      "request_hint": "advance"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000226",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 305/6",
+      "title": "Pleitos, 1765",
+      "priority": 1,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Pleitos",
+      "date_text": "1765-1766",
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?",
+      "source_url": "https://catalogo.example.org/ahpe/6"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000227",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 306/7",
+      "title": "Ejecutorias, 1768",
+      "priority": 3,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Ejecutorias",
+      "date_text": "1768-1769",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      },
+      "request_hint": "advance"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000228",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 307/8",
+      "title": "",
+      "priority": 5,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Pleitos",
+      "date_text": "1771-1772",
+      "description": "Cuadernillo cosido; faltan los últimos folios según el catálogo."
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000229",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 308/9",
+      "title": "Ejecutorias, 1774",
+      "priority": 2,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Ejecutorias",
+      "date_text": "1774-1775",
+      "request_hint": "advance"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000022a",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 309/1",
+      "title": "Pleitos, 1777",
+      "priority": 4,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Pleitos",
+      "date_text": "1777-1778",
+      "brief": {
+        "vellum_id": "2a6f0b93-7d14-4e8c-a5b7-000000000002",
+        "title": "Cuentas del pósito"
+      },
+      "research_question": "¿Qué cantidades de grano se repartieron y a quién?"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000022b",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 310/2",
+      "title": "Ejecutorias, 1780",
+      "priority": 1,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Ejecutorias",
+      "date_text": "1780-1781",
+      "request_hint": "advance"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-00000000022c",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000804",
+      "signatura": "Pleitos 311/3",
+      "title": "Pleitos, 1783",
+      "priority": 3,
+      "fondo": "Real Audiencia",
+      "seccion": "Pleitos civiles",
+      "serie": "Pleitos",
+      "date_text": "1783-1784",
+      "source_url": "https://catalogo.example.org/ahpe/12"
+    }
+  ]
+}

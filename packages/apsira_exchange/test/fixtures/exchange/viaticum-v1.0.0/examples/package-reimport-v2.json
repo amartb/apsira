@@ -1,0 +1,142 @@
+{
+  "format": "viaticum.package",
+  "format_version": "1.0",
+  "artifact_id": "9d4c7e12-6a3b-4c58-8e21-000000000004",
+  "produced_at": "2026-10-27T12:00:00Z",
+  "producer": {
+    "app": "vellum",
+    "app_version": "0.9.1"
+  },
+  "trip": {
+    "vellum_trip_id": "3e8b1d27-5c90-4f6a-b4d3-000000000003",
+    "version": 2,
+    "title": "Reimportación — todos los casos (v2)",
+    "date_hint": {
+      "start": "2026-12-01",
+      "end": "2026-12-04"
+    }
+  },
+  "archives": [
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "slug": "amve",
+      "name": "Archivo Municipal de Villanueva del Ejemplo",
+      "short_name": "AMVE",
+      "city": "Villanueva del Ejemplo",
+      "province": "Ejemplo",
+      "country": "España",
+      "address": "Plaza Mayor 3",
+      "pares_code": "ES.00000.AMVE"
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "slug": "adsp",
+      "name": "Archivo Diocesano de Santa Prueba",
+      "city": "Santa Prueba",
+      "country": "España",
+      "pares_code": "ES.00000.ADSP"
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000805",
+      "slug": "apse",
+      "name": "Archivo Parroquial de San Ejemplo",
+      "city": "San Ejemplo",
+      "country": "España"
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000806",
+      "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000806",
+      "slug": "acpe",
+      "name": "Archivo de la Casa de los Pérez de Ejemplo",
+      "city": "Villanueva del Ejemplo",
+      "country": "España",
+      "address": "Calle Real 14"
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000807",
+      "slug": "amte",
+      "name": "Archivo Municipal de Torre de Ejemplo",
+      "short_name": "AMTE",
+      "city": "Torre de Ejemplo",
+      "province": "Ejemplo",
+      "country": "España"
+    }
+  ],
+  "items": [
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000301",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 1, leg. 1",
+      "title": "Sin cambios",
+      "priority": 2,
+      "fondo": "Ayuntamiento"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000302",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 2, leg. 1",
+      "title": "Cambia el catálogo",
+      "priority": 1,
+      "description": "Descripción corregida en VELLUM."
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000303",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 3, leg. 2",
+      "title": "Cambia el catálogo bajo trabajo hecho",
+      "priority": 2,
+      "date_text": "1760"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000304",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "signatura": "Caja 4, leg. 1",
+      "title": "Cambia de archivo, sin trabajo",
+      "priority": 2
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000305",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "signatura": "Caja 5, leg. 1",
+      "title": "Cambia de archivo, con pedido",
+      "priority": 1
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000308",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000805",
+      "signatura": "Libro 8",
+      "title": "Sin cambios en otro archivo",
+      "priority": 5
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000309",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802",
+      "signatura": "Leg. 9",
+      "title": "Sin cambios",
+      "priority": 3,
+      "request_hint": "advance"
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000310",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801",
+      "signatura": "Caja 10, leg. 1",
+      "title": "Nuevo",
+      "priority": 2
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000311",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000806",
+      "signatura": "Leg. 11",
+      "title": "Nuevo en el archivo adoptado",
+      "priority": 3
+    },
+    {
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000312",
+      "archive_vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000807",
+      "signatura": "Caja 12",
+      "title": "Nuevo en un archivo nuevo",
+      "priority": 2,
+      "request_hint": "on_site"
+    }
+  ]
+}

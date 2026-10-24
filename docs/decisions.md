@@ -33,6 +33,7 @@ becomes Decided on review), Superseded.
 | D-APK-016 | `apsira_lock`: RELAY's app lock as the shared one (off by default, 5 minutes, 0 = at once, never a lock-out, a backwards clock locks), its `lock` row unchanged, `local_auth` in the package, FLAG_SECURE through the package's own Kotlin; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | Decided |
 | D-APK-017 | `apsira_onboarding`: the intro with the app's mark as a parameter, the language step, the step frame and flow, the tour player, the Help shell, the discovery pieces; seen flags per install through `InstallFlag`; routes stay in each app | Decided |
 | D-APK-018 | `apsira_db`: RELAY's opener, server, restore swap and snapshot as the shared ones, with `2520b90b` in the server, VIATICUM's integrity check and snapshot reader, LYCEUM's step hook and names as a `DatabaseLayout`; the backup snapshot goes through `.tmp` and a rename | Decided |
+| D-APK-019 | `apsira_exchange`: LYCEUM's envelope (C2) for every export, the apps' old shapes read as `LegacyShape`s, the `sqlite_master` dump and LYCEUM's loader with the apps' parts as parameters, one `validate_examples.py` | Decided |
 | D-APK-020 | `apsira_zip`: RELAY's streaming ZIP writer, CRC-32 and one-pass reader, the apps' parts as hooks (entry names, an entry check, extraction, the keep limit); refusals as `ZipRefusal`, mapped by each app; consumers RELAY and LYCEUM | Decided |
 | D-APK-021 | `apsira_notify`: RELAY's notifier with app-defined channels (no channel id moves), at most three actions, the lock-screen public version, the permission flow with a per-install asked flag, the package's own settings intents; RELAY's patched `flutter_local_notifications` moves to `packages/third_party/` | Decided |
 
@@ -758,6 +759,61 @@ becomes Decided on review), Superseded.
 - **Consequences:** RELAY and VIATICUM keep their files and port names; LYCEUM keeps its names through its
   layout. Each app deletes its copies and records the change in its own log at adoption (R3, V3, L3); L3 checks
   that its restore always finds a live file, since RELAY's protocol copies it into the safety copy.
+
+## D-APK-019 — `apsira_exchange`: LYCEUM's envelope for every export
+
+- **Status:** Decided (2026-10-24: plan revision 2 of ledger `packages-v0-4`, ruling R-3; ruling R-6 Q5 = a for
+  RELAY's `app_meta`). It builds ruling C2 of D-APK-010. Its consumers are **RELAY, VIATICUM and LYCEUM**.
+- **Context:** three envelope dialects. LYCEUM `9f4ff27` writes `lyceum.json` as `domain/export/envelope.dart`
+  writes it: `format`, `format_version` `"1.0"`, `produced_at`, `producer {app, app_version}`, `schema_version`, a
+  top-level `app_version`, canonical JSON with `tables` last. RELAY `09b28810` writes `relay.json` as
+  `{appVersion, format, schemaVersion, tables, version: 1}`, its 40 tables named by a list, the device grants of
+  two `settings` rows redacted, one row per line. VIATICUM `78d38e0` writes `viaticum.results` with `format`,
+  `format_version`, `artifact_id`, `produced_at` and `producer` but no `schema_version`, and reads VELLUM's
+  `viaticum.seed` and `viaticum.package` of the same shape. LYCEUM's dump reads `sqlite_master`; its loader builds
+  a database from `tables`; VIATICUM's and LYCEUM's `validate_examples.py` share half their code.
+- **Decision:** `apsira_exchange` 0.4.0, pure Dart, holds LYCEUM's code with the apps' parts as parameters:
+  - **The envelope** is LYCEUM's: required `format`, `format_version` (written `"1.0"`; read: major 1, any
+    minor), `produced_at` (UTC, `YYYY-MM-DDTHH:MM:SSZ`; read with an optional fraction), `producer {app,
+    app_version}`, `schema_version` (an integer ≥ 1); canonical JSON (`apsira_core`'s `writeSortedJson`) with
+    `tables` last, so a dump streams it between `writeHead` and `tail`. An app may add keys (LYCEUM's top-level
+    `app_version`, VIATICUM's `artifact_id`); readers ignore keys they do not know.
+  - **The reader** `checkEnvelope(json, {formats, currentSchemaVersion, legacy})` never throws:
+    `EnvelopeOk(envelope, readAs)`, `NotABundle(reason)`, `FormatUnsupported(found)` or `SchemaTooNew(found,
+    supported)`; `checkEnvelopeUtf8` takes the bytes (a byte-order mark, bad UTF-8 or cut JSON is `NotABundle`).
+    Each app maps the four to its own codes. Old shapes read through `LegacyShape`: `relayExportV1` (RELAY
+    v1.0.0…v2.0.x `relay.json`) and `viaticumExchangeV1` (no `schema_version`: VELLUM's seed and package,
+    VIATICUM's results up to v1.0.x).
+  - **What each app writes after adoption:** LYCEUM unchanged byte for byte. RELAY's `relay.json` gets the
+    envelope head and keeps its `tables` byte for byte: its table list, its `settings` redactions and its order
+    are parameters (`only`, `jsonFieldRedaction`, `DumpLayout.rowPerLine` with RELAY's reals); what schema v12
+    removes from `app_meta` under Q5 is RELAY's own change (R3.7), not this package's. VIATICUM's results gain
+    `schema_version` and keep `artifact_id`.
+  - **The dump** `exportedTables` reads `sqlite_master` (no `sqlite_*`, no virtual table or its shadows, minus
+    the app's device-state tables) and `JsonDump.writeTables` streams the rows page by page in primary-key order,
+    returning the counts; `writeExport` writes head, tables and tail into the caller's sink and lets every sink
+    error through, so the caller's `.part` is never renamed.
+  - **The loader** `buildDatabaseFrom(target, tables, …)` is LYCEUM's `json_load.dart` with the app's database
+    (`open`), upgrade steps (`upgrade`), a step after the load (`afterLoad`: LYCEUM's derived indexes) and the load
+    order (default: parents first by `PRAGMA foreign_key_list`) passed in; it refuses with `LoadRefusal`
+    {`notABundle`, `schemaTooNew`, `storageFull`} and removes the partial file on every refusal and every error.
+  - **One `tool/validate_examples.py`** for every app's `exchange/` folder: VIATICUM's rules and layout, LYCEUM's
+    rules, layout and export–manifest pairs (`--pairs`), chosen by the schemas present; Python 3, `jsonschema>=4`.
+  - **Backup manifests are not envelopes** and do not change (RELAY's `manifest.json`, VIATICUM's snake-case
+    manifest, LYCEUM's `export-manifest.json`): a backup-format change is outside C2.
+  - **Dependencies:** `apsira_core`, `drift ^2.35.2`, `sqlite3 ^3.7.1` with the host library in package tests
+    (`hooks: user_defines: sqlite3: source: system`).
+  - **The crash matrix** KP-E1…E6 (`test/crash_matrix_test.dart`): the writer's sink closed mid-`tables`, the load
+    killed after N of M tables, an export cut at every 1 KiB, `ENOSPC` during the load, each released shape (one
+    fixture per tag, copied from the tag), and a format or schema too new.
+- **Alternatives rejected:** RELAY's head as the standard (C2 names LYCEUM's); one dialect per app in the package
+  (three readers to keep); RELAY's `tables` rewritten as canonical JSON (every RELAY export's bytes would change
+  for no reader's gain); a hand list of tables for LYCEUM (a table the schema gains would be left out).
+- **Consequences:** RELAY: `JsonDump.write` → `writeExport` with `ExportEnvelope(format: 'relay-export', …)`,
+  its list and redactions as parameters; its reader takes `LegacyShape.relayExportV1`. VIATICUM: the results
+  writer adds `schema_version`; the seed, package and results readers take `LegacyShape.viaticumExchangeV1`.
+  LYCEUM: `envelope.dart`, `json_dump.dart` and `json_load.dart` become the package's, its top-level
+  `app_version` an `extra` key. Each is a line in the app's decision log at adoption.
 
 ## D-APK-020 — `apsira_zip`: RELAY's and LYCEUM's streaming ZIP
 

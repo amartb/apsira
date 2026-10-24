@@ -1,0 +1,35 @@
+# From lyceum pubspec.yaml @ 9f4ff27 (the drift and sqlite3 pins, RELAY's
+# 09b28810 the same). D-APK-019.
+name: apsira_exchange
+description: >-
+  LYCEUM's export envelope for every Apsira app's export, the apps' older
+  shapes read as legacy shapes, the sqlite_master dump with each app's table
+  list, redactions and layout, LYCEUM's loader, and one validate_examples.py.
+version: 0.4.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+# apsira_* in the git form at the shared tag, with the committed
+# pubspec_overrides.yaml (D-APK-007). No build_runner and no drift_dev: the
+# package ships no generated code (D-APK-001); the tests' databases are
+# hand-written SQL.
+dependencies:
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
+  drift: ^2.35.2
+  sqlite3: ^3.7.1
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.31.0
+
+# The package's own tests use the host's libsqlite3 instead of the build
+# hook's download. Hooks read this from the root package only, so the apps,
+# which bundle sqlite3's own library, are unaffected.
+hooks:
+  user_defines:
+    sqlite3:
+      source: system
+      name:
+        linux: /lib/x86_64-linux-gnu/libsqlite3.so.0

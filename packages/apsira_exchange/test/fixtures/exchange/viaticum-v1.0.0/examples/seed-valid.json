@@ -1,0 +1,64 @@
+{
+  "format": "viaticum.seed",
+  "format_version": "1.0",
+  "artifact_id": "5b0d3c9e-8f1a-4c2b-9e7d-1a2b3c4d5e6f",
+  "produced_at": "2026-10-20T10:00:00Z",
+  "producer": { "app": "vellum", "app_version": "0.9.0" },
+  "archives": [
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567801",
+      "slug": "amve",
+      "name": "Archivo Municipal de Villanueva del Ejemplo",
+      "short_name": "AMVE",
+      "city": "Villanueva del Ejemplo",
+      "province": "Ejemplo",
+      "country": "España",
+      "address": "Plaza Mayor 1",
+      "practical": {
+        "opening_hours_text": {
+          "lunes_viernes": "09:00–14:00 y 16:00–19:00",
+          "sabado": "cerrado",
+          "domingo": "cerrado"
+        },
+        "appointment_required": false,
+        "photo_policy": "Fotografía sin flash, con permiso de sala.",
+        "website": "https://archivo.example.org",
+        "site_type": "archive"
+      }
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567802",
+      "slug": "adsp",
+      "name": "Archivo Diocesano de Santa Prueba",
+      "city": "Santa Prueba",
+      "country": "España",
+      "pares_code": "ES.00000.ADSP",
+      "practical": {
+        "opening_hours_text": {
+          "lunes_jueves": "Mañanas de 9 a 14; tardes solo con cita"
+        },
+        "appointment_required": true,
+        "access_notes": "Llamar el día anterior para confirmar la cita.",
+        "notes": "Sala pequeña: cuatro puestos.",
+        "site_type": "archive"
+      }
+    },
+    {
+      "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-901234567803",
+      "slug": "ait",
+      "name": "Archivo Insular de Tamarán",
+      "short_name": "AIT",
+      "city": "Villa de Tamarán",
+      "province": "Islas de Ejemplo",
+      "country": "España",
+      "tz": "Atlantic/Canary",
+      "practical": {
+        "opening_hours_text": {
+          "lunes_viernes": "08:30-14:30"
+        },
+        "appointment_required": false,
+        "site_type": "library"
+      }
+    }
+  ]
+}

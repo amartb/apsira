@@ -1,0 +1,2 @@
+# The exchange gate runs the validator's unittest without -B.
+__pycache__/
