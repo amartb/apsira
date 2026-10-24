@@ -1,16 +1,12 @@
 # Apsira shared packages
 
-Eight Dart packages the Apsira Flutter apps depend on, released together at one shared tag
-`apsira-vX.Y.Z`. Decided in `../docs/decisions.md`: D-APK-001 (the first set and its
-boundaries), D-APK-002 (tools scope), D-APK-003 (pinning by git ref), D-APK-006 (what v0.1
-settled), D-APK-007 (one version, one tag, edges between packages), D-APK-009 (adoption in
-every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`) D-APK-012 (the shared strings) and D-APK-017 (onboarding).
-
 The Dart packages the Apsira Flutter apps depend on, released together at one shared tag
 `apsira-vX.Y.Z`. Decided in `../docs/decisions.md`: D-APK-001 (the first set and its
 boundaries), D-APK-002 (tools scope), D-APK-003 (pinning by git ref), D-APK-006 (what v0.1
 settled), D-APK-007 (one version, one tag, edges between packages), D-APK-009 (adoption in
-every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`) and D-APK-015 (`apsira_storage`).
+every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`), D-APK-012 (the shared strings),
+D-APK-013 (the `apsira_ui` 0.3 component themes), D-APK-015 (`apsira_storage`), D-APK-016
+(the app lock) and D-APK-017 (onboarding).
 
 | Package | Kind | Holds | Depends on |
 |---|---|---|---|
@@ -21,6 +17,7 @@ every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`) and D-APK-015 (`apsira
 | `apsira_app` | Flutter plugin | error handlers, the rotating file log sink, the start-phase redirect, `RestartableRoot`, the startup-failure app, `SystemClock` + the zone channel, the `PendingPort` stub base, per-install flags, the About page; `testing.dart` with `MemoryLogSink` | `flutter`, `apsira_core`, `apsira_ui` |
 | `apsira_jobs` | Flutter plugin | the `BackgroundJobs` port, `JobConstraints`, the WorkManager adapter (keep/replace policy) and its fake, the zone-change resync receiver (`ZoneResync.kt`); RELAY and VIATICUM only | `flutter`, `workmanager` |
 | `apsira_l10n` | Flutter | `ApsiraL10n` (54 keys in English and Spanish, hand-written, its own delegate; any other language English), `AppLanguage`, `AppLanguageSetting` with the `LanguageStore` port | `flutter`, `flutter_riverpod` |
+| `apsira_lock` | Flutter plugin | RELAY's app lock: the `Authenticator` port and its `local_auth` adapter, hide in recent apps (`ScreenPrivacy`, FLAG_SECURE through its own Kotlin, `RecentsPrivacy`), `LockSettings` with the app's `LockSettingsStore`, `LockController`, `LockShield`, `LockCover`, `LockSettingsSection`; `testing.dart` with the fakes; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | `flutter`, `apsira_core`, `apsira_l10n`, `apsira_ui`, `flutter_riverpod`, `local_auth`, `local_auth_android` |
 | `apsira_onboarding` | Flutter | `FirstOpenIntro` (the app's mark a parameter), `LanguageStep`, `StepFrame`, `FirstOpenFlow<S>`, `TourPlayer` with `TourStepData`, the Help shell, the one-time tips and discovery pieces, `SeenFlags` (per install, over `InstallFlag`) | `flutter`, `apsira_app`, `apsira_l10n`, `apsira_ui` |
 | `apsira_storage` | Flutter plugin | the `BackupTarget` port and its SAF adapter, `StorageSpace` over the storage channel (`StorageModule.kt`, `apsira_storage/storage`), `DocumentPicker`, `Sharer` and `PhotoSource` with their adapters, `ImageMeta`; `testing.dart` with a fake per port | `flutter`, `apsira_core`, `saf_stream`, `saf_util`, `share_plus`, `image_picker` |
 
@@ -28,7 +25,7 @@ Each library is imported through its barrel (`package:apsira_core/apsira_core.da
 `package:apsira_core/testing.dart`, `package:apsira_ui/apsira_ui.dart`, …); `src/` is private.
 `apsira_ui/example/` is an app that depends on `apsira_ui` as a consumer does; its tests
 prove the package-qualified fonts, licences and lockup load from a consumer's bundle.
-`apsira_app/example/`, `apsira_jobs/example/` and `apsira_storage/example/` are the plugins' consumer apps: each calls
+`apsira_app/example/`, `apsira_jobs/example/`, `apsira_storage/example/` and `apsira_lock/example/` are the plugins' consumer apps: each calls
 its package once at start, and its debug APK is the proof that the package's Kotlin
 compiles (the build is run by hand; each package README says how).
 

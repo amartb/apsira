@@ -29,6 +29,7 @@ becomes Decided on review), Superseded.
 | D-APK-012 | Shared strings: `apsira_l10n`'s key table and its wording, one rule for app phrases, `AppLanguage` and `AppLanguageSetting`; Flutter's `MaterialLocalizations` rejected | Decided |
 | D-APK-013 | `apsira_ui` 0.3: `build()` carries the shared component set (menus, `highlightColor`, the snack theme, `accentText` text and outlined buttons, R-10), every app VIATICUM included; LYCEUM's other sub-themes are builders and `buildFull`; settings rows, menu items and `ThemeModeSetting` | Decided |
 | D-APK-015 | `apsira_storage`: the backup, storage-space, document-picker, share and photo ports with their adapters and fakes, one storage channel `apsira_storage/storage`; `FolderAccess`, the crop and the media stores stay per app | Decided |
+| D-APK-016 | `apsira_lock`: RELAY's app lock as the shared one (off by default, 5 minutes, 0 = at once, never a lock-out, a backwards clock locks), its `lock` row unchanged, `local_auth` in the package, FLAG_SECURE through the package's own Kotlin; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | Decided |
 | D-APK-017 | `apsira_onboarding`: the intro with the app's mark as a parameter, the language step, the step frame and flow, the tour player, the Help shell, the discovery pieces; seen flags per install through `InstallFlag`; routes stay in each app | Decided |
 
 ---
@@ -579,6 +580,50 @@ becomes Decided on review), Superseded.
   than a `PlatformException` is now `documentUnreadable`. LYCEUM: `share_plus` 12 → 13; `PhotoSource` gains
   `recoverLost` and loses `crop`, which stays a LYCEUM port; photos come with their upright size, and the gallery
   opens the system photo picker. Each change is a line in the app's decision log at adoption.
+
+## D-APK-016 — `apsira_lock`: RELAY's app lock, `local_auth` and the package's own FLAG_SECURE
+
+- **Status:** Decided (2026-10-24; operator ruling R-1 of the packages-v0-3 session, Q2 and Q3).
+- **Context:** RELAY (`09b28810`) has the only complete app lock of the three apps: the system biometric or
+  screen-lock prompt at launch and after a background timeout, behind a branded cover, with "hide in recent
+  apps" (FLAG_SECURE) beside it. LYCEUM (`9f4ff27`) has its own lock settings (`app_lock_enabled`,
+  `auto_lock_minutes`); VIATICUM (`78d38e0`) decided "no app lock" in its D-036 and now gains one (the
+  Phase-2 handoff). RELAY sets the flag through `flutter_windowmanager_plus`.
+- **Decision:**
+  - RELAY's lock is the shared one, unchanged in behaviour: off by default, a 5-minute default timeout, 0 locks
+    as soon as the app goes to the background, a clock that went backwards locks, a failed or cancelled prompt
+    stays locked with a retry and no counter or back-off (never a lock-out), and the lock does not engage when
+    the device cannot prompt, the authenticator throws, or the settings cannot be read within 2 s
+    (`lockSettingsReadBound`), each logged as `lock.notEngaged` with its code only.
+  - The settings record is RELAY's row unchanged, `{"enabled":false,"timeoutMinutes":5,"hideInRecents":false}`;
+    a missing or mistyped field reads as its default. The package never chooses a key or a store: each app
+    implements `LockSettingsStore` (`read`, `write`) over its own storage and keeps its keys (plan P-3), and
+    `LockSettings.mergeInto` keeps the fields a later version wrote, as RELAY's `updateLockSettings` does.
+    RELAY's stream of the row becomes `lockSettingsProvider`, an `AsyncNotifier` over the store that the
+    controller follows: the Settings rows write through it, and an app that changes the stored row elsewhere
+    (a restore) invalidates it.
+  - `Authenticator` and its `local_auth` adapter (`LocalAuthAuthenticator`, RELAY's mapping of every
+    `LocalAuthExceptionCode`) live in the package (Q2): `local_auth ^3.0.2` and `local_auth_android ^2.3.0`,
+    RELAY's pins. The prompt's title, hint and cancel are `ApsiraL10n`'s; its reason is the app's own text.
+  - FLAG_SECURE goes through the package's own Kotlin on the channel `apsira_lock/screen_privacy`
+    (`ApsiraLockPlugin`, `ScreenPrivacyModule.kt`, about 25 lines, Q3): the plugin keeps the last state asked
+    for and sets it again on every activity it attaches to, and the Dart side applies it again on every return
+    from the background, as RELAY's `RecentsPrivacy` does. No window-manager plugin.
+  - The gate is `LockShield`, RELAY's `LockGate` without go_router: the app passes its exemption
+    (`isExempt`, with the listenable that says when it changes); RELAY's crossing, router and exempt-route
+    widgets stay in RELAY. The cover is `LockCover`, the Settings rows `LockSettingsSection` on `apsira_ui`'s
+    settings rows. Every consumer's `MainActivity` is a `FlutterFragmentActivity` and its manifest declares
+    `USE_BIOMETRIC` (`local_auth`'s requirements; the example proves both).
+- **Alternatives rejected:** `flutter_windowmanager_plus` in the package (a third-party plugin in LYCEUM and
+  VIATICUM for one window flag, R-1 Q3-b); the ports only, each app keeping its adapter (two or three adapter
+  copies, the drift this repository exists to end, Q2-b); a stream port for the settings (LYCEUM and VIATICUM
+  store them without one; the package's own notifier gives every app RELAY's live behaviour); LYCEUM's two
+  keys as the shared record (a migration in RELAY's data).
+- **Consequences:** RELAY drops `flutter_windowmanager_plus` and its own lock files, keeping its row and its
+  KAIROS exemption on top of `LockShield`; LYCEUM keeps `app_lock_enabled` and `auto_lock_minutes` behind its
+  store and gains `app_lock_hide_in_recents` (off); VIATICUM gains `local_auth`, the lock off by default, and
+  supersedes its D-036 in its own log. Each app's adoption builds a debug APK, since mocked channel tests cannot
+  see a mismatch between the Dart and Kotlin halves.
 
 ## D-APK-017 — `apsira_onboarding`: first open, tours, Help and tips
 
