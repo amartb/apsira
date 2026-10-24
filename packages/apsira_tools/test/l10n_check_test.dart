@@ -174,4 +174,24 @@ final g = material.Text('Prefixed');
     final (code, _) = await _run(['--unknown']);
     expect(code, 2);
   });
+
+  group('a missing gen-l10n file (v0.2)', () {
+    test('exits 2 with one line naming the path, not a stack trace', () async {
+      final missing = '${configDir.path}/absent/l10n.yaml';
+      final out = StringBuffer();
+      final code = await runL10nCheck(['--l10n-config', missing], out: out);
+      expect(code, 2);
+      expect(out.toString(), 'l10n_check: no l10n config at $missing\n');
+    });
+
+    test('the default path of the tools file is named the same way', () async {
+      final out = StringBuffer();
+      final code = await runL10nCheck(const [], out: out);
+      expect(code, 2);
+      expect(
+        out.toString(),
+        'l10n_check: no l10n config at lib/app/l10n/l10n.yaml\n',
+      );
+    });
+  });
 }

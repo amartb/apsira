@@ -16,9 +16,12 @@
 // test/fixtures/layering/; `--pubspec` (default `pubspec.yaml`) names the
 // dev-only packages and the default `package`. `--config` (default
 // tool/apsira_tools.yaml, D-APK-002) holds the allowlists, the shared
-// packages, the colour-literal exemptions and the disabled rules. Exit 0
-// when clean, 1 naming each `file:line`, the import or call, and the rule;
-// 2 on bad usage.
+// packages, the colour-literal exemptions and the disabled rules, and the
+// v0.2 knobs VIATICUM's lint needs (from viaticum tool/layering_lint.dart @
+// 20f05f6): the forbidden-call groups, extra layers of a built-in kind,
+// per-prefix forbidden packages (rule `layer-packages`) and replaced rows
+// of the import matrix. Exit 0 when clean, 1 naming each `file:line`, the
+// import or call, and the rule; 2 on bad usage.
 //
 // The scan is lexical: comments and string literals are blanked first
 // (interpolated expressions are kept), then import and export directives and
@@ -74,6 +77,17 @@ const layeringRules = {
       'layering.colour_literal_exempt (app/theme/) and generated code '
       '(*.g.dart, *.freezed.dart; CLAUDE.md §1.7)',
 };
+
+/// The rules a config key switches on (v0.2), by id: off, and not counted,
+/// until their key is set.
+const optionalRules = {
+  'layer-packages':
+      'a file under a layering.forbidden_packages prefix never imports the '
+      'packages listed for it',
+};
+
+/// The text of [rule], from [layeringRules] or [optionalRules].
+String? ruleText(String rule) => layeringRules[rule] ?? optionalRules[rule];
 
 /// The `dart:` libraries domain and core may use: no I/O, isolates, FFI or
 /// UI.
@@ -169,14 +183,24 @@ enum LayerKind {
 /// A file's layer; [feature] names the folder under `features/`.
 typedef Layer = ({LayerKind kind, String? feature});
 
-/// The layer of [path], relative to the lint root, with `/` separators.
-Layer layerOf(String path) {
+/// The layer of [path], relative to the lint root, with `/` separators. A
+/// path under a prefix of [extraLayers] (`layering.extra_layers`, v0.2) is
+/// of that prefix's kind; the longest prefix wins.
+Layer layerOf(String path, {Map<String, LayerKind> extraLayers = const {}}) {
   final parts = path.split('/');
   Layer of(LayerKind kind) => (kind: kind, feature: null);
   if (path == 'main.dart' || path == 'app/bootstrap.dart') {
     return of(LayerKind.root);
   }
   if (path == 'app/router.dart') return of(LayerKind.router);
+  String? extra;
+  for (final prefix in extraLayers.keys) {
+    if (path.startsWith(prefix) &&
+        (extra == null || prefix.length > extra.length)) {
+      extra = prefix;
+    }
+  }
+  if (extra != null) return of(extraLayers[extra]!);
   switch (parts.first) {
     case 'app' when parts.length == 2:
       return of(LayerKind.shell);
@@ -221,7 +245,7 @@ class LayeringViolation {
   @override
   String toString() {
     final subject = directive == null ? what : "$directive '$what'";
-    return '$file:$line: $subject breaks $rule: ${layeringRules[rule]}';
+    return '$file:$line: $subject breaks $rule: ${ruleText(rule)}';
   }
 }
 
@@ -266,7 +290,7 @@ List<LayeringViolation> checkSource(
   LayeringConfig config = LayeringConfig.relay,
 }) {
   final file = root.isEmpty ? path : '$root/$path';
-  final layer = layerOf(path);
+  final layer = layerOf(path, extraLayers: config.extraLayers);
   final disabled = config.disabledRules;
   if (layer.kind == LayerKind.stray) {
     return [
@@ -306,7 +330,9 @@ List<LayeringViolation> checkSource(
   }
 
   if (layer.kind == LayerKind.domain || layer.kind == LayerKind.core) {
-    for (final (pattern, name) in _forbiddenCalls) {
+    for (final (pattern, name) in [
+      for (final group in config.forbiddenCalls) ...?forbiddenCallGroups[group],
+    ]) {
       for (final match in pattern.allMatches(code)) {
         final line = _lineAt(source, match.start);
         final text = match[0]!.replaceAll(RegExp(r'\s'), '');
@@ -361,12 +387,23 @@ final _colourLiterals = <(RegExp, String?)>[
 final _directive = RegExp(r'^[ \t]*(import|export)\b[^;]*;', multiLine: true);
 final _quoted = RegExp(r'''(['"])(.*?)\1''');
 
-final _forbiddenCalls = <(RegExp, String?)>[
-  (RegExp(r'\bDateTime\s*\.\s*now\s*\('), 'DateTime.now()'),
-  (RegExp(r'\bDateTime\s*\.\s*timestamp\s*\('), 'DateTime.timestamp()'),
-  (RegExp(r'\bRandom\s*\.\s*secure\s*\('), 'Random.secure()'),
-  (RegExp(r'\bRandom\s*\('), 'Random()'),
-  (RegExp(r'\bUuid\s*\('), 'Uuid()'),
+/// The calls `pure-calls` refuses in domain and core, by the group name
+/// `layering.forbidden_calls` lists (v0.2; RELAY's default is all four). A
+/// finding names the call, or the matched text when the name is null.
+final forbiddenCallGroups = <String, List<(RegExp, String?)>>{
+  'system-time': [
+    (RegExp(r'\bDateTime\s*\.\s*now\s*\('), 'DateTime.now()'),
+    (RegExp(r'\bDateTime\s*\.\s*timestamp\s*\('), 'DateTime.timestamp()'),
+  ],
+  'random': [
+    (RegExp(r'\bRandom\s*\.\s*secure\s*\('), 'Random.secure()'),
+    (RegExp(r'\bRandom\s*\('), 'Random()'),
+  ],
+  'uuid': [(RegExp(r'\bUuid\s*\('), 'Uuid()')],
+  'clock-package': _clockPackageCalls,
+};
+
+final _clockPackageCalls = <(RegExp, String?)>[
   // The clock and time packages are on the domain allowlist (D-043 addendum), but not
   // as a source of time: the clock package's global `clock` and its system
   // `Clock()` (the port is an interface, never constructed), and the time
@@ -425,6 +462,12 @@ String? _importRule(
   if (uri.startsWith('package:')) {
     final slash = uri.indexOf('/');
     final package = uri.substring(8, slash < 0 ? uri.length : slash);
+    if (package != config.package &&
+        config.forbiddenPackages.entries.any(
+          (e) => path.startsWith(e.key) && e.value.contains(package),
+        )) {
+      return 'layer-packages';
+    }
     final shared = config.sharedPackages.contains(package)
         ? sharedPackageLayers[package]
         : null;
@@ -442,15 +485,26 @@ String? _importRule(
       }
       return null;
     } else {
-      to = layerOf(uri.substring(slash + 1));
+      to = layerOf(uri.substring(slash + 1), extraLayers: config.extraLayers);
     }
   } else {
     final resolved = uri.contains(':') ? null : _resolve(path, uri);
     if (resolved == null) return 'placement';
-    to = layerOf(resolved);
+    to = layerOf(resolved, extraLayers: config.extraLayers);
   }
 
   bool inside(Set<LayerKind> kinds) => kinds.contains(to.kind);
+  final row = config.mayImport[kind];
+  if (row != null && !(kind == LayerKind.feature && to.kind == kind)) {
+    if (row.contains(to.kind)) return null;
+    return switch (kind) {
+      LayerKind.domain || LayerKind.core => pureRule,
+      LayerKind.data => 'data-imports',
+      LayerKind.services => 'services-imports',
+      LayerKind.theme || LayerKind.l10n => 'theme-l10n-imports',
+      _ => 'feature-imports',
+    };
+  }
   return switch (kind) {
     LayerKind.domain =>
       inside({LayerKind.core, LayerKind.domain}) ? null : pureRule,
@@ -667,7 +721,8 @@ Future<int> runLayeringLint(List<String> args, {StringSink? out}) async {
   }
   sink.writeln(
     'layering: $root clean (${dartFilesUnder(root).length} files, '
-    '${layeringRules.length} rules)',
+    '${layeringRules.length + (config.forbiddenPackages.isEmpty ? 0 : 1)} '
+    'rules)',
   );
   return 0;
 }

@@ -1,0 +1,19 @@
+{
+  "root": "viaticum",
+  "packages": [
+    {
+      "name": "viaticum",
+      "version": "0.0.1",
+      "kind": "root",
+      "source": "root",
+      "dependencies": ["collection", "crypto", "flutter", "flutter_test"],
+      "directDependencies": ["collection", "crypto", "flutter"],
+      "devDependencies": ["flutter_test"]
+    },
+    {"name": "collection", "version": "1.19.1", "kind": "direct", "source": "hosted", "dependencies": []},
+    {"name": "crypto", "version": "3.0.7", "kind": "direct", "source": "hosted", "dependencies": ["typed_data"]},
+    {"name": "typed_data", "version": "1.4.0", "kind": "transitive", "source": "hosted", "dependencies": ["collection"]},
+    {"name": "flutter", "version": "0.0.0", "kind": "direct", "source": "sdk", "dependencies": ["collection"]},
+    {"name": "flutter_test", "version": "0.0.0", "kind": "dev", "source": "sdk", "dependencies": ["flutter"]}
+  ]
+}

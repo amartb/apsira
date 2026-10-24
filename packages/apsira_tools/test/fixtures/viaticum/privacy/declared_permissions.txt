@@ -1,0 +1,5 @@
+# The declared list of manifest_approved.xml: each in architecture.md §11.1
+# or the app's own signature permission, each with a reason.
+com.apsiralabs.viaticum.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION: androidx.core, signature
+android.permission.POST_NOTIFICATIONS: reminders
+android.permission.WAKE_LOCK: WorkManager

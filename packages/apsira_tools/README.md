@@ -7,10 +7,10 @@ Each file names its RELAY source (`// From relay <path> @ 5f606e9`).
 | Command | Checks | Exit 1 when |
 |---|---|---|
 | `dart run apsira_tools:layering_lint [--root <dir>] [--pubspec <file>]` | the import layers, pure domain/core, colour literals, dev-only packages | any of its 14 rules is broken; each finding names `file:line`, the import or call, and the rule |
-| `dart run apsira_tools:l10n_check [--l10n-config <l10n.yaml>] [--arb-dir <dir>] [--source-dir <dir>]` | every ARB key in every required locale with matching placeholders; no string literal passed to `Text(` | a key, a locale or a placeholder is missing, or a literal is found |
+| `dart run apsira_tools:l10n_check [--l10n-config <l10n.yaml>] [--arb-dir <dir>] [--source-dir <dir>]` | every ARB key in every required locale with matching placeholders; no string literal passed to the `l10n.text_calls` | a key, a locale or a placeholder is missing, or a literal is found; exit 2 with `l10n_check: no l10n config at <path>` when the gen-l10n file is absent |
 | `dart run apsira_tools:coverage_gate [--run <test dir>] [--lcov <file>] [--root <dir>] [--min-lines <n>] [--min-branches <n>]` | domain line and branch coverage; every domain file in the report | below a threshold, a domain file missing, or (`--run`) the tests fail |
-| `dart run apsira_tools:deps_check [--deps-json <file>] [--allowlist <file>] [--lib <dir>]` | the runtime dependency closure against the allowlist; no network package | a package is not allowlisted, is a network package, or `lib/` imports a banned URI |
-| `dart run apsira_tools:manifest_check --manifest <file or dir> [--declared <file>]` | the merged Android manifest against the declared permissions; no `INTERNET` | a permission is forbidden, undeclared or missing |
+| `dart run apsira_tools:deps_check [--deps-json <file>] [--allowlist <file>] [--lib <dir>] [--pubspec <file>] [--dependencies-doc <file>]` | the runtime dependency closure against the allowlist; no network package; with a dependencies document, a row per direct dependency | a package is not allowlisted, is a network package, `lib/` imports a banned URI, or a direct dependency has no row |
+| `dart run apsira_tools:manifest_check [--manifest] <file or dir> [--declared <file>] [--architecture <file>]` | the merged Android manifest against the declared permissions; no `INTERNET`; with an approved-permissions document, each permission approved or the app's own, each declared one with a reason | a permission is forbidden, undeclared, missing, unapproved or without a reason |
 
 Every command also takes `--config <file>` (default `tool/apsira_tools.yaml`) and exits
 2 on bad usage, including a config error.
@@ -39,6 +39,37 @@ or shared package, or unparsable YAML exits 2 naming the key and the file.
 | `privacy.allowlist` | `tool/privacy/dependency_allowlist.yaml` | `deps_check` (`--allowlist` wins) |
 | `privacy.declared_permissions` | `tool/privacy/declared_permissions.txt` | `manifest_check` (`--declared` wins) |
 
+The v0.2 keys make VIATICUM's tools configuration (D-APK-002's "config knob in
+v0.2" items). Their defaults are RELAY's behaviour, so a v0.1 file still
+reproduces RELAY.
+
+| Key (v0.2) | RELAY default | Read by |
+|---|---|---|
+| `layering.forbidden_calls` | `system-time, random, uuid, clock-package` | the call groups `pure-calls` refuses in domain and core |
+| `layering.extra_layers` | none | path prefixes that are a layer of a built-in kind (`root`, `router`, `shell`, `services`, `theme`, `l10n`, `core`, `domain`, `data`) |
+| `layering.forbidden_packages` | none | path prefixes and the packages a file under one never imports; rule `layer-packages`, counted only when set |
+| `layering.may_import` | none | a layer's row of the import matrix replaced by the layers it may import (rows `domain`, `core`, `data`, `services`, `theme`, `l10n`, `feature`) |
+| `l10n.text_calls` | `Text` | the calls the scan refuses a literal in: `Text`, `SelectableText` (first argument), `TextSpan` (its `text:`) |
+| `coverage.exempt_export_only` | `true` | `false` fails an export-only library (a barrel) that lcov lacks, instead of a notice |
+| `privacy.dependencies_doc` | none | `deps_check`: the document needing a table row per direct and dev dependency but `flutter` (`--dependencies-doc` wins) |
+| `privacy.manifest` | none | `manifest_check`: the manifest when the command line names none |
+| `privacy.approved_permissions` | none | `manifest_check`: the document approving permissions (`--architecture` wins) |
+| `privacy.approved_heading` | `### 11.1` | the section whose table rows (`` `NAME` ``) approve `android.permission.NAME` |
+
+`test/fixtures/viaticum/apsira_tools.yaml` is VIATICUM's file.
+
+### Stays in VIATICUM
+
+These deltas are VIATICUM's own logic (D-APK-002), not knobs:
+
+- `layering_lint`: the dev-only `lab` layer `features/spike_lab/` and its rule
+  `lab-imports`.
+- `l10n_check`: `archivalTerms`, the Spanish archival ARB keys with fixed values.
+- `deps_check`: the printed dependency paths to each network exception, and its
+  summary line without the unused-allowlist part.
+- `manifest_check`: the `<application>` backup attributes
+  (`ViaticumBackupAgent`).
+
 This package's own `tool/apsira_tools.yaml` is the worked example. It sets every key
 to its default, and `package: relay` because the test fixtures are RELAY's tree.
 `tool/privacy/` holds RELAY's allowlist and declared permissions, so the defaults
@@ -53,5 +84,6 @@ RELAY's linter rules. An app includes it with
 ## Tests
 
 `dart test` from this directory. The fixtures under `test/fixtures/` are RELAY's, byte
-for byte (each directory's `README.md` names the source). The layering suite pins
+for byte (each directory's `README.md` names the source), except `viaticum/`, which
+proves each v0.2 key with one passing and one failing case. The layering suite pins
 RELAY's 21 findings in the violations fixture.

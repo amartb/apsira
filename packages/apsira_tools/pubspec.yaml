@@ -3,7 +3,7 @@ description: >-
   RELAY's quality tools (layering lint, l10n check, coverage gate, dependency
   and manifest privacy checks) for every Apsira Flutter app, configured per app
   by tool/apsira_tools.yaml.
-version: 0.1.0
+version: 0.2.0
 publish_to: none
 
 environment:

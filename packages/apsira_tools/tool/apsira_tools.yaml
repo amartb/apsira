@@ -34,6 +34,20 @@ layering:
   colour_literal_exempt: [app/theme/]
   # Rule ids whose findings are dropped (layering_lint names the rules).
   disabled_rules: []
+  # v0.2. The call groups pure-calls refuses in domain and core:
+  # system-time, random, uuid, clock-package.
+  forbidden_calls: [system-time, random, uuid, clock-package]
+  # v0.2. Path prefixes that are a layer of a built-in kind (root, router,
+  # shell, services, theme, l10n, core, domain, data), e.g.
+  # {app/tutorial/: router}.
+  extra_layers: {}
+  # v0.2. Path prefixes and the packages a file under one never imports
+  # (rule layer-packages, counted only when set).
+  forbidden_packages: {}
+  # v0.2. A layer's row of the import matrix replaced: the layers it may
+  # import (rows: domain, core, data, services, theme, l10n, feature), e.g.
+  # {l10n: [core, theme, l10n]}.
+  may_import: {}
 
 l10n:
   # The gen-l10n file (arb-dir, template-arb-file); `--l10n-config` wins.
@@ -41,6 +55,9 @@ l10n:
   required_locales: [en, es]
   # Source paths, relative to the scanned directory, the Text( scan skips.
   scan_exemptions: [app/l10n/generated/, features/theme_preview/]
+  # v0.2. The calls the scan refuses a string literal in: Text,
+  # SelectableText (first argument), TextSpan (its text:).
+  text_calls: [Text]
 
 coverage:
   # The test directory `--run` defaults to; unset runs no tests and reads
@@ -48,7 +65,19 @@ coverage:
   # run: test/domain
   min_lines: 90
   min_branches: 85
+  # v0.2. An export-only library (a barrel) has no line to cover: true
+  # leaves it out with a notice, false fails it when lcov lacks it.
+  exempt_export_only: true
 
 privacy:
   allowlist: tool/privacy/dependency_allowlist.yaml
   declared_permissions: tool/privacy/declared_permissions.txt
+  # v0.2, all unset in RELAY. The document whose table needs a row per
+  # direct dependency (deps_check --dependencies-doc):
+  # dependencies_doc: docs/dependencies.md
+  # The manifest manifest_check reads when the command line names none:
+  # manifest: build/app/intermediates/merged_manifests/prodRelease
+  # The document whose approved_heading table approves every permission
+  # (manifest_check --architecture):
+  # approved_permissions: docs/07-architecture.md
+  approved_heading: '### 11.1'

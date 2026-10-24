@@ -6,11 +6,23 @@
 // says so.
 //
 //   dart run apsira_tools:manifest_check [--config <file>]
-//       --manifest <file or directory> [--declared <file>]
+//       [--manifest] <file or directory> [--declared <file>]
+//       [--architecture <file>]
 //
 // `--declared` defaults to `privacy.declared_permissions` of the `--config`
 // file (default tool/apsira_tools.yaml, D-APK-002):
-// tool/privacy/declared_permissions.txt.
+// tool/privacy/declared_permissions.txt. The manifest may be given
+// positionally or with `--manifest`, and defaults to `privacy.manifest`
+// (v0.2; none in RELAY).
+//
+// The approved permissions (v0.2, VIATICUM's, from viaticum
+// tool/privacy/manifest_check.dart @ 20f05f6): with `--architecture` or
+// `privacy.approved_permissions` (none in RELAY), every requested and
+// every declared permission must be in the table of that document's
+// `privacy.approved_heading` section (default `### 11.1`; a row's first
+// cell is `` `NAME` `` for `android.permission.NAME`) or be one the
+// manifest defines with signature protection, and every declared one needs
+// a reason. A document without that table exits 2.
 //
 // CI runs it after Gradle's `processProdReleaseManifest` on
 // build/app/intermediates/merged_manifests/prodRelease: a directory is
@@ -30,7 +42,8 @@ const forbiddenPermissions = {'android.permission.INTERNET'};
 
 const _usage =
     'usage: dart run apsira_tools:manifest_check [--config <file>] '
-    '--manifest <file or directory> [--declared <file>]';
+    '[--manifest] <file or directory> [--declared <file>] '
+    '[--architecture <file>]';
 
 final _comment = RegExp(r'<!--.*?-->', dotAll: true);
 
@@ -62,6 +75,44 @@ Set<String> removedPermissions(String manifest) => {
       if (_name.firstMatch(element[1]!) case final m?) (m[1] ?? m[2])!,
 };
 
+final _permission = RegExp(r'<permission\b([^>]*)>', dotAll: true);
+
+final _signature = RegExp(
+  r'''android:protectionLevel\s*=\s*["']signature["']''',
+);
+
+/// The permissions [manifest] itself defines with signature protection:
+/// only an app signed with the same key holds them.
+Set<String> ownSignaturePermissions(String manifest) => {
+  for (final element in _permission.allMatches(
+    manifest.replaceAll(_comment, ''),
+  ))
+    if (_signature.hasMatch(element[1]!))
+      if (_name.firstMatch(element[1]!) case final m?) (m[1] ?? m[2])!,
+};
+
+/// The permissions the [heading] section of [document] approves: the
+/// first cell of every table row in it, `` `NAME` ``, as
+/// `android.permission.NAME`. The section ends at the next heading of the
+/// same level or above.
+Set<String> approvedPermissions(
+  String document, {
+  String heading = '### 11.1',
+}) {
+  final start = document.indexOf(heading);
+  if (start < 0) return {};
+  final level = RegExp(r'^#*').firstMatch(heading)![0]!.length;
+  final next = RegExp('^#{1,${level < 1 ? 1 : level}} ', multiLine: true);
+  final headingEnd = document.indexOf('\n', start);
+  final rest = headingEnd < 0 ? '' : document.substring(headingEnd);
+  final end = next.firstMatch(rest)?.start ?? rest.length;
+  return {
+    for (final line in rest.substring(0, end).split('\n'))
+      if (RegExp(r'^\|\s*`([A-Z_]+)`').firstMatch(line) case final m?)
+        'android.permission.${m[1]}',
+  };
+}
+
 /// The declared list: one `<permission>: <reason>` per line; blank lines and
 /// lines starting with `#` are skipped. A line without a reason maps to ''.
 Map<String, String> parseDeclaredPermissions(String text) => {
@@ -80,7 +131,23 @@ final class ManifestReport {
     required this.undeclared,
     required this.missing,
     this.declaredPath = 'tool/privacy/declared_permissions.txt',
+    this.outside = const [],
+    this.declaredOutside = const [],
+    this.noReason = const [],
+    this.approvedSource = '',
   });
+
+  /// Requested, not forbidden, and neither approved nor the app's own.
+  final List<String> outside;
+
+  /// Declared, and neither approved nor the app's own.
+  final List<String> declaredOutside;
+
+  /// Declared without a reason (checked with an approved source).
+  final List<String> noReason;
+
+  /// The approved-permissions source a finding names: `<file> <heading>`.
+  final String approvedSource;
 
   /// The declared list a finding tells the reader to edit.
   final String declaredPath;
@@ -94,15 +161,18 @@ final class ManifestReport {
   /// Declared but not requested.
   final List<String> missing;
 
-  bool get isClean =>
-      forbidden.isEmpty && undeclared.isEmpty && missing.isEmpty;
+  bool get isClean => findings.isEmpty;
 
   Iterable<String> get findings => [
     for (final p in forbidden) 'forbidden permission: $p (D-041)',
+    for (final p in outside) 'outside $approvedSource: $p',
     for (final p in undeclared)
       'undeclared permission: $p (add it to $declaredPath with its '
           'reason, if architecture §11.1 approves it)',
     for (final p in missing) 'declared but not in the manifest: $p',
+    for (final p in declaredOutside)
+      'the declared list holds $p, which is outside $approvedSource',
+    for (final p in noReason) 'declared without a reason: $p',
   ];
 
   @override
@@ -110,15 +180,33 @@ final class ManifestReport {
 }
 
 /// Checks [manifest] against the [declared] permission names, read from
-/// [declaredPath].
+/// [declaredPath], and, when [approved] is given (v0.2), against the
+/// permissions [approvedSource] approves.
 ManifestReport checkManifest(
   String manifest,
   Map<String, String> declared, {
   String declaredPath = 'tool/privacy/declared_permissions.txt',
+  Set<String>? approved,
+  String approvedSource = '',
 }) {
   final requested = usesPermissions(manifest);
   final forbidden = requested.intersection(forbiddenPermissions);
+  final own = ownSignaturePermissions(manifest);
+  bool allowed(String p) => approved!.contains(p) || own.contains(p);
+  List<String> sorted(Iterable<String> names) => names.toList()..sort();
   return ManifestReport(
+    outside: approved == null
+        ? const []
+        : sorted(requested.difference(forbidden).where((p) => !allowed(p))),
+    declaredOutside: approved == null
+        ? const []
+        : sorted(declared.keys.where((p) => !allowed(p))),
+    noReason: approved == null
+        ? const []
+        : sorted(
+            declared.entries.where((e) => e.value.isEmpty).map((e) => e.key),
+          ),
+    approvedSource: approvedSource,
     forbidden: forbidden.toList()..sort(),
     undeclared:
         requested
@@ -159,28 +247,44 @@ Future<int> runManifestCheck(List<String> args, {StringSink? out}) async {
   final sink = out ?? stdout;
   String? manifestPath;
   String? declaredPath;
+  String? approvedPath;
   var configPath = defaultConfigPath;
-  for (var i = 0; i < args.length; i += 2) {
+  for (var i = 0; i < args.length; i++) {
+    final arg = args[i];
+    if (!arg.startsWith('--')) {
+      if (manifestPath != null) {
+        sink.writeln(_usage);
+        return 2;
+      }
+      manifestPath = arg;
+      continue;
+    }
     if (i + 1 >= args.length) {
       sink.writeln(_usage);
       return 2;
     }
-    switch (args[i]) {
+    final value = args[++i];
+    switch (arg) {
       case '--config':
-        configPath = args[i + 1];
-      case '--manifest':
-        manifestPath = args[i + 1];
+        configPath = value;
+      case '--manifest' when manifestPath == null:
+        manifestPath = value;
       case '--declared':
-        declaredPath = args[i + 1];
+        declaredPath = value;
+      case '--architecture':
+        approvedPath = value;
       default:
         sink.writeln(_usage);
         return 2;
     }
   }
+  final String heading;
   try {
-    declaredPath ??= ApsiraToolsConfig.load(path: configPath)
-        .privacy
-        .declaredPermissions;
+    final privacy = ApsiraToolsConfig.load(path: configPath).privacy;
+    declaredPath ??= privacy.declaredPermissions;
+    manifestPath ??= privacy.manifest;
+    approvedPath ??= privacy.approvedPermissions;
+    heading = privacy.approvedHeading;
   } on FormatException catch (e) {
     sink.writeln('manifest: ${e.message}');
     return 2;
@@ -195,6 +299,21 @@ Future<int> runManifestCheck(List<String> args, {StringSink? out}) async {
     sink.writeln('manifest: no such declared list: $declaredPath');
     return 2;
   }
+  Set<String>? approved;
+  if (approvedPath != null) {
+    if (!File(approvedPath).existsSync()) {
+      sink.writeln('manifest: no such file: $approvedPath');
+      return 2;
+    }
+    approved = approvedPermissions(
+      File(approvedPath).readAsStringSync(),
+      heading: heading,
+    );
+    if (approved.isEmpty) {
+      sink.writeln('manifest: no $heading permission table in $approvedPath');
+      return 2;
+    }
+  }
   final declared = parseDeclaredPermissions(
     File(declaredPath).readAsStringSync(),
   );
@@ -202,6 +321,8 @@ Future<int> runManifestCheck(List<String> args, {StringSink? out}) async {
     manifest.readAsStringSync(),
     declared,
     declaredPath: declaredPath,
+    approved: approved,
+    approvedSource: '$approvedPath $heading',
   );
   for (final finding in report.findings) {
     sink.writeln('manifest: $finding');
@@ -212,7 +333,8 @@ Future<int> runManifestCheck(List<String> args, {StringSink? out}) async {
   }
   sink.writeln(
     'manifest: ${manifest.path} clean (${declared.length} declared, '
-    'no ${forbiddenPermissions.join(', ')})',
+    'no ${forbiddenPermissions.join(', ')})'
+    "${approved == null ? '' : "; each in $approvedPath $heading or the app's own"}",
   );
   return 0;
 }

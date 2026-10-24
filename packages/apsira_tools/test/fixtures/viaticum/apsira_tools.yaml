@@ -1,0 +1,43 @@
+# VIATICUM @ 20f05f6 as apsira_tools v0.2 knobs (D-APK-002): every key whose
+# value differs from RELAY's. Paths are relative to the package root, where
+# the suite runs. The fixture README names the case each key is proved by.
+package: viaticum
+
+layering:
+  domain_packages: [collection, crypto, meta]
+  feature_packages:
+    - collection
+    - flutter
+    - flutter_localizations
+    - flutter_riverpod
+    - freezed_annotation
+    - go_router
+    - intl
+    - meta
+    - riverpod
+    - riverpod_annotation
+  disabled_rules: [colour-literals]
+  forbidden_calls: [system-time, random, uuid]
+  extra_layers:
+    app/tutorial/: router
+  forbidden_packages:
+    app/tutorial/: [flutter_riverpod, riverpod, riverpod_annotation]
+  may_import:
+    l10n: [core, theme, l10n]
+
+l10n:
+  config: test/fixtures/viaticum/l10n/l10n.yaml
+  scan_exemptions:
+    [app/l10n/generated/, features/theme_preview/, features/spike_lab/]
+  text_calls: [Text, SelectableText, TextSpan]
+
+coverage:
+  exempt_export_only: false
+
+privacy:
+  allowlist: test/fixtures/viaticum/privacy/dependency_allowlist.yaml
+  declared_permissions: test/fixtures/viaticum/privacy/declared_permissions.txt
+  dependencies_doc: test/fixtures/viaticum/privacy/dependencies.md
+  manifest: test/fixtures/viaticum/privacy/manifest_approved.xml
+  approved_permissions: test/fixtures/viaticum/privacy/architecture.md
+  approved_heading: '### 11.1'

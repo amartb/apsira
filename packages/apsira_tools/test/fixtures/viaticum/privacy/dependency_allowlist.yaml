@@ -1,0 +1,8 @@
+# The runtime closure of deps.json, each with its reason.
+allowed:
+  collection: pure Dart collections
+  crypto: SHA-256
+  flutter: the SDK
+  typed_data: crypto's typed lists
+network: [http, dio]
+network_prefixes: [firebase_]

@@ -31,8 +31,10 @@
 // disk (a barrel such as lib/domain/query/syntax/power_syntax.dart: only
 // comments, `library` and at least one `export` directive): it has no
 // executable line, so lcov never lists it however many tests import it,
-// and the gate names it in a notice instead of failing it as missing. With
-// no domain code yet the gate passes with a notice.
+// and the gate names it in a notice instead of failing it as missing.
+// `coverage.exempt_export_only: false` (v0.2, VIATICUM's) drops that
+// exemption: a barrel is a domain file like any other. With no domain code
+// yet the gate passes with a notice.
 //
 // Exit codes, the same in both modes: 0 when the gate passes; 1 when
 // coverage is below a threshold, a domain file is missing from the report,
@@ -340,8 +342,12 @@ Future<int> runCoverageGate(
         return 1;
       }
     }
-    final (code: domainFiles, :exportOnly) = _domainSources(root);
-    for (final file in exportOnly) {
+    final sources = _domainSources(root);
+    final exempt = options['--exempt-export-only'] == 'true';
+    final domainFiles = exempt
+        ? sources.code
+        : ([...sources.code, ...sources.exportOnly]..sort());
+    for (final file in exempt ? sources.exportOnly : const <String>[]) {
       sink.writeln(
         'coverage_gate: notice: export-only library, nothing to cover: $file',
       );
@@ -410,6 +416,8 @@ Map<String, String?> _parseArgs(List<String> args) {
     '--root': '.',
     '--min-lines': '${config.minLines}',
     '--min-branches': '${config.minBranches}',
+    // Not a flag: `coverage.exempt_export_only` (v0.2).
+    '--exempt-export-only': '${config.exemptExportOnly}',
     ...given,
   };
 }

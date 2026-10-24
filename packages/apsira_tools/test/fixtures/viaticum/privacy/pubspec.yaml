@@ -1,0 +1,10 @@
+name: viaticum
+dependencies:
+  collection: ^1.19.1
+  crypto: ^3.0.7
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Requests CAMERA, which architecture.md §11.1 does not approve. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.apsiralabs.viaticum">
+    <permission
+        android:name="com.apsiralabs.viaticum.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+        android:protectionLevel="signature" />
+    <uses-permission
+        android:name="com.apsiralabs.viaticum.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <application android:label="Viaticum" />
+</manifest>

@@ -29,11 +29,18 @@
 // other runtime path to it still fails.
 //
 //   dart run apsira_tools:deps_check [--config <file>] [--deps-json <file>]
-//       [--allowlist <file>] [--lib <dir>]
+//       [--allowlist <file>] [--lib <dir>] [--pubspec <file>]
+//       [--dependencies-doc <file>]
 //
 // `--allowlist` defaults to `privacy.allowlist` of the `--config` file
 // (default tool/apsira_tools.yaml, D-APK-002):
 // tool/privacy/dependency_allowlist.yaml.
+//
+// The dependency table (v0.2, VIATICUM's, from viaticum
+// tool/privacy/deps_check.dart @ 20f05f6): with `--dependencies-doc` or
+// `privacy.dependencies_doc` (none in RELAY), every direct and dev
+// dependency of `--pubspec` (default pubspec.yaml) but the SDK needs a
+// table row whose first cell names it in that document.
 //
 // Exit 0 when clean, 1 naming each finding, 2 on bad usage.
 import 'dart:convert';
@@ -48,7 +55,30 @@ const buildHookReason = 'build hook, not in the APK';
 
 const _usage =
     'usage: dart run apsira_tools:deps_check [--config <file>] '
-    '[--deps-json <file>] [--allowlist <file>] [--lib <dir>]';
+    '[--deps-json <file>] [--allowlist <file>] [--lib <dir>] '
+    '[--pubspec <file>] [--dependencies-doc <file>]';
+
+/// The direct dependency that is the SDK itself, which needs no row in the
+/// dependency table.
+const sdkPackage = 'flutter';
+
+/// The direct dependencies (regular and dev) of [pubspec] with no table row
+/// whose first cell names them in [dependenciesDoc], sorted. [sdkPackage]
+/// needs none.
+List<String> missingRows(String pubspec, String dependenciesDoc) {
+  final doc = loadYaml(pubspec);
+  final names = {
+    if (doc is YamlMap)
+      for (final section in ['dependencies', 'dev_dependencies'])
+        if (doc[section] case final YamlMap deps) ...deps.keys.map((k) => '$k'),
+  }..remove(sdkPackage);
+  final rows = {
+    for (final line in dependenciesDoc.split('\n'))
+      if (RegExp(r'^\|\s*([a-z0-9_]+)\s*\|').firstMatch(line) case final m?)
+        m[1]!,
+  };
+  return names.difference(rows).toList()..sort();
+}
 
 /// How many `network_exceptions` the allowlist may hold (D-105); a second
 /// one needs its own decision.
@@ -369,6 +399,8 @@ Future<int> runDepsCheck(List<String> args, {StringSink? out}) async {
   String? allowlistPath;
   var configPath = defaultConfigPath;
   var lib = 'lib';
+  var pubspecPath = 'pubspec.yaml';
+  String? docPath;
   for (var i = 0; i < args.length; i += 2) {
     if (i + 1 >= args.length) {
       sink.writeln(_usage);
@@ -383,20 +415,28 @@ Future<int> runDepsCheck(List<String> args, {StringSink? out}) async {
         allowlistPath = args[i + 1];
       case '--lib':
         lib = args[i + 1];
+      case '--pubspec':
+        pubspecPath = args[i + 1];
+      case '--dependencies-doc':
+        docPath = args[i + 1];
       default:
         sink.writeln(_usage);
         return 2;
     }
   }
   try {
-    allowlistPath ??= ApsiraToolsConfig.load(path: configPath)
-        .privacy
-        .allowlist;
+    final privacy = ApsiraToolsConfig.load(path: configPath).privacy;
+    allowlistPath ??= privacy.allowlist;
+    docPath ??= privacy.dependenciesDoc;
   } on FormatException catch (e) {
     sink.writeln('deps: ${e.message}');
     return 2;
   }
-  for (final path in [?depsPath, allowlistPath]) {
+  for (final path in [
+    ?depsPath,
+    allowlistPath,
+    if (docPath != null) ...[pubspecPath, docPath],
+  ]) {
     if (!File(path).existsSync()) {
       sink.writeln('deps: no such file: $path');
       return 2;
@@ -427,11 +467,25 @@ Future<int> runDepsCheck(List<String> args, {StringSink? out}) async {
     dependents: dependents,
     allowlistPath: allowlistPath,
   );
-  for (final finding in report.findings) {
+  final rows = docPath == null
+      ? const <String>[]
+      : missingRows(
+          File(pubspecPath).readAsStringSync(),
+          File(docPath).readAsStringSync(),
+        );
+  for (final finding in [
+    ...report.findings,
+    for (final p in rows)
+      'no row in $docPath: $p (every direct dependency has one)',
+  ]) {
     sink.writeln('deps: $finding');
   }
-  if (!report.isClean) {
-    sink.writeln('deps: the runtime closure breaks the allowlist');
+  if (!report.isClean || rows.isNotEmpty) {
+    sink.writeln(
+      report.isClean
+          ? 'deps: $docPath lacks a row for a direct dependency'
+          : 'deps: the runtime closure breaks the allowlist',
+    );
     return 1;
   }
   final unused = allowlist.allowed.keys.toSet().difference(closure);
@@ -441,7 +495,8 @@ Future<int> runDepsCheck(List<String> args, {StringSink? out}) async {
     'no network package'
     '${admitted.isEmpty ? '' : ' but ${admitted.join(', ')} (D-111, D-114)'}; '
     '${spike.difference(closure).length} spike-only packages outside it'
-    '${unused.isEmpty ? '' : '; not in the closure: ${(unused.toList()..sort()).join(', ')}'}',
+    '${unused.isEmpty ? '' : '; not in the closure: ${(unused.toList()..sort()).join(', ')}'}'
+    '${docPath == null ? '' : '; every direct dependency has its row in $docPath'}',
   );
   return 0;
 }

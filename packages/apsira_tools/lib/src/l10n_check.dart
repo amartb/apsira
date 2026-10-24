@@ -12,7 +12,8 @@
 // tool/apsira_tools.yaml, D-APK-002) also gives the required locales and
 // the scan exemptions. `--arb-dir` and `--source-dir` (default `lib`) point
 // the check at other inputs, such as test/fixtures/l10n/.
-// Exit 0 when clean, 1 naming each file and key at fault, 2 on bad usage.
+// Exit 0 when clean, 1 naming each file and key at fault, 2 on bad usage or
+// when the gen-l10n file is absent (`l10n_check: no l10n config at <path>`).
 //
 // The source scan is the whole of the hard-coded-string guard for now (08 §3):
 // it flags a string literal passed straight to `Text(`, outside generated
@@ -32,6 +33,19 @@ const requiredLocales = ['en', 'es'];
 /// localisations; the dev-only ThemePreview screen, whose labels are token
 /// names, not user-facing text (it never ships in prod).
 const scanExemptions = ['app/l10n/generated/', 'features/theme_preview/'];
+
+/// The calls `l10n.text_calls` may name (v0.2): `Text(` and
+/// `SelectableText(` by their first argument, `TextSpan` by its `text:`
+/// (the spans of `Text.rich` and `SelectableText.rich`). RELAY scans `Text(`
+/// only; VIATICUM all three.
+const textCallNames = ['Text', 'SelectableText', 'TextSpan'];
+
+/// How a finding names each of [textCallNames].
+const _callee = {
+  'Text': 'Text(',
+  'SelectableText': 'SelectableText(',
+  'TextSpan': 'TextSpan(text:',
+};
 
 /// One finding: the file at fault, the key (or source line) and why.
 class L10nProblem {
@@ -242,13 +256,15 @@ List<L10nProblem> checkArbDir(
   return problems;
 }
 
-/// Reports every `Text(` in the Dart files under [sourceDir] whose first
-/// argument is a string literal with a letter outside its interpolations.
+/// Reports every call of [calls] ([textCallNames]; RELAY's `Text(` by
+/// default) in the Dart files under [sourceDir] given a string literal with
+/// a letter outside its interpolations.
 /// Skips `*.g.dart`, `*.freezed.dart` and the [exemptions] (paths relative
 /// to [sourceDir]). Comments are ignored.
 List<L10nProblem> scanHardCodedText(
   String sourceDir, {
   List<String> exemptions = scanExemptions,
+  List<String> calls = const ['Text'],
 }) {
   final root = Directory(sourceDir);
   if (!root.existsSync()) return [L10nProblem(sourceDir, 'no such directory')];
@@ -271,12 +287,12 @@ List<L10nProblem> scanHardCodedText(
       continue;
     }
     final source = file.readAsStringSync();
-    for (final (offset, literal) in textLiterals(source)) {
+    for (final (offset, literal, callee) in textCallLiterals(source, calls)) {
       final line = '\n'.allMatches(source.substring(0, offset)).length + 1;
       problems.add(
         L10nProblem(
           '${root.path.replaceFirst(RegExp(r'/$'), '')}/$relative',
-          'passes $literal to Text(: use AppLocalizations (D-030)',
+          'passes $literal to $callee: use AppLocalizations (D-030)',
           line: line,
         ),
       );
@@ -287,13 +303,42 @@ List<L10nProblem> scanHardCodedText(
 
 final _letter = RegExp(r'\p{L}', unicode: true);
 final _interpolation = RegExp(r'\$\{[^}]*\}|\$[A-Za-z_][A-Za-z0-9_]*');
-final _textCall = RegExp(r'(?<![A-Za-z0-9_$])Text\s*\(\s*$');
+final _textCall = RegExp(r'(?<![A-Za-z0-9_$])(Selectable)?Text\s*\(\s*$');
+final _spanText = RegExp(r'(?<![A-Za-z0-9_$])text\s*:\s*$');
+final _spanCall = RegExp(r'(?<![A-Za-z0-9_$])TextSpan\s*$');
+
+/// The call [code] (comments and strings blanked) is inside at its end:
+/// the text before the innermost `(` still open.
+String _openCall(String code) {
+  var depth = 0;
+  for (var j = code.length - 1; j >= 0; j--) {
+    final c = code[j];
+    if (c == ')' || c == ']' || c == '}') depth++;
+    if (c == '(' || c == '[' || c == '{') {
+      if (depth == 0) return c == '(' ? code.substring(0, j) : '';
+      depth--;
+    }
+  }
+  return '';
+}
 
 /// The string literals passed as the first argument of `Text(` in
 /// [source], with their offsets, ignoring comments and literals made only
 /// of interpolations, digits and punctuation.
-List<(int, String)> textLiterals(String source) {
-  final found = <(int, String)>[];
+List<(int, String)> textLiterals(String source) => [
+  for (final (offset, literal, _) in textCallLiterals(source, const ['Text']))
+    (offset, literal),
+];
+
+/// The string literals given to the calls of [calls] ([textCallNames]) in
+/// [source], with their offsets and how the call is named (`Text(`,
+/// `SelectableText(`, `TextSpan(text:`), as [textLiterals]. From viaticum
+/// tool/l10n_check.dart @ 20f05f6.
+List<(int, String, String)> textCallLiterals(
+  String source,
+  List<String> calls,
+) {
+  final found = <(int, String, String)>[];
   // Code with comments and string contents blanked out, to find calls in.
   final code = StringBuffer();
   var i = 0;
@@ -365,9 +410,19 @@ List<(int, String)> textLiterals(String source) {
       final tail = before.substring(
         before.length < 80 ? 0 : before.length - 80,
       );
-      if (_textCall.hasMatch(tail)) {
+      final call = _textCall.firstMatch(tail);
+      final String? name;
+      if (call != null) {
+        name = call[1] == null ? 'Text' : 'SelectableText';
+      } else if (_spanText.hasMatch(tail) &&
+          _spanCall.hasMatch(_openCall(before))) {
+        name = 'TextSpan';
+      } else {
+        name = null;
+      }
+      if (name != null && calls.contains(name)) {
         final text = literal.replaceAll(_interpolation, '');
-        if (_letter.hasMatch(text)) found.add((i, literal));
+        if (_letter.hasMatch(text)) found.add((i, literal, _callee[name]!));
       }
       code.write(literal.replaceAll(RegExp(r'[^\n]'), ' '));
       i = end;
@@ -403,7 +458,12 @@ Future<int> runL10nCheck(List<String> args, {StringSink? out}) async {
     sink.writeln('l10n: ${e.message}');
     return 2;
   }
-  final config = readConfig(options['--l10n-config'] ?? tools.config);
+  final configPath = options['--l10n-config'] ?? tools.config;
+  if (!File(configPath).existsSync()) {
+    sink.writeln('l10n_check: no l10n config at $configPath');
+    return 2;
+  }
+  final config = readConfig(configPath);
   final arbDir = options['--arb-dir'] ?? config.arbDir;
   final sourceDir = options['--source-dir'] ?? 'lib';
 
@@ -413,7 +473,11 @@ Future<int> runL10nCheck(List<String> args, {StringSink? out}) async {
       template: config.template,
       locales: tools.requiredLocales,
     ),
-    ...scanHardCodedText(sourceDir, exemptions: tools.scanExemptions),
+    ...scanHardCodedText(
+      sourceDir,
+      exemptions: tools.scanExemptions,
+      calls: tools.textCalls,
+    ),
   ];
   for (final problem in problems) {
     sink.writeln('l10n: $problem');
@@ -426,7 +490,15 @@ Future<int> runL10nCheck(List<String> args, {StringSink? out}) async {
   }
   sink.writeln(
     'l10n: $arbDir complete in ${tools.requiredLocales.join(' and ')}; '
-    'no string literal passed to Text( in $sourceDir',
+    'no string literal passed to ${_callList(tools.textCalls)} in $sourceDir',
   );
   return 0;
+}
+
+/// `Text(`, or `Text(, SelectableText( or TextSpan(text:`.
+String _callList(List<String> calls) {
+  final names = [for (final call in calls) _callee[call]!];
+  return names.length < 2
+      ? names.join()
+      : '${names.take(names.length - 1).join(', ')} or ${names.last}';
 }
