@@ -32,6 +32,7 @@ becomes Decided on review), Superseded.
 | D-APK-015 | `apsira_storage`: the backup, storage-space, document-picker, share and photo ports with their adapters and fakes, one storage channel `apsira_storage/storage`; `FolderAccess`, the crop and the media stores stay per app | Decided |
 | D-APK-016 | `apsira_lock`: RELAY's app lock as the shared one (off by default, 5 minutes, 0 = at once, never a lock-out, a backwards clock locks), its `lock` row unchanged, `local_auth` in the package, FLAG_SECURE through the package's own Kotlin; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | Decided |
 | D-APK-017 | `apsira_onboarding`: the intro with the app's mark as a parameter, the language step, the step frame and flow, the tour player, the Help shell, the discovery pieces; seen flags per install through `InstallFlag`; routes stay in each app | Decided |
+| D-APK-018 | `apsira_db`: RELAY's opener, server, restore swap and snapshot as the shared ones, with `2520b90b` in the server, VIATICUM's integrity check and snapshot reader, LYCEUM's step hook and names as a `DatabaseLayout`; the backup snapshot goes through `.tmp` and a rename | Decided |
 | D-APK-020 | `apsira_zip`: RELAY's streaming ZIP writer, CRC-32 and one-pass reader, the apps' parts as hooks (entry names, an entry check, extraction, the keep limit); refusals as `ZipRefusal`, mapped by each app; consumers RELAY and LYCEUM | Decided |
 | D-APK-021 | `apsira_notify`: RELAY's notifier with app-defined channels (no channel id moves), at most three actions, the lock-screen public version, the permission flow with a per-install asked flag, the package's own settings intents; RELAY's patched `flutter_local_notifications` moves to `packages/third_party/` | Decided |
 
@@ -712,6 +713,51 @@ becomes Decided on review), Superseded.
   and take RELAY's `accentText`. Help's app bar wraps a title too long for one line and grows to hold it (T12's
   finding: RELAY's `tour_screen` cut "Recordatorios y repeticiones" with an ellipsis at large text); a title that
   fits keeps the standard bar. Each change is a line in the app's decision log at adoption.
+
+## D-APK-018 — `apsira_db`: RELAY's opener, server, restore swap and snapshot, with VIATICUM's and LYCEUM's additions
+
+- **Status:** Decided (2026-10-24: plan revision 2 of ledger `packages-v0-4`, rulings R-3 and R-5 Q3-a). Builds
+  D-APK-009 and D-APK-011's rule that behaviour is RELAY's.
+- **Context:** the three apps open, migrate, snapshot and restore their SQLite file with three drifted copies.
+  RELAY `09b28810` has the complete set (`data/db/{opener,server,restore_swap,backup_snapshot,connection}.dart`,
+  `migrations/migrate.dart`): the pre-migration snapshot, the `.migrating` marker, safe mode, the background open
+  and the drift server with its fix `2520b90b` (the end of an `exclusively()` block closed the whole server).
+  VIATICUM `78d38e0` ported an older RELAY: no `.migrating` marker, no `2520b90b` (latent: it calls no
+  `exclusively(`), an async `syncDirectoryToDisk` and its own `DbLog`; it adds `integrityCheckPasses` and
+  `readSnapshot`. LYCEUM `9f4ff27` opens a `LazyDatabase` with no snapshot or safe mode, and swaps a restore in by
+  renames under a marker holding `swap` or `rollback`, with an `afterStep` seam that its tests kill at.
+- **Decision:** `apsira_db` 0.4.0, a Flutter package (only `src/server.dart` needs `dart:ui`), holds:
+  - The opener (`openWithSnapshot`, `openForBackground`, safe mode, `resetFromSnapshot`, `eraseDatabase`,
+    `restoreSafetyCopy`, `hasSnapshot`), the swap (`beginRestore`, `writeSafetyCopy`, `armRestore`, `swapIn`,
+    `finishRestore`, `abandonRestore`, `rollBack`, `dropCoveredSafetyCopies`), the snapshot, `fsyncDirectory`,
+    `openDatabaseFile` with `applyPragmas`, `migrateWithForeignKeysOff` and the server: RELAY's code and log
+    codes, generic over the app's `GeneratedDatabase` and its name. The server carries `2520b90b`.
+  - The on-disk names are a `DatabaseLayout`. `DatabaseLayout.standard(name)` is RELAY's and VIATICUM's
+    (`<name>.db`, `<name>.db.restoring`, `<name>.db.migrating`, `restore/<name>.staged.db`,
+    `snapshots/<name>.safety.db`); LYCEUM passes its own (`lyceum.sqlite`, `lyceum.sqlite.restoring`,
+    `lyceum.sqlite.migrating`, `restore/lyceum.staged.sqlite`, `snapshots/lyceum.safety.db`), so no stored file
+    is renamed. `perInstallPaths` lists the markers an app excludes from Android backup. Pruning to
+    `keepSnapshots` counts only pre-migration snapshots, never a safety copy.
+  - One restore protocol, RELAY's: the safety copy is a copy, the marker names it, and the restored file stands
+    only once `finishRestore` removes the marker. The recovery also reads a LYCEUM 1.0.x marker (`swap`,
+    `rollback`) by LYCEUM's own rules, so a restore cut short before the update is finished as LYCEUM would.
+  - LYCEUM's seam becomes a step hook on every swap, rollback, snapshot and migration step (`SwapStep`,
+    `RollBackStep`, `SnapshotStep`, `OpenStep`); `package:apsira_db/testing.dart` gives the crash, the
+    recording sync, `expectOneWholeDatabase`, `killEveryMigrationStep` and `hardKill`.
+  - VIATICUM's `integrityCheckPasses` and `readSnapshot` join, app-neutral; logging is `apsira_core`'s `Log`.
+- **Behaviour changes from the sources:** the backup snapshot is written as `VACUUM INTO <path>.tmp`, flushed,
+  renamed and its directory synced (RELAY and VIATICUM wrote `<path>` in place, so a crash left a partial file
+  under the snapshot's name: kill point KP-S1); RELAY's `snapshotLeavesOut` becomes the `leavesOut` parameter;
+  `swapIn` refuses a staged file that is not a database or whose `-wal` holds commits (LYCEUM's checks).
+  VIATICUM gains the `.migrating` marker, `2520b90b`, the background open's second marker check and RELAY's
+  sync signatures (a failed sync throws). LYCEUM gains snapshots and safe mode (Q3-a) and RELAY's restore
+  protocol, which copies where LYCEUM renamed.
+- **Alternatives rejected:** keeping LYCEUM's rename protocol beside RELAY's (two protocols, two recoveries, and a
+  restored file that stands before its reopen has checked it); VIATICUM's async `DirectorySync` (RELAY's call
+  sites are the more numerous, R-10); a generated fixture database in the tests (no `drift_dev`, D-APK-001).
+- **Consequences:** RELAY and VIATICUM keep their files and port names; LYCEUM keeps its names through its
+  layout. Each app deletes its copies and records the change in its own log at adoption (R3, V3, L3); L3 checks
+  that its restore always finds a live file, since RELAY's protocol copies it into the safety copy.
 
 ## D-APK-020 — `apsira_zip`: RELAY's and LYCEUM's streaming ZIP
 
