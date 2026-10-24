@@ -29,6 +29,7 @@ becomes Decided on review), Superseded.
 | D-APK-012 | Shared strings: `apsira_l10n`'s key table and its wording, one rule for app phrases, `AppLanguage` and `AppLanguageSetting`; Flutter's `MaterialLocalizations` rejected | Decided |
 | D-APK-013 | `apsira_ui` 0.3: `build()` carries the shared component set (menus, `highlightColor`, the snack theme, `accentText` text and outlined buttons, R-10), every app VIATICUM included; LYCEUM's other sub-themes are builders and `buildFull`; settings rows, menu items and `ThemeModeSetting` | Decided |
 | D-APK-015 | `apsira_storage`: the backup, storage-space, document-picker, share and photo ports with their adapters and fakes, one storage channel `apsira_storage/storage`; `FolderAccess`, the crop and the media stores stay per app | Decided |
+| D-APK-017 | `apsira_onboarding`: the intro with the app's mark as a parameter, the language step, the step frame and flow, the tour player, the Help shell, the discovery pieces; seen flags per install through `InstallFlag`; routes stay in each app | Decided |
 
 ---
 
@@ -578,3 +579,43 @@ becomes Decided on review), Superseded.
   than a `PlatformException` is now `documentUnreadable`. LYCEUM: `share_plus` 12 → 13; `PhotoSource` gains
   `recoverLost` and loses `crop`, which stays a LYCEUM port; photos come with their upright size, and the gallery
   opens the system photo picker. Each change is a line in the app's decision log at adoption.
+
+## D-APK-017 — `apsira_onboarding`: first open, tours, Help and tips
+
+- **Status:** Decided (2026-10-24: plan revision 2 of ledger `packages-v0-3`, rulings R-1 and R-3). Builds
+  D-APK-010 C1 and D-APK-012.
+- **Context:** RELAY `09b28810` and VIATICUM `78d38e0` carry the same first open (intro, language, basic tour),
+  the same tour player and the same Help page, VIATICUM's ported from RELAY's with small drifts; LYCEUM
+  `9f4ff27` has its own onboarding frame. RELAY keeps its one-time tips in the `settings` table
+  (`tips_dismissed`), so a restore carries them, against C1.
+- **Decision:** `apsira_onboarding` 0.3.0 holds:
+  - `FirstOpenIntro`: VIATICUM's (a `Material` ground, its own skip button for TalkBack, the reduce-motion
+    cross-fade, the wordmark scaled down rather than cut) on RELAY's type and tokens. The app passes its title
+    and its mark as `mark(progress)` (RELAY's two legs, VIATICUM's door and stop, LYCEUM's own); the lockup
+    defaults to `ApsiraBrand.lockupReversed`. The full-motion timeline is VIATICUM's 4.5 s.
+  - `LanguageStep` and `LanguageOption` (RELAY's `FirstOpenLanguageOption`), English and Español by default:
+    Follow phone stays a Settings choice, as in all three apps.
+  - `StepFrame` (LYCEUM's `OnboardingFrame` with VIATICUM's `_StepFrame`: it fills the screen and scrolls under
+    large text, with optional Back, Skip and a primary action) and `FirstOpenFlow<S>`, RELAY's value type made
+    generic over the app's own step enum.
+  - `TourStepData` (VIATICUM's, with the taps) and `TourPlayer`: RELAY's controls and styles, with VIATICUM's
+    taps, step keys and wrapping dots; no Skip without `onSkip`. The taps' TalkBack sentence is the app's
+    (`tapPathLabel`).
+  - The Help shell: `HelpScreen(groups)`, `HelpGroup`, `HelpRow` (read as one button, VIATICUM's),
+    `HelpTourScreen`, `HowToPage`, `HowToExampleRow`, the keys `help/tour/<id>` and `help/howto/<id>`, and
+    `helpTourPath(id)` with `helpHowToPath(id)`. The tours, the how-tos and their words stay in each app.
+  - Discovery (RELAY `discovery.dart`): `OneTimeTipCard` (Got it from `tipGotIt`; its icon a parameter, since
+    `apsira_ui` has no tip glyph), `HintRotation`, `SuggestionChip`, `SuggestionChipRow` (its pill drawn from
+    tokens) and `insertToken`.
+  - `SeenFlags(dir, {pathOf})`: a tip or tour seen is one `InstallFlag` file (`seen/<id>.json` by default; an
+    app passes its own layout). Seen state is per install (C1): a restore neither sets nor clears it.
+- **Alternatives rejected:** a shared `FirstOpenScreen`: the steps after the tour differ (RELAY's backup folder,
+  KAIROS's holidays, LYCEUM's app lock), so each app keeps its screen and composes these pieces. Routes or
+  `go_router` in the package: each app owns its router; the package gives a path helper only. RELAY's
+  `tips_dismissed` setting: it travels in a backup, which C1 rules out. Third-party onboarding packages
+  (`introduction_screen`, `showcaseview`): the apps' own widgets already do this on tokens, and AC-12.5 allows
+  apsira packages only.
+- **Consequences:** `apsira_onboarding` depends on `apsira_app`, `apsira_core`, `apsira_l10n`, `apsira_ui` and
+  `flutter`. RELAY's intro moves from 5 s to 4.5 s and its tips become per install (the stored
+  `tips_dismissed` ids are written once as flags in its adoption); VIATICUM's tour dots read "Step n of m" and
+  take RELAY's `accentText`. Each change is a line in the app's decision log at adoption.

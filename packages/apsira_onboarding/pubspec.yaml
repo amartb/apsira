@@ -1,0 +1,32 @@
+name: apsira_onboarding
+description: "First open, tours, Help and tips for the Apsira apps: the intro, the language step, the step frame and flow, the tour player, the Help shell, the one-time tips and the per-install seen flags."
+publish_to: none
+version: 0.3.0
+
+environment:
+  sdk: ^3.13.0
+  # The lowest Flutter any live consumer pins (docs/agent-rules.md).
+  flutter: ">=3.47.0"
+
+# D-APK-017: apsira packages and flutter only, no third-party dependency. apsira_*
+# in the git form at the shared tag, with the committed pubspec_overrides.yaml
+# (D-APK-007).
+dependencies:
+  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_app } }
+  apsira_l10n: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_l10n } }
+  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_ui } }
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  apsira_test: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_test } }
+  flutter_lints: ^6.0.0
+  # The Spanish MaterialLocalizations for the EN/ES widget tests only.
+  flutter_localizations:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  # The tour's tap paths and the tips draw Material icons; the apps set it too.
+  uses-material-design: true
