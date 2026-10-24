@@ -8,6 +8,10 @@
 #
 #   bash tool/check.sh            every step
 #   bash tool/check.sh --release  only the shared-tag release rules (D-APK-007)
+#
+# packages/third_party/<name>/ holds vendored packages (D-APK-021): not apsira packages, so no
+# rule, loop or format step covers them, but a dependency on one takes the same git form and
+# override as an apsira dependency.
 set -u
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -51,11 +55,21 @@ in_dir() {
 # Every package, and every package's example/, by its pubspec.
 packages=()
 for pubspec in packages/*/pubspec.yaml; do
+  case "$pubspec" in packages/third_party/*) continue ;; esac
   [ -f "$pubspec" ] && packages+=("${pubspec%/pubspec.yaml}")
 done
 examples=()
 for pubspec in packages/*/example/pubspec.yaml; do
+  case "$pubspec" in packages/third_party/*) continue ;; esac
   [ -f "$pubspec" ] && examples+=("${pubspec%/pubspec.yaml}")
+done
+
+# The vendored packages' names, as one awk alternation ("" when there are none).
+vendored=""
+for pubspec in packages/third_party/*/pubspec.yaml; do
+  [ -f "$pubspec" ] || continue
+  name="${pubspec%/pubspec.yaml}"
+  vendored="${vendored:+$vendored|}${name##*/}"
 done
 
 version_of() {
@@ -67,27 +81,37 @@ version=""
 [ "${#packages[@]}" -gt 0 ] && version="$(version_of <"${packages[0]}/pubspec.yaml")"
 tag="apsira-v$version"
 
-# apsira_deps <pubspec> <sections regex> — "<section> <name> <line>" for every apsira_*
-# key directly under the matching top-level sections.
-apsira_deps() {
-  awk -v want="$2" '
+# named_deps <pubspec> <sections regex> <names regex> — "<section> <name> <line>" for every
+# key matching the names directly under the matching top-level sections.
+named_deps() {
+  awk -v want="$2" -v names="^[[:space:]]+($3)[[:space:]]*:" '
     /^[^[:space:]#][^:]*:/ { section = $0; sub(/:.*/, "", section); next }
-    section ~ want && /^[[:space:]]+apsira_[a-z0-9_]+[[:space:]]*:/ {
+    section ~ want && $0 ~ names {
       name = $0; sub(/^[[:space:]]+/, "", name); sub(/[[:space:]]*:.*/, "", name)
       line = $0; sub(/^[[:space:]]+/, "", line); sub(/[[:space:]]+$/, "", line)
       print section " " name " " line
     }' "$1"
 }
 
+# apsira_deps <pubspec> <sections regex> — the apsira_* keys.
+apsira_deps() { named_deps "$1" "$2" 'apsira_[a-z0-9_]+'; }
+
+# vendored_deps <pubspec> <sections regex> — the keys naming a packages/third_party/ package.
+vendored_deps() {
+  [ -n "$vendored" ] || return 0
+  named_deps "$1" "$2" "$vendored"
+}
+
 # closure <package dir> — every apsira package it resolves: its dependencies and
-# dev_dependencies, then their dependencies, transitively; sorted, one per line.
+# dev_dependencies, then their dependencies, transitively; with every vendored package
+# any of them depends on; sorted, one per line.
 # The package itself is left out: a dev_dependency that depends back on it
 # (apsira_ui's apsira_test) is satisfied by the root, and pub refuses an
 # override of the root package (D-APK-014).
 closure() {
-  local queue=() seen=" " name
+  local queue=() seen=" " name sections='^(dependencies|dev_dependencies)$'
   while read -r _ name _; do queue+=("$name"); done \
-    < <(apsira_deps "$1/pubspec.yaml" '^(dependencies|dev_dependencies)$')
+    < <(apsira_deps "$1/pubspec.yaml" "$sections"; vendored_deps "$1/pubspec.yaml" "$sections")
   while [ "${#queue[@]}" -gt 0 ]; do
     name="${queue[0]}"
     queue=("${queue[@]:1}")
@@ -95,7 +119,8 @@ closure() {
     seen="$seen$name "
     [ -f "packages/$name/pubspec.yaml" ] || continue
     while read -r _ dep _; do queue+=("$dep"); done \
-      < <(apsira_deps "packages/$name/pubspec.yaml" '^dependencies$')
+      < <(apsira_deps "packages/$name/pubspec.yaml" '^dependencies$'
+        vendored_deps "packages/$name/pubspec.yaml" '^dependencies$')
   done
   printf '%s\n' $seen | sed "/^$/d;/^${1##*/}\$/d" | sort
 }
@@ -139,29 +164,33 @@ changelog() {
   return 1
 }
 
-# git_form <dir> — every apsira dependency is exactly the git form at the shared tag;
-# a path: dependency, another ref or url, a multi-line form or an override in the
-# pubspec itself is a defect.
+# git_form <dir> — every apsira dependency, and every dependency on a vendored package
+# (packages/third_party/<name>), is exactly the git form at the shared tag; a path:
+# dependency, another ref or url, a multi-line form or an override in the pubspec itself
+# is a defect.
 git_form() {
-  local status=0 section name line want
+  local status=0 section name line want dir
+  local sections='^(dependencies|dev_dependencies|dependency_overrides)$'
   while read -r section name line; do
-    want="$name: { git: { url: $url, ref: $tag, path: packages/$name } }"
+    case "$name" in apsira_*) dir="packages/$name" ;; *) dir="packages/third_party/$name" ;; esac
+    want="$name: { git: { url: $url, ref: $tag, path: $dir } }"
     if [ "$section" = dependency_overrides ]; then
       echo "$1/pubspec.yaml overrides $name; path overrides live in pubspec_overrides.yaml"
       status=1
-    elif [ ! -f "packages/$name/pubspec.yaml" ]; then
+    elif [ ! -f "$dir/pubspec.yaml" ]; then
       echo "$1/pubspec.yaml depends on $name, which is not a package here"
       status=1
     elif [ "$line" != "$want" ]; then
       printf '%s/pubspec.yaml: %s\n  want: %s\n' "$1" "$line" "$want"
       status=1
     fi
-  done < <(apsira_deps "$1/pubspec.yaml" '^(dependencies|dev_dependencies|dependency_overrides)$')
+  done < <(apsira_deps "$1/pubspec.yaml" "$sections"; vendored_deps "$1/pubspec.yaml" "$sections")
   return "$status"
 }
 
 # overrides <dir> — pubspec_overrides.yaml holds exactly `name: { path: ../name }` for
-# the transitive closure, and nothing else; a package with no apsira dependency has none.
+# the transitive closure (`name: { path: ../third_party/name }` for a vendored package),
+# and nothing else; a package with no apsira or vendored dependency has none.
 overrides() {
   local file="$1/pubspec_overrides.yaml" want have line name
   want="$(closure "$1")"
@@ -174,8 +203,14 @@ overrides() {
   while IFS= read -r line; do
     case "$line" in "" | "#"* | "dependency_overrides:") continue ;; esac
     name="$(printf '%s\n' "$line" | sed -n 's/^  \(apsira_[a-z0-9_]*\): { path: \.\.\/\1 }$/\1/p')"
+    if [ -z "$name" ] && [ -n "$vendored" ]; then
+      name="$(printf '%s\n' "$line" |
+        sed -En "s/^  ($vendored): \{ path: \.\.\/third_party\/([a-z0-9_]+) \}\$/\1 \2/p" |
+        awk '$1 == $2 { print $1 }')"
+    fi
     if [ -z "$name" ]; then
-      echo "$file: '$line' is not '  apsira_<pkg>: { path: ../apsira_<pkg> }'"
+      echo "$file: '$line' is not '  apsira_<pkg>: { path: ../apsira_<pkg> }'" \
+        "or '  <vendored>: { path: ../third_party/<vendored> }'"
       return 1
     fi
     have="$have$name"$'\n'
@@ -260,7 +295,7 @@ if [ "$mode" = full ]; then
   step "sha256 brand" in_dir packages/apsira_ui/lib/brand sha256sum -c --quiet SHA256SUMS
   step "brand identical to apsira-brand/" brand_identical
   step "colour literals only in colors.dart" colour_literals
-  step "format" dart format --output=none --set-exit-if-changed packages
+  step "format" dart format --output=none --set-exit-if-changed "${packages[@]}"
 
   for dir in "${packages[@]}"; do
     name="${dir##*/}"

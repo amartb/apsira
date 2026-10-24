@@ -1,0 +1,43 @@
+# From relay pubspec.yaml @ 09b28810 (the flutter_local_notifications pin, its
+# vendored copy and the lints).
+name: apsira_notify
+description: >-
+  The notifications every Apsira app shares: RELAY's Notifier port and its
+  LocalNotifier adapter on the patched flutter_local_notifications (the app's
+  own channels, at most three actions, the lock-screen public version), the
+  permission flow with a per-install asked flag, and the settings intents
+  (notifications, battery optimisation, app details) through the package's own
+  Kotlin.
+publish_to: none
+version: 0.4.0
+
+environment:
+  sdk: ^3.13.0
+  # The lowest Flutter any live consumer pins (docs/agent-rules.md).
+  flutter: ">=3.47.0"
+
+# D-APK-021: RELAY's patched flutter_local_notifications 22.3.2 (D-217's
+# public version) lives in packages/third_party/ and is named in the git form
+# at the shared tag, like the apsira_* packages; pubspec_overrides.yaml points
+# every one of them at its directory (D-APK-007). No app_settings (ruling
+# R-2, Q4-c): the settings intents are the package's own Kotlin.
+dependencies:
+  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_app } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
+  flutter:
+    sdk: flutter
+  flutter_local_notifications: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/third_party/flutter_local_notifications } }
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  # apsira_app's apsira_ui draws Lucide and Material icons; the apps set it too.
+  uses-material-design: true
+  plugin:
+    platforms:
+      android:
+        package: com.apsiralabs.apsira_notify
+        pluginClass: ApsiraNotifyPlugin

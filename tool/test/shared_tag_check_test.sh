@@ -2,7 +2,9 @@
 # tool/test/shared_tag_check_test.sh — proves the shared-tag release rules of
 # tool/check.sh (D-APK-007) on scratch package trees, and that a package whose
 # apsira dependency points at a tag that does not exist yet still resolves
-# offline through its committed pubspec_overrides.yaml.
+# offline through its committed pubspec_overrides.yaml. A vendored package
+# (packages/third_party/<name>, D-APK-021) takes the same git form and
+# override, and travels in the closure of every package above it.
 #
 # Each case copies a passing base tree, breaks one rule, and runs
 # `tool/check.sh --release`; the step named for the rule must print FAIL and
@@ -102,6 +104,27 @@ wrong_ref() { sed -i 's/ref: apsira-v9.9.9/ref: apsira_core-v9.9.9/' packages/ap
 wrong_url() { sed -i 's#url: git@github.com:amartb/apsira.git#url: https://github.com/amartb/apsira.git#' packages/apsira_ui/pubspec.yaml; }
 missing_override() { sed -i '/apsira_core: { path/d' packages/apsira_test/pubspec_overrides.yaml; }
 extra_override() { overrides . apsira_core apsira_ui; }
+
+# vendor — the base tree with a vendored package that apsira_ui depends on in
+# the git form; apsira_ui and apsira_test (through apsira_ui) override it.
+vendor() {
+  local dir=packages/third_party/vendored_plugin
+  mkdir -p "$dir"
+  printf 'name: vendored_plugin\nversion: 22.3.2\nenvironment:\n  sdk: ^3.0.0\n' >"$dir/pubspec.yaml"
+  echo "  vendored_plugin: { git: { url: $url, ref: apsira-v$version, path: $dir } }" \
+    >>packages/apsira_ui/pubspec.yaml
+  echo '  vendored_plugin: { path: ../third_party/vendored_plugin }' \
+    | tee -a packages/apsira_ui/pubspec_overrides.yaml >>packages/apsira_test/pubspec_overrides.yaml
+}
+vendored_path_dependency() {
+  vendor
+  sed -i 's#^  vendored_plugin: { git: .*#  vendored_plugin: { path: ../third_party/vendored_plugin }#' \
+    packages/apsira_ui/pubspec.yaml
+}
+vendored_missing_override() {
+  vendor
+  sed -i '/vendored_plugin/d' packages/apsira_test/pubspec_overrides.yaml
+}
 path_dependency() {
   sed -i 's#^  apsira_core: .*#  apsira_core: { path: ../apsira_core }#' packages/apsira_ui/pubspec.yaml
 }
@@ -112,6 +135,8 @@ expect_fail wrong-url "apsira_ui apsira dependencies at apsira-v9.9.9" wrong_url
 expect_fail missing-override "apsira_test pubspec_overrides.yaml" missing_override
 expect_fail extra-override "apsira_core pubspec_overrides.yaml" extra_override
 expect_fail path-dependency "apsira_ui apsira dependencies at apsira-v9.9.9" path_dependency
+expect_fail vendored-path-dependency "apsira_ui apsira dependencies at apsira-v9.9.9" vendored_path_dependency
+expect_fail vendored-missing-override "apsira_test pubspec_overrides.yaml" vendored_missing_override
 
 out="$(release "$base")"
 if [ "$(printf '%s\n' "$out" | tail -n 1)" = "check: PASS" ] && ! printf '%s\n' "$out" | grep -q '^FAIL '; then
@@ -126,6 +151,23 @@ if out="$(cd "$base/packages/apsira_test" && dart pub get --offline 2>&1)"; then
 else
   printf '%s\n' "$out" | tail -n 20
   bad "offline override does not resolve without the tag"
+fi
+
+vendored="$scratch/vendored"
+cp -a "$base" "$vendored"
+(cd "$vendored" && vendor)
+out="$(release "$vendored")"
+if [ "$(printf '%s\n' "$out" | tail -n 1)" = "check: PASS" ] && ! printf '%s\n' "$out" | grep -q '^FAIL '; then
+  ok "a vendored dependency in the git form, overridden through the closure, passes"
+else
+  printf '%s\n' "$out" | tail -n 20
+  bad "a vendored dependency in the git form does not pass the release rules"
+fi
+if out="$(cd "$vendored/packages/apsira_test" && dart pub get --offline 2>&1)"; then
+  ok "the vendored override resolves offline without the tag"
+else
+  printf '%s\n' "$out" | tail -n 20
+  bad "the vendored override does not resolve offline without the tag"
 fi
 
 if [ "$failed" -eq 0 ]; then

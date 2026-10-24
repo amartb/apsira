@@ -25,13 +25,13 @@ D-APK-013 (the `apsira_ui` 0.3 component themes), D-APK-014 (its component kit),
 | `apsira_db` | Flutter | the database opener with its pre-migration snapshot and safe mode, the background database server, the restore swap with each app's `DatabaseLayout` and its step hook, the `VACUUM INTO` snapshot, the migration runner, `fsyncDirectory` (D-APK-018) | `flutter`, `apsira_core`, `drift`, `sqlite3` |
 | `apsira_exchange` | pure Dart | LYCEUM's export envelope (ruling C2) with the released legacy shapes, the `sqlite_master` dump and its loader; `tool/validate_examples.py` (D-APK-019) | `apsira_core`, `drift`, `sqlite3` |
 | `apsira_zip` | pure Dart | RELAY's streaming ZIP: `ZipWriter` (back-pressure, ZIP64), `Crc32`, `verifyZip` (one pass, a `ZipRefusal` for anything outside the profile; entry names, an entry check, extraction and the keep limit passed in by the app); RELAY and LYCEUM only (D-APK-020) | `apsira_core`, `crypto` |
-| `apsira_notify` | Flutter plugin | RELAY's notifier with app-defined channels, up to three actions and a public version, the permission flow per install, the settings intents in its own Kotlin, the per-install alarm registry; on the vendored notifications plugin in `packages/third_party/` (D-APK-021, D-APK-022) | `flutter`, `apsira_core`, `flutter_local_notifications` (vendored) |
+| `apsira_notify` | Flutter plugin | RELAY's `Notifier` port and its `LocalNotifier` adapter (the app's `NotificationChannelSpec`s, at most three actions, the lock-screen public version, `launchResponse` once), `notificationIdFor`, `NotificationPermissionFlow` with a per-install asked flag, `SystemSettings` (notification, battery and app-details screens through its own Kotlin, `apsira_notify/settings`); `testing.dart` with `FakeNotifier` and `FakeSystemSettings`; consumers declare `POST_NOTIFICATIONS` and enable Java desugaring | `flutter`, `apsira_app`, `apsira_core`, `flutter_local_notifications` (vendored, `third_party/`) |
 
 Each library is imported through its barrel (`package:apsira_core/apsira_core.dart`,
 `package:apsira_core/testing.dart`, `package:apsira_ui/apsira_ui.dart`, …); `src/` is private.
 `apsira_ui/example/` is an app that depends on `apsira_ui` as a consumer does; its tests
 prove the package-qualified fonts, licences and lockup load from a consumer's bundle.
-`apsira_app/example/`, `apsira_jobs/example/`, `apsira_storage/example/` and `apsira_lock/example/` are the plugins' consumer apps: each calls
+`apsira_app/example/`, `apsira_jobs/example/`, `apsira_storage/example/`, `apsira_lock/example/` and `apsira_notify/example/` are the plugins' consumer apps: each calls
 its package once at start, and its debug APK is the proof that the package's Kotlin
 compiles (the build is run by hand; each package README says how).
 
@@ -104,6 +104,13 @@ each package's `example/` app, which depends on its package by `path: ../` (and
 `apsira_ui`'s also on `apsira_l10n` by `path: ../../apsira_l10n`, for the delegate; its
 `pubspec_overrides.yaml`, where it has one, resolves the package's apsira dependencies
 by `../../`): it is the consumer proof, inside the package, and never released. `bash tool/check.sh --release` checks the rules, over the packages only.
+
+`third_party/<name>/` holds a vendored package that is not an apsira package: RELAY's
+patched `flutter_local_notifications` (D-APK-021, its `RELAY_PATCH.md`). No package rule,
+loop or `format` step covers it, but a dependency on it takes the same git form
+(`path: packages/third_party/<name>`), and its override, `<name>: { path:
+../third_party/<name> }`, belongs to the closure of every package that depends on it,
+directly or through another package.
 
 ## Releasing
 

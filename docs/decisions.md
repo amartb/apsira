@@ -33,6 +33,7 @@ becomes Decided on review), Superseded.
 | D-APK-016 | `apsira_lock`: RELAY's app lock as the shared one (off by default, 5 minutes, 0 = at once, never a lock-out, a backwards clock locks), its `lock` row unchanged, `local_auth` in the package, FLAG_SECURE through the package's own Kotlin; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | Decided |
 | D-APK-017 | `apsira_onboarding`: the intro with the app's mark as a parameter, the language step, the step frame and flow, the tour player, the Help shell, the discovery pieces; seen flags per install through `InstallFlag`; routes stay in each app | Decided |
 | D-APK-020 | `apsira_zip`: RELAY's streaming ZIP writer, CRC-32 and one-pass reader, the apps' parts as hooks (entry names, an entry check, extraction, the keep limit); refusals as `ZipRefusal`, mapped by each app; consumers RELAY and LYCEUM | Decided |
+| D-APK-021 | `apsira_notify`: RELAY's notifier with app-defined channels (no channel id moves), at most three actions, the lock-screen public version, the permission flow with a per-install asked flag, the package's own settings intents; RELAY's patched `flutter_local_notifications` moves to `packages/third_party/` | Decided |
 
 ---
 
@@ -758,3 +759,71 @@ becomes Decided on review), Superseded.
   `ENOSPC` while staging is a `storageFull` refusal instead of a thrown `FileSystemException`. LYCEUM:
   `BundleZipWriter` → `ZipWriter`, `BundleZipRefused` → `ZipRefused` with its own mapping, `mediaHashMismatch`
   → `rejected` from its `onEntry`, `keepLimit: 16 << 20`. Each is a line in the app's decision log at adoption.
+
+## D-APK-021 — `apsira_notify`: RELAY's notifier, the app's channels, the patched plugin in this repository
+
+- **Status:** Decided (2026-10-24: D-APK-010 C4, part 1; rulings R-2 (Q4-c) and R-4 (Q2-b-install) of the
+  packages-v0-4 session). The per-install alarm registry, part 2 of C4, is D-APK-022.
+- **Context:** RELAY `09b28810` has the complete notifier: int ids, at most three actions (Done, Snooze 10 min,
+  Snooze…; its P3-R6), taps on `responses`, `launchResponse`, the lock-screen public version (`publicTitle`, its
+  D-217) on its own patched copy of `flutter_local_notifications` 22.3.2, and settings opened through
+  `app_settings`. VIATICUM `78d38e0` posts on two channels it creates (`alerts`, `quiet`), String ids hashed with
+  FNV-1a over UTF-8, taps only, no visibility, and asks the permission once per install behind a file flag.
+  LYCEUM `9f4ff27` posts on one channel through `zonedSchedule` on the plugin's 21.0.0, with no action and no
+  public version.
+- **Decision:**
+  - The port is RELAY's `Notifier` (`show`, `cancel`, `responses`, `launchResponse`, `permissionGranted`,
+    `requestPermission`, `openNotificationSettings`) with VIATICUM's `ensureChannels`, and `LocalNotifier` its
+    adapter. `AppNotification` names its channel by a `NotificationChannelSpec` in place of RELAY's enum.
+  - **Channels are the app's.** `NotificationChannelSpec(id, name, {importance, description, silent, category,
+    privateOnLockScreen})`: the package holds no channel id. Each app passes the ids its installs already have
+    (RELAY `relay_reminders`, `relay_recording`, `relay_backups`, `relay_calendar`; VIATICUM `alerts`, `quiet`;
+    LYCEUM its own), because Android keys a user's per-channel settings by id: a new id resets them and leaves a
+    second channel in the system settings. Priority follows importance, as in RELAY's pairs. `ensureChannels`
+    refuses two specs with one id and is safe to call on every start.
+  - At most three actions (`AppNotification.maxActions`): one that runs in the background dismisses the
+    notification, one that opens the app leaves it (RELAY's P3-R6). The API carries LYCEUM's Done · +10 min ·
+    Snooze… (R-4); which notifications show Done is the app's choice (LYCEUM's deadline and response alerts show
+    none). A tap on the body leaves the notification (`autoCancel: false`) unless the notification sets
+    `dismissOnTap`, as VIATICUM's do (they have no actions, and its tap opened the app and dismissed them).
+  - The public version is RELAY's: `publicTitle` becomes the patched plugin's `publicVersion`, and a spec with
+    `privateOnLockScreen` posts with private visibility. **A-8:** VIATICUM gains no actions and no public
+    version (C4 names LYCEUM only) and its specs set no visibility; the trigger to add one is VIATICUM's next
+    change to its notifications.
+  - `launchResponse` answers the tap or action that started the process once; a second call in the same process
+    answers null, so a start-up path that asks twice cannot run an action twice (RELAY asked the plugin on every
+    call). The plugin's launched-from-history check keeps it from the next start.
+  - `notificationIdFor(key)` is RELAY's FNV-1a over UTF-16 code units, kept to 31 bits. VIATICUM's
+    `notificationIntId` hashes UTF-8 bytes; both agree on ASCII keys, which every VIATICUM id is, so no
+    notification showing at the update changes its id.
+  - The permission flow is RELAY's (`ReminderAccess`, the app's explanation before Android's prompt, the exact
+    alarm check through a callback the app passes) with VIATICUM's per-install asked flag: an `InstallFlag` at the
+    app's own path (C1), written before the prompt. Once it is set, `askFor` shows the explanation again and its
+    yes opens the app's notification settings in place of the prompt, which Android stops showing after two
+    refusals. A crash between the flag and the prompt therefore costs one settings visit, never a second prompt.
+  - **Settings intents (Q4-c):** the package's own Kotlin, `NotifySettingsModule.kt` on the channel
+    `apsira_notify/settings`, opens the app's notification settings (`ACTION_APP_NOTIFICATION_SETTINGS`), the
+    battery-optimisation list (`ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS`) and the app-details page
+    (`ACTION_APPLICATION_DETAILS_SETTINGS`): the intents `app_settings` 9.0.1 starts, with its fallback to the
+    app-details page when one cannot start. Without an activity it answers the error `noActivity` rather than
+    nothing. RELAY's recorder moves to `openAppDetails()` and RELAY drops `app_settings`.
+  - **The vendored plugin:** RELAY's `packages/flutter_local_notifications` (22.3.2 with the D-217 patch) moves
+    unchanged to `packages/third_party/flutter_local_notifications`, `RELAY_PATCH.md` and `RELAY_PATCH.diff`
+    with it. `apsira_notify` names it in the git form at the shared tag
+    (`path: packages/third_party/flutter_local_notifications`); `tool/check.sh` requires that form for every
+    dependency on a `packages/third_party/` package, admits `{ path: ../third_party/<name> }` in
+    `pubspec_overrides.yaml`, carries it in the transitive closure of every package that depends on
+    `apsira_notify`, and leaves `third_party/` out of `format` and the package loops. An app drops its own
+    dependency on the plugin; one that imports it directly names the same git form, since pub refuses two
+    sources of one package.
+- **Alternatives rejected:** a channel enum in the package (one set of ids for three apps: two of them would
+  reset their users' channel settings); VIATICUM's String ids as the port (the plugin and the alarm registry
+  work in ints, and the hash is kept as `notificationIdFor`); `app_settings` in the package (Q4-b: a new plugin
+  in LYCEUM's and VIATICUM's APKs) or kept beside the intents in RELAY (Q4-a: two openers in one APK); the
+  plugin pinned from RELAY's repository (an app repository as a package source, against D-APK-007's one URL);
+  the published plugin without the patch (no lock-screen public version, RELAY's R-10).
+- **Consequences:** RELAY passes its four channel ids as specs, deletes its vendored copy and override, and
+  drops `app_settings`. VIATICUM's notifier becomes the port with `notificationIdFor`, its two specs and its
+  taps read from `responses` (a tap with no payload is one it ignores). LYCEUM moves from the plugin's 21.0.0 to
+  the vendored 22.3.2, keeps its channel id, and gains the three actions and the public version in its
+  adoption. Upgrading the plugin re-applies the patch here, as `RELAY_PATCH.md` describes.

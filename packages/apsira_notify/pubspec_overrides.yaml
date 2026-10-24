@@ -1,0 +1,6 @@
+dependency_overrides:
+  apsira_app: { path: ../apsira_app }
+  apsira_core: { path: ../apsira_core }
+  apsira_l10n: { path: ../apsira_l10n }
+  apsira_ui: { path: ../apsira_ui }
+  flutter_local_notifications: { path: ../third_party/flutter_local_notifications }

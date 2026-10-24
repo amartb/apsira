@@ -1,0 +1,143 @@
+--- a/lib/src/platform_specifics/android/notification_details.dart
++++ b/lib/src/platform_specifics/android/notification_details.dart
+@@ -105,6 +105,21 @@
+   final bool invisible;
+ }
+ 
++// RELAY PATCH (R-10, D-217): the public version below.
++/// The version of a notification shown on a secure lock screen in place of
++/// its content (`NotificationCompat.Builder.setPublicVersion`), for one
++/// whose [AndroidNotificationDetails.visibility] is private.
++class AndroidNotificationPublicVersion {
++  /// Constructs an instance of [AndroidNotificationPublicVersion].
++  const AndroidNotificationPublicVersion({this.title, this.body});
++
++  /// The public version's title.
++  final String? title;
++
++  /// The public version's body.
++  final String? body;
++}
++
+ /// Contains notification details specific to Android.
+ class AndroidNotificationDetails {
+   /// Constructs an instance of [AndroidNotificationDetails].
+@@ -158,6 +173,7 @@
+     this.number,
+     this.audioAttributesUsage = AudioAttributesUsage.notification,
+     this.dismissIsolate,
++    this.publicVersion, // RELAY PATCH (R-10, D-217)
+   });
+ 
+   /// The icon that should be used when displaying the notification.
+@@ -343,6 +359,11 @@
+   /// Defines the notification visibility on the lockscreen.
+   final NotificationVisibility? visibility;
+ 
++  // RELAY PATCH (R-10, D-217)
++  /// The version shown on a secure lock screen while the content is hidden
++  /// (a private [visibility]); null for the system's redacted one.
++  final AndroidNotificationPublicVersion? publicVersion;
++
+   /// The duration in milliseconds after which the notification will be
+   /// cancelled if it hasn't already.
+   final int? timeoutAfter;
+--- a/lib/src/platform_specifics/android/method_channel_mappers.dart
++++ b/lib/src/platform_specifics/android/method_channel_mappers.dart
+@@ -239,7 +239,18 @@
+         ..addAll(_convertActionsToMap(actions))
+         ..addAll(_convertStyleInformationToMap())
+         ..addAll(_convertNotificationSoundToMap(sound))
+-        ..addAll(_convertLargeIconToMap());
++        ..addAll(_convertLargeIconToMap())
++        ..addAll(_convertPublicVersionToMap()); // RELAY PATCH (R-10, D-217)
++
++  // RELAY PATCH (R-10, D-217): no keys without a public version, so the map
++  // stays the published plugin's.
++  Map<String, Object?> _convertPublicVersionToMap() => switch (publicVersion) {
++    final version? => <String, Object?>{
++      'publicVersionTitle': version.title,
++      'publicVersionBody': version.body,
++    },
++    null => const <String, Object?>{},
++  };
+ 
+   Map<String, Object?> _convertStyleInformationToMap() {
+     if (styleInformation is BigPictureStyleInformation) {
+--- a/android/src/main/java/com/dexterous/flutterlocalnotifications/models/NotificationDetails.java
++++ b/android/src/main/java/com/dexterous/flutterlocalnotifications/models/NotificationDetails.java
+@@ -105,6 +105,9 @@
+   private static final String LED_ON_MS = "ledOnMs";
+   private static final String LED_OFF_MS = "ledOffMs";
+   private static final String VISIBILITY = "visibility";
++  // RELAY PATCH (R-10, D-217)
++  private static final String PUBLIC_VERSION_TITLE = "publicVersionTitle";
++  private static final String PUBLIC_VERSION_BODY = "publicVersionBody";
+ 
+   private static final String TICKER = "ticker";
+   private static final String SCHEDULE_MODE = "scheduleMode";
+@@ -177,6 +180,9 @@
+   public Integer ledOffMs;
+   public String ticker;
+   public Integer visibility;
++  // RELAY PATCH (R-10, D-217): the public version's text; both null for none.
++  public String publicVersionTitle;
++  public String publicVersionBody;
+ 
+   @SerializedName(value = "scheduleMode", alternate = "allowWhileIdle")
+   public ScheduleMode scheduleMode;
+@@ -284,6 +290,11 @@
+       readLargeIconInformation(notificationDetails, platformChannelSpecifics);
+       notificationDetails.ticker = (String) platformChannelSpecifics.get(TICKER);
+       notificationDetails.visibility = (Integer) platformChannelSpecifics.get(VISIBILITY);
++      // RELAY PATCH (R-10, D-217)
++      notificationDetails.publicVersionTitle =
++          (String) platformChannelSpecifics.get(PUBLIC_VERSION_TITLE);
++      notificationDetails.publicVersionBody =
++          (String) platformChannelSpecifics.get(PUBLIC_VERSION_BODY);
+       if (platformChannelSpecifics.containsKey(SCHEDULE_MODE)) {
+         notificationDetails.scheduleMode =
+             ScheduleMode.valueOf((String) platformChannelSpecifics.get(SCHEDULE_MODE));
+--- a/android/src/main/java/com/dexterous/flutterlocalnotifications/FlutterLocalNotificationsPlugin.java
++++ b/android/src/main/java/com/dexterous/flutterlocalnotifications/FlutterLocalNotificationsPlugin.java
+@@ -454,6 +454,7 @@
+     }
+ 
+     setVisibility(notificationDetails, builder);
++    setPublicVersion(context, notificationDetails, builder); // RELAY PATCH (R-10, D-217)
+     applyGrouping(notificationDetails, builder);
+     setSound(context, notificationDetails, builder);
+     setVibrationPattern(notificationDetails, builder);
+@@ -954,6 +955,32 @@
+     builder.setVisibility(visibility);
+   }
+ 
++  // RELAY PATCH (R-10, D-217): the version a secure lock screen shows while the content is
++  // hidden (a private visibility): its own title and text, the same channel, small icon, colour
++  // and time, built as the notification's own builder is.
++  private static void setPublicVersion(
++      Context context,
++      NotificationDetails notificationDetails,
++      NotificationCompat.Builder builder) {
++    if (StringUtils.isNullOrEmpty(notificationDetails.publicVersionTitle)
++        && StringUtils.isNullOrEmpty(notificationDetails.publicVersionBody)) {
++      return;
++    }
++    NotificationCompat.Builder publicBuilder =
++        new NotificationCompat.Builder(context, notificationDetails.channelId)
++            .setContentTitle(notificationDetails.publicVersionTitle)
++            .setContentText(notificationDetails.publicVersionBody)
++            .setPriority(notificationDetails.priority);
++    setSmallIcon(context, notificationDetails, publicBuilder);
++    if (notificationDetails.color != null) {
++      publicBuilder.setColor(notificationDetails.color.intValue());
++    }
++    if (notificationDetails.when != null) {
++      publicBuilder.setWhen(notificationDetails.when);
++    }
++    builder.setPublicVersion(publicBuilder.build());
++  }
++
+   private static void applyGrouping(
+       NotificationDetails notificationDetails, NotificationCompat.Builder builder) {
+     boolean isGrouped = false;
