@@ -394,7 +394,11 @@ becomes Decided on review), Superseded.
   - **`ZoneChangeReceiver` and `enqueueResync`** belong in `apsira_jobs`, never `apsira_notify` (ruling R-3). They
     move in Phase 1 if `androidx.work` compiles from `apsira_jobs` with no artifact new to either APK (T6 branch 1);
     otherwise they stay a named exception in RELAY and VIATICUM until Phase 3, destined for `apsira_jobs`
-    (branch 2). Branch taken: recorded here by the `apsira_jobs` task.
+    (branch 2). **Branch taken: 1** (T6, 2026-10-24). `workmanager_android` 0.10.9's `BackgroundWorker`, its
+    `DART_TASK_KEY` and the top-level `PAYLOAD_PREFIX` are public. Its `androidx.work:work-runtime:2.11.2` is an
+    `implementation` dependency, the artifact and version RELAY and VIATICUM already name. So `apsira_jobs`' Android
+    build names that project and artifact, adding nothing to either APK, and holds `ZoneResync.kt` and the
+    `<receiver>`. RELAY's debug build proves the compile; if it fails, branch 2 returns as an F-task.
 - **Alternatives rejected:** the adapter inside `apsira_app` (reverses LYCEUM D-034) or one per app (the policy
   fork can recur); a hand-written SHA-256 (owns a crypto primitive) or the hash inside `FileLogSink` (changes
   VIATICUM's `LogRecord` and its tests); LYCEUM's token-less `null` (moves RELAY's results).

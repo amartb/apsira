@@ -1,0 +1,20 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- RECEIVE_BOOT_COMPLETED comes with androidx.work's own manifest, which
+         workmanager_android brings into every app that uses this package. -->
+    <application>
+        <!-- The zone resync's receiver (ZoneResync.kt; from RELAY's and
+             VIATICUM's app manifests): a zone change, a clock change, a reboot
+             or an app update queues one reminder resync. Not exported: only
+             the system sends these. -->
+        <receiver
+            android:name="com.apsiralabs.apsira_jobs.ZoneChangeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

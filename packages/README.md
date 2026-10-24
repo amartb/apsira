@@ -13,7 +13,7 @@ every app) and D-APK-011 (the Tier-1 set at `apsira-v0.2.0`).
 | `apsira_tools` | pure Dart, `bin/` | `layering_lint`, `l10n_check`, `coverage_gate`, `deps_check`, `manifest_check` + `tool/apsira_tools.yaml` config; the release and build script skeletons | `yaml` |
 | `apsira_test` | Flutter, dev | the Android font scaler, the large-text layout checker, the golden matrix with bundled fonts, the a11y pass, `prop_core`, pump helpers | `flutter`, `flutter_test`, `apsira_ui` |
 | `apsira_app` | Flutter plugin | error handlers, the rotating file log sink, the start-phase redirect, `RestartableRoot`, the startup-failure app, `SystemClock` + the zone channel, per-install flags, the About page | `flutter`, `apsira_core`, `apsira_ui` |
-| `apsira_jobs` | Flutter plugin | the `BackgroundJobs` port, `JobConstraints`, the WorkManager adapter (keep/replace policy) and its fake; RELAY and VIATICUM only | `flutter`, `workmanager` |
+| `apsira_jobs` | Flutter plugin | the `BackgroundJobs` port, `JobConstraints`, the WorkManager adapter (keep/replace policy) and its fake, the zone-change resync receiver (`ZoneResync.kt`); RELAY and VIATICUM only | `flutter`, `workmanager` |
 
 Each library is imported through its barrel (`package:apsira_core/apsira_core.dart`,
 `package:apsira_core/testing.dart`, `package:apsira_ui/apsira_ui.dart`, …); `src/` is private.

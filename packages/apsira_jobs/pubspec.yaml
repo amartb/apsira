@@ -1,0 +1,32 @@
+# From viaticum pubspec.yaml @ 78d38e0 and relay pubspec.yaml @ 09b28810 (the
+# workmanager pin both apps already have).
+name: apsira_jobs
+description: "Periodic background jobs for the Apsira apps: the BackgroundJobs port, JobConstraints, the WorkManager adapter and its fake, and the zone-change resync receiver."
+publish_to: none
+version: 0.2.0
+
+environment:
+  sdk: ^3.13.0
+  # The lowest Flutter any live consumer pins (docs/agent-rules.md).
+  flutter: ">=3.47.0"
+
+# RELAY and VIATICUM only; LYCEUM does not depend on it (LYCEUM D-034, D-APK-011).
+# No apsira_* dependency.
+dependencies:
+  flutter:
+    sdk: flutter
+  workmanager: ^0.10.10
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  # A plugin only so its Android half (ZoneResync.kt, the manifest's receiver)
+  # is built into the app; ApsiraJobsPlugin itself does nothing (README).
+  plugin:
+    platforms:
+      android:
+        package: com.apsiralabs.apsira_jobs
+        pluginClass: ApsiraJobsPlugin
