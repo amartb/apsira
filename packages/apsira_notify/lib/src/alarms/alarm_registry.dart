@@ -13,7 +13,9 @@ import 'json_file.dart';
 /// The alarms this install armed: a file under app storage, never in the
 /// database or a backup, so a restored database never re-arms an alarm and
 /// another phone's alarms never travel here (D-APK-022). The app's Android
-/// backup rules exclude its folder (`expectExcludedFromDeviceBackup`).
+/// backup rules exclude its folder and the scheduling plugin's own list
+/// (`expectExcludedFromDeviceBackup` with `alarmBackupExclusions`); a list
+/// that travelled anyway is cancelled by `AlarmSync`.
 ///
 /// Two files in the folder of [path], one writer each:
 /// - the registry ([path], `{nextPlatformId, alarms[], pendingCancels[]}`),

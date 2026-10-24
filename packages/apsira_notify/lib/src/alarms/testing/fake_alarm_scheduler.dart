@@ -6,8 +6,9 @@ import '../alarm_scheduler.dart';
 /// Records the platform's alarms so tests can assert what would ring.
 ///
 /// [armed] is the platform's own list, by platform id: [schedule] replaces by
-/// id, [cancel] removes, [fire] takes one out as it goes off, and [forgetAll]
-/// is a reboot that lost every alarm.
+/// id, [cancel] removes, [fire] takes one out as it goes off, [forgetAll]
+/// is a reboot that lost every alarm, and [pendingPlatformIds] answers its
+/// ids.
 final class FakeAlarmScheduler implements AlarmScheduler {
   /// What is armed, by platform id: what would ring.
   final Map<int, RegisteredAlarm> armed = {};
@@ -53,6 +54,11 @@ final class FakeAlarmScheduler implements AlarmScheduler {
     cancelled.add(platformId);
     armed.remove(platformId);
   }
+
+  /// The ids in [armed]: a test seeds [armed] with alarms another install
+  /// set to stand for a plugin list a restore brought.
+  @override
+  Future<Set<int>> pendingPlatformIds() async => armed.keys.toSet();
 
   /// The alarm armed under [platformId] goes off: it leaves [armed].
   RegisteredAlarm fire(int platformId) {

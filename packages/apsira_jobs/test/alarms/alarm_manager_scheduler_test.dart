@@ -3,14 +3,17 @@
 // @ 78d38e0: exact, waking, allow-while-idle alarms that survive a reboot,
 // under the registry's platform ids; cancel, which prunes the plugin's reboot
 // list; and the fire entry, which records the fire, delivers it and cancels
-// the platform alarm (D-APK-022, ruling R-1 Q1-c). The plugin's own Dart code
-// runs; its method channel is answered by a recording handler. That an alarm
+// the platform alarm (D-APK-022, ruling R-1 Q1-c); the plugin's reboot list,
+// read through the package's own channel, and KP-A10 on it (F1). The plugin's
+// own Dart code runs; its method channel is answered by a recording handler
+// that keeps the reboot list as the plugin's AlarmService does. That an alarm
 // fires on time on the phone, in Doze and after a reboot, is a device check.
 import 'dart:io';
 import 'dart:ui' show CallbackHandle;
 
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:apsira_jobs/apsira_jobs.dart';
+import 'package:apsira_jobs/testing.dart';
 import 'package:apsira_notify/apsira_notify.dart';
 import 'package:apsira_notify/testing.dart';
 import 'package:flutter/services.dart';
@@ -43,16 +46,34 @@ void main() {
   late List<MethodCall> calls;
   late bool accepted;
   late Directory dir;
+  // The plugin's persistent_alarm_ids: oneShotAt with rescheduleOnReboot
+  // adds, cancel removes (AlarmService.java).
+  late Set<int> persistent;
+  late List<MethodCall> listCalls;
 
   setUp(() {
     calls = [];
+    listCalls = [];
+    persistent = {};
     accepted = true;
     dir = Directory.systemTemp.createTempSync('alarm_manager_');
     messenger.setMockMethodCallHandler(AndroidAlarmManager.channel, (
       call,
     ) async {
       calls.add(call);
+      final args = call.arguments;
+      if (args is List && args.isNotEmpty && args.first is int) {
+        final id = args.first as int;
+        if (call.method == 'Alarm.oneShotAt' && accepted) persistent.add(id);
+        if (call.method == 'Alarm.cancel') persistent.remove(id);
+      }
       return call.method == 'Alarm.oneShotAt' ? accepted : true;
+    });
+    messenger.setMockMethodCallHandler(AlarmManagerScheduler.listChannel, (
+      call,
+    ) async {
+      listCalls.add(call);
+      return call.method == 'persistentAlarmIds' ? [...persistent] : null;
     });
     AndroidAlarmManager.setTestOverrides(
       getCallbackHandle: (callback) => CallbackHandle.fromRawHandle(
@@ -63,6 +84,7 @@ void main() {
 
   tearDown(() {
     messenger.setMockMethodCallHandler(AndroidAlarmManager.channel, null);
+    messenger.setMockMethodCallHandler(AlarmManagerScheduler.listChannel, null);
     dir.deleteSync(recursive: true);
   });
 
@@ -176,6 +198,74 @@ void main() {
   test('construction touches no platform channel', () {
     AlarmManagerScheduler(_onFire);
     expect(calls, isEmpty);
+    expect(listCalls, isEmpty);
+  });
+
+  group('the plugin\'s reboot list (F1)', () {
+    test('pendingPlatformIds reads persistent_alarm_ids through the '
+        'package\'s channel, without starting the plugin', () async {
+      persistent.addAll({3, 41});
+      final scheduler = AlarmManagerScheduler(_onFire);
+      expect(await scheduler.pendingPlatformIds(), {3, 41});
+      expect(listCalls.single.method, 'persistentAlarmIds');
+      expect(calls, isEmpty);
+      persistent.clear();
+      expect(await scheduler.pendingPlatformIds(), isEmpty);
+    });
+
+    test('KP-A10 a restored list the registry never handed out: after the '
+        'resync only this install\'s alarms are on it', () async {
+      // The backup copied the plugin's prefs file; its boot receiver would
+      // re-arm these after the next reboot.
+      persistent.addAll({0, 5, 9});
+      final sync = AlarmSync(
+        AlarmManagerScheduler(_onFire),
+        AlarmRegistry(() async => dir),
+      );
+      final report = await sync.resync(
+        wanted: [
+          entry().alarm,
+          entry(id: 'reminder:b', platformId: 1).alarm,
+        ],
+        now: t0,
+      );
+      expect(persistent, {
+        for (final e in await AlarmRegistry(() async => dir).entries())
+          e.platformId,
+      });
+      expect([
+        for (final c in named('Alarm.cancel')) (c.arguments as List).first,
+      ], containsAll([0, 5, 9]));
+      expect(report.strangers, 3);
+    });
+
+    test('the per-install set names the plugin\'s prefs file', () {
+      expect(alarmManagerBackupExclusions, const [
+        BackupPath.sharedPref(
+          'dev.fluttercommunity.plus.android_alarm_manager_plugin.xml',
+        ),
+      ]);
+      const viaticum = '''
+<data-extraction-rules>
+  <cloud-backup><exclude domain="file" path="alarms/" /></cloud-backup>
+  <device-transfer><exclude domain="file" path="alarms/" /></device-transfer>
+</data-extraction-rules>
+''';
+      expect(
+        backupExclusionGaps(viaticum, excluded: alarmManagerBackupExclusions),
+        hasLength(2),
+      );
+      final fixed = viaticum.replaceAll(
+        '<exclude domain="file" path="alarms/" />',
+        '<exclude domain="file" path="alarms/" />'
+            '<exclude domain="sharedpref" '
+            'path="dev.fluttercommunity.plus.android_alarm_manager_plugin.xml" />',
+      );
+      expect(
+        backupExclusionGaps(fixed, excluded: alarmManagerBackupExclusions),
+        isEmpty,
+      );
+    });
   });
 
   group('the fire entry', () {

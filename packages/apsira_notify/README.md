@@ -124,10 +124,16 @@ final report = await sync.resync(wanted: wantedAlarms, now: clock.nowUtc());
 - **`resync({wanted, now})`** applies the snoozes (one stands in for its alarm's time while
   the alarm is wanted and the snooze is ahead; the rest are pruned), leaves out what fired
   at that instant and, with `lateGrace`, what is older, takes the window (`planAlarms`:
-  `reminderWindowSize` = 100 nearest), cancels every registry entry outside it and every
-  pending code before it unregisters them, then registers the whole window and calls
-  `schedule` for **every** alarm in it. A copied or stale registry costs a no-op cancel,
-  never an unarmed alarm. `AlarmSyncReport` counts `scheduled`, `cancelled` and `refused`.
+  `reminderWindowSize` = 100 nearest), cancels every registry entry outside it, every
+  pending code and every **stranger** (an id the plugin holds pending,
+  `AlarmScheduler.pendingPlatformIds`, that the registry never handed out: a list a
+  restore or a transfer copied, which the plugin re-arms after a reboot) before it
+  unregisters them, then registers the whole window and calls `schedule` for **every**
+  alarm in it. The plugin's list is read before the registry, so an alarm another engine
+  arms meanwhile is never a stranger. A copied or stale registry costs a no-op cancel,
+  never an unarmed alarm. `AlarmSyncReport` counts `scheduled`, `cancelled`, `refused` and
+  `strangers`. The plugin's list belongs to `AlarmSync`: the app arms nothing through that
+  plugin by itself.
 - **`snooze(alarm, until: …)`** writes the snooze and arms it at once (the +10 min action);
   Done is the app dropping the alarm from `wanted` (and `SnoozeStore.clear`).
 - **`ScheduledAlarm(alarmId, atUtc, content)`**: `content` is the fire's (VIATICUM's
@@ -141,9 +147,16 @@ final report = await sync.resync(wanted: wantedAlarms, now: clock.nowUtc());
   `AlarmManagerScheduler` in `apsira_jobs` (RELAY, VIATICUM).
 
 **Consumer requirement:** `data_extraction_rules.xml` excludes `alarms/` (or both paths)
-in `<cloud-backup>` and `<device-transfer>`, and `full_backup_content` too when the app has
-one. The adoption runs `expectExcludedFromDeviceBackup(rules, fullBackupContent: …, paths:
-alarmInstallPaths)` from `testing.dart` on the app's own files.
+and the plugin's scheduled list (`<exclude domain="sharedpref"
+path="scheduled_notifications.xml"/>`, `flnScheduledNotifications`) in `<cloud-backup>`
+and `<device-transfer>`, and `full_backup_content` too when the app has one. The adoption
+runs `expectExcludedFromDeviceBackup(rules, fullBackupContent: …, paths: [the app's C1
+files], excluded: [...alarmBackupExclusions, …])` from `testing.dart` on the app's own
+files; `BackupPath.file`, `.sharedPref`, `.root` and `.database` name a path in each domain
+(LYCEUM's `.migrating` marker is `BackupPath.root('app_flutter/lyceum.sqlite.migrating')`),
+and an app on `AlarmManagerScheduler` adds `apsira_jobs`' `alarmManagerBackupExclusions`.
+The check reads the `file`, `sharedpref`, `root` and `database` domains, where a `root`
+folder covers the domains under it.
 
 ## What it holds, and what each app deletes
 
@@ -165,13 +178,13 @@ source in its header. Paths are under the app's root; the adoption lane confirms
 | `AlarmSync`, `AlarmSyncReport` | V `lib/app/services/reminder_sync_service.dart` (its diff and queue) | the alarm half of its reminder sync | the alarm half of `ReminderSyncService` | the cancel-and-schedule loop of `lib/app/services/reminder_service.dart` |
 | `reminderWindowSize`, `nearestFires`, `planAlarms` | R `lib/domain/reminders/window.dart` | those and `requestCodeFor` | `nearestAlarms`, `planWindow` | the window of `plannedAlerts` |
 | `FlnAlarmScheduler` | L `lib/data/platform/notification_service.dart` | — | — | `schedule`, `cancel`, `scheduledIds` |
-| `FakeAlarmScheduler`, `expectExcludedFromDeviceBackup` (`testing.dart`) | R and V `test/fakes/fake_alarm_scheduler.dart`; V's rules check | that fake | that fake and the check | — |
+| `FakeAlarmScheduler`, `expectExcludedFromDeviceBackup`, `BackupPath`, `alarmBackupExclusions` (`testing.dart`) | R and V `test/fakes/fake_alarm_scheduler.dart`; V's rules check | that fake | that fake and the check | — |
 | `../third_party/flutter_local_notifications` | R `packages/flutter_local_notifications` | the copy and its override | the published 22.3.2 | the published 21.0.0 |
 
 ## Checks
 
 From this directory: `flutter analyze` and `flutter test` (the `notify` gate): the crash
-matrices (KP-N1…N3, `test/alarms/` KP-A1…A9), RELAY's notifier, permission and `fln_public_version_test.dart`,
+matrices (KP-N1…N3, `test/alarms/` KP-A1…A10), RELAY's notifier, permission and `fln_public_version_test.dart`,
 VIATICUM's channel and tap cases, the settings channel against a mock; the registry (a
 VIATICUM 1.0.0 `registry.json` fixture), the snooze store, RELAY's window, the sync,
 `FlnAlarmScheduler` against the plugin's channel, and the backup-rules check on VIATICUM's

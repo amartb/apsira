@@ -1,5 +1,6 @@
 // The crash matrix of the per-install alarm registry (D-APK-022, kill points
-// KP-A1…A9 of the packages-v0-4 task specs), written before the code. A kill
+// KP-A1…A9 of the packages-v0-4 task specs and KP-A10 of F1), written before
+// the code. A kill
 // is a `SimulatedCrash` thrown by a step hook after the named step; the test
 // then drops every object and builds new ones from the files on disk and the
 // platform's alarms, as a restarted process would. The platform is the
@@ -8,6 +9,7 @@ import 'dart:io';
 
 import 'package:apsira_notify/apsira_notify.dart';
 import 'package:apsira_notify/testing.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A kill at a named step.
@@ -41,6 +43,7 @@ Map<String, DateTime> ringing(FakeAlarmScheduler platform) => {
 DateTime at(int minutes) => t0.add(Duration(minutes: minutes));
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late Directory dir;
 
   setUp(() => dir = Directory.systemTemp.createTempSync('alarm_crash_'));
@@ -263,5 +266,125 @@ void main() {
     expect(await snoozes().all(), isEmpty);
     expect(platform.armed, isEmpty);
     expect(await registry().entries(), isEmpty);
+  });
+
+  group('KP-A10 a restore or transfer that brought the plugin\'s own list', () {
+    // The backup copied the scheduling plugin's persisted list (FLN's
+    // scheduled_notifications, android_alarm_manager_plus's
+    // persistent_alarm_ids), which its boot receiver re-arms: the platform
+    // holds pending ids that this install's registry never handed out.
+    RegisteredAlarm foreign(String id, int platformId) => RegisteredAlarm(
+      alarmId: id,
+      platformId: platformId,
+      atUtc: at(45),
+      content: {'title': 'Other phone $id'},
+    );
+
+    test('with an empty registry: after the resync only this install\'s '
+        'alarms are pending; every other id is cancelled', () async {
+      final platform = FakeAlarmScheduler();
+      for (final f in [foreign('x', 0), foreign('y', 1), foreign('z', 7)]) {
+        platform.armed[f.platformId] = f;
+      }
+      final report = await sync(platform)
+          .resync(wanted: [alarm('a'), alarm('b')], now: t0);
+      expect(ringing(platform), {'a': at(60), 'b': at(60)});
+      final mine = {for (final e in await registry().entries()) e.platformId};
+      expect(await platform.pendingPlatformIds(), mine);
+      expect(platform.cancelled, containsAll([0, 1, 7]));
+      expect(report.cancelled, 3);
+      platform.cancelled.clear();
+      await sync(platform).resync(wanted: [alarm('a'), alarm('b')], now: t0);
+      expect(platform.cancelled, isEmpty, reason: 'nothing foreign is left');
+    });
+
+    test('with a foreign registry beside the foreign list: the same', () async {
+      final other = Directory.systemTemp.createTempSync('alarm_list_');
+      addTearDown(() => other.deleteSync(recursive: true));
+      final otherPhone = FakeAlarmScheduler();
+      await sync(otherPhone, storage: other).resync(
+        wanted: [alarm('x'), alarm('a', minutes: 20), alarm('y')],
+        now: t0,
+      );
+      Directory('${dir.path}/alarms').createSync(recursive: true);
+      File('${other.path}/alarms/registry.json')
+          .copySync('${dir.path}/alarms/registry.json');
+      final platform = FakeAlarmScheduler();
+      platform.armed.addAll(otherPhone.armed);
+      platform.armed[9] = foreign('stale', 9);
+
+      await sync(platform)
+          .resync(wanted: [alarm('a', minutes: 20), alarm('b')], now: t0);
+      expect(ringing(platform), {'a': at(20), 'b': at(60)});
+      expect(await platform.pendingPlatformIds(), {
+        for (final e in await registry().entries()) e.platformId,
+      });
+      expect(platform.cancelled, contains(9));
+    });
+
+    test('on the notification plugin (FlnAlarmScheduler): the restored '
+        'scheduled list is cancelled, this install\'s alarms stay', () async {
+      // The plugin's own check of a future date reads the real clock.
+      final now = DateTime.utc(2099, 1, 1, 9);
+      const channel = MethodChannel(
+        'dexterous.com/flutter/local_notifications',
+      );
+      final messenger =
+          TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+      final pending = <int, Map<String, Object?>>{
+        for (final id in [0, 3, 12000])
+          id: {'id': id, 'title': 'Other', 'body': 'o', 'payload': 'x$id'},
+      };
+      final cancelled = <int>[];
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        final args = call.arguments;
+        switch (call.method) {
+          case 'pendingNotificationRequests':
+            return [...pending.values];
+          case 'zonedSchedule':
+            final id = (args as Map)['id'] as int;
+            pending[id] = {
+              'id': id,
+              'title': args['title'],
+              'body': args['body'],
+              'payload': args['payload'],
+            };
+          case 'cancel':
+            final id = (args as Map)['id'] as int;
+            cancelled.add(id);
+            pending.remove(id);
+        }
+        return null;
+      });
+      addTearDown(() => messenger.setMockMethodCallHandler(channel, null));
+      const spec = NotificationChannelSpec('alerts', 'Alerts');
+      final scheduler = FlnAlarmScheduler(
+        notificationOf: (a) => AppNotification(
+          notificationId: a.platformId,
+          title: a.content['title']! as String,
+          body: 'b',
+          channel: spec,
+        ),
+        now: () => now,
+      );
+      ScheduledAlarm soon(String id) => ScheduledAlarm(
+        alarmId: id,
+        atUtc: now.add(const Duration(hours: 1)),
+        content: {'title': 'Mine $id'},
+      );
+
+      await AlarmSync(
+        scheduler,
+        registry(),
+        lateGrace: Duration.zero,
+      ).resync(wanted: [soon('a'), soon('b')], now: now);
+      final mine = {for (final e in await registry().entries()) e.platformId};
+      expect(pending.keys.toSet(), mine);
+      expect(cancelled, containsAll([0, 3, 12000]));
+      expect(
+        pending.values.map((p) => p['payload']),
+        unorderedEquals(['a', 'b']),
+      );
+    });
   });
 }

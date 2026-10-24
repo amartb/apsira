@@ -15,7 +15,11 @@ read unchanged) as `AlarmRegistry`, a per-install `SnoozeStore` (`alarms/snoozes
 `AlarmSync` (every wanted alarm armed again, the registry deciding only what to cancel;
 write-ahead both ways), RELAY's window, the `AlarmScheduler` port with platform ids from
 the registry, `FlnAlarmScheduler`, and in `testing.dart` `FakeAlarmScheduler` and
-`expectExcludedFromDeviceBackup`. Adds `timezone ^0.11.2`.
+`expectExcludedFromDeviceBackup`. Adds `timezone ^0.11.2`. The port's
+`pendingPlatformIds` answers the plugin's own persisted list, and `resync` cancels every id
+on it that the registry never handed out (`AlarmSyncReport.strangers`); the backup-rules
+check reads the `file`, `sharedpref`, `root` and `database` domains (`BackupPath`,
+`excluded:`), and `alarmBackupExclusions` adds the plugin's `scheduled_notifications.xml`.
 
 Migration for every app: drop the app's own `flutter_local_notifications` dependency (a
 direct import names the vendored copy in the git form); declare `POST_NOTIFICATIONS` and
@@ -33,9 +37,11 @@ path.
 - LYCEUM: from the plugin's 21.0.0 to the vendored 22.3.2; its channel id kept; Done ·
   +10 min · Snooze… and the public version in its adoption (R-4).
 
-Migration for the alarm registry, every app: exclude `alarms/` from `<cloud-backup>` and
-`<device-transfer>` (and `full_backup_content`), checked with
-`expectExcludedFromDeviceBackup`; pass the wanted alarms to `AlarmSync.resync`.
+Migration for the alarm registry, every app: exclude `alarms/` and
+`<exclude domain="sharedpref" path="scheduled_notifications.xml"/>` from `<cloud-backup>`
+and `<device-transfer>` (and `full_backup_content`), checked with
+`expectExcludedFromDeviceBackup(…, excluded: alarmBackupExclusions)`; pass the wanted
+alarms to `AlarmSync.resync`; arm nothing through the scheduling plugin outside it.
 
 - RELAY: schema v12 drops `registered_alarms`; its request codes go to
   `addPendingCancels` once; `AlarmManagerScheduler` from `apsira_jobs`; adds the exclusion.

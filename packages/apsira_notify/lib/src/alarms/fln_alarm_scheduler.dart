@@ -105,6 +105,14 @@ final class FlnAlarmScheduler implements AlarmScheduler {
     }
   }
 
+  /// The ids of the plugin's pending requests: on Android its
+  /// `scheduled_notifications` list, which its boot receiver re-arms.
+  @override
+  Future<Set<int>> pendingPlatformIds() async {
+    await _ready?.call();
+    return {for (final p in await _plugin.pendingNotificationRequests()) p.id};
+  }
+
   @override
   Future<void> openBatteryOptimisationSettings() =>
       _settings.openBatteryOptimisationSettings();

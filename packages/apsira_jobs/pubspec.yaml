@@ -28,8 +28,9 @@ dev_dependencies:
     sdk: flutter
 
 flutter:
-  # A plugin only so its Android half (ZoneResync.kt, the manifest's receiver)
-  # is built into the app; ApsiraJobsPlugin itself does nothing (README).
+  # A plugin so its Android half (ZoneResync.kt, the manifest's receiver) is
+  # built into the app; ApsiraJobsPlugin answers the alarm manager's reboot
+  # list on apsira_jobs/alarms (README).
   plugin:
     platforms:
       android:

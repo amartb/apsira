@@ -10,11 +10,16 @@ Adds `AlarmManagerScheduler` (D-APK-022, ruling R-1 Q1-c), `apsira_notify`'s
 allowed while idle, re-armed after a reboot, the alarm-clock fallback) under the
 registry's platform ids, with VIATICUM's fire entry `onAlarmFired` (record, deliver,
 cancel) and `alarmParams`/`alarmFromParams`. Depends on `apsira_notify` at the shared tag.
+`pendingPlatformIds` reads the plugin's reboot list (`persistent_alarm_ids`) through
+`ApsiraJobsPlugin`'s channel `apsira_jobs/alarms`, so `AlarmSync` cancels the ids a restore
+brought; `testing.dart` adds `alarmManagerBackupExclusions`, the plugin's prefs file.
 
 Migration: move every apsira `ref:` to `apsira-v0.4.0`. RELAY and VIATICUM delete their
 `lib/data/platform/alarm_manager_scheduler.dart` and bind this one (VIATICUM passes its
 `exactAlarmsAllowed` as `canScheduleExact`); their fire entry calls `onAlarmFired` with an
-`AlarmRegistry` over app storage.
+`AlarmRegistry` over app storage. Both exclude
+`dev.fluttercommunity.plus.android_alarm_manager_plugin.xml` (domain `sharedpref`) from
+Android's backup, checked with `alarmManagerBackupExclusions`.
 
 ## 0.3.0 — 2026-10-24
 

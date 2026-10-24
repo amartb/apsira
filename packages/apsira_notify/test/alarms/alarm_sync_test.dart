@@ -27,6 +27,36 @@ Map<String, DateTime> ringing(FakeAlarmScheduler platform) => {
   for (final a in platform.armed.values) a.alarmId: a.atUtc,
 };
 
+/// The fake platform, with [beforePending] run as the platform's pending list
+/// is read: another engine at work while a resync runs.
+final class _Racing implements AlarmScheduler {
+  _Racing(this.inner);
+
+  final FakeAlarmScheduler inner;
+  Future<void> Function()? beforePending;
+
+  @override
+  Future<bool> canScheduleExact() => inner.canScheduleExact();
+
+  @override
+  Future<bool> schedule(RegisteredAlarm alarm) => inner.schedule(alarm);
+
+  @override
+  Future<void> cancel(int platformId) => inner.cancel(platformId);
+
+  @override
+  Future<Set<int>> pendingPlatformIds() async {
+    final run = beforePending;
+    beforePending = null;
+    await run?.call();
+    return inner.pendingPlatformIds();
+  }
+
+  @override
+  Future<void> openBatteryOptimisationSettings() =>
+      inner.openBatteryOptimisationSettings();
+}
+
 void main() {
   late Directory dir;
   late FakeAlarmScheduler platform;
@@ -262,4 +292,42 @@ void main() {
       expect(await SnoozeStore(() async => dir).all(), isEmpty);
     },
   );
+
+  group('pending ids this install never registered (F1)', () {
+    test('are cancelled and counted; the registry\'s own stay', () async {
+      await sync().resync(wanted: [alarm('a')], now: t0);
+      final a = (await registry().entries()).single;
+      platform.armed[40] = RegisteredAlarm(
+        alarmId: 'restored',
+        platformId: 40,
+        atUtc: at(5),
+      );
+      final report = await sync().resync(wanted: [alarm('a')], now: t0);
+      expect(platform.cancelled, [40]);
+      expect(report.cancelled, 1);
+      expect(platform.armed.keys, [a.platformId]);
+    });
+
+    test('the list is read before the registry: an alarm another engine '
+        'registers and arms meanwhile is never taken for a stranger', () async {
+      final racing = _Racing(platform);
+      racing.beforePending = () async {
+        // A notification's +10 min in the background engine.
+        await sync().snooze(alarm('n', minutes: 5), until: at(10));
+      };
+      await sync(on: racing)
+          .resync(wanted: [alarm('a'), alarm('n', minutes: 5)], now: t0);
+      expect(platform.cancelled, isEmpty);
+      expect(ringing(platform).keys, unorderedEquals(['a', 'n']));
+      expect(await platform.pendingPlatformIds(), {
+        for (final e in await registry().entries()) e.platformId,
+      });
+    });
+
+    test('FakeAlarmScheduler reports what it holds armed', () async {
+      expect(await platform.pendingPlatformIds(), isEmpty);
+      await sync().resync(wanted: [alarm('a'), alarm('b')], now: t0);
+      expect(await platform.pendingPlatformIds(), platform.armed.keys.toSet());
+    });
+  });
 }

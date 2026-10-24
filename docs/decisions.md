@@ -36,7 +36,7 @@ becomes Decided on review), Superseded.
 | D-APK-019 | `apsira_exchange`: LYCEUM's envelope (C2) for every export, the apps' old shapes read as `LegacyShape`s, the `sqlite_master` dump and LYCEUM's loader with the apps' parts as parameters, one `validate_examples.py` | Decided |
 | D-APK-020 | `apsira_zip`: RELAY's streaming ZIP writer, CRC-32 and one-pass reader, the apps' parts as hooks (entry names, an entry check, extraction, the keep limit); refusals as `ZipRefusal`, mapped by each app; consumers RELAY and LYCEUM | Decided |
 | D-APK-021 | `apsira_notify`: RELAY's notifier with app-defined channels (no channel id moves), at most three actions, the lock-screen public version, the permission flow with a per-install asked flag, the package's own settings intents; RELAY's patched `flutter_local_notifications` moves to `packages/third_party/` | Decided |
-| D-APK-022 | The per-install alarm registry: VIATICUM's `alarms/registry.json` in `apsira_notify` with a per-install `SnoozeStore`, `AlarmSync` (re-arms every wanted alarm, cancels only what the registry names), RELAY's window; `FlnAlarmScheduler` (LYCEUM) and `AlarmManagerScheduler` in `apsira_jobs` (Q1-c); every consumer excludes `alarms/` from Android's backup | Decided |
+| D-APK-022 | The per-install alarm registry: VIATICUM's `alarms/registry.json` in `apsira_notify` with a per-install `SnoozeStore`, `AlarmSync` (re-arms every wanted alarm, cancels what the registry names and every plugin-pending id it never handed out), RELAY's window; `FlnAlarmScheduler` (LYCEUM) and `AlarmManagerScheduler` in `apsira_jobs` (Q1-c); every consumer excludes `alarms/` and the plugins' persisted lists from Android's backup | Decided (amended by F1, 2026-10-24) |
 
 ---
 
@@ -934,7 +934,8 @@ becomes Decided on review), Superseded.
 ## D-APK-022 — The per-install alarm registry
 
 - **Status:** Decided (2026-10-24: D-APK-010 C4, part 2; rulings R-1 (Q1-c) and R-4 (Q2-b-install) of the
-  packages-v0-4 session). The notifier, part 1, is D-APK-021.
+  packages-v0-4 session). The notifier, part 1, is D-APK-021. **Amended 2026-10-24 (task F1, the phase's final
+  validation V-1):** the plugins' own persisted lists are per-install state too; see the last two Consequences.
 - **Context:** VIATICUM `78d38e0` keeps the alarms it set in a per-install registry (`alarms/registry.json`,
   `{nextPlatformId, alarms[]}`, written whole through a `.tmp`, flushed and renamed; `fired.jsonl` appended by
   the fire's engine), outside the database and Android's backup, so a restored database never re-arms a stale
@@ -990,3 +991,26 @@ becomes Decided on review), Superseded.
   LYCEUM's alerts move to `FlnAlarmScheduler` with ids from the registry (its 10000+ ids are cancelled once by
   its adoption), gains the snooze store, and excludes `alarms/`. A background snooze and a resync of the app's
   engine may write the same files at once; each write is whole, and the next resync re-derives the schedule.
+- **Consequences (F1): the plugin lists.** Each scheduling plugin keeps its own list and re-arms it after a
+  reboot: flutter_local_notifications the SharedPreferences file `scheduled_notifications` (its
+  `ScheduledNotificationBootReceiver`), android_alarm_manager_plus `persistent_alarm_ids` with each alarm's
+  params in `dev.fluttercommunity.plus.android_alarm_manager_plugin`. Android's backup and a device transfer
+  copy both unless the rules exclude them, and the new install's registry never names those ids, so the
+  registry alone cannot cancel them: another phone's or a stale reminder would ring after the next reboot.
+  Two layers, both in the packages:
+  - **Cancel what this install never registered.** The port gains `pendingPlatformIds()` (FLN's
+    `pendingNotificationRequests`; the alarm manager's list through `apsira_jobs`' own channel
+    `apsira_jobs/alarms`, `ApsiraJobsPlugin.kt`). `resync` reads it before the registry and cancels every
+    id on it that the registry does not name and that is no pending code (`AlarmSyncReport.strangers`),
+    before it arms anything; kill point KP-A10 proves it on the fake platform, on `FlnAlarmScheduler` and on
+    `AlarmManagerScheduler`. The plugin's list therefore belongs to `AlarmSync`: an app arms nothing through
+    either plugin outside it (none does at `09b28810`, `78d38e0`, `9f4ff27`), and LYCEUM's 10000+ ids and
+    RELAY's request codes still on a plugin list are cancelled by the first resync either way.
+  - **Exclude the lists.** `expectExcludedFromDeviceBackup` reads the `file`, `sharedpref`, `root` and
+    `database` domains (`BackupPath`, `excluded:`), resolved under the data directory as Android does.
+    Each adoption's .6 excludes, in `<cloud-backup>`, `<device-transfer>` and `full_backup_content`:
+    `alarms/`, `<exclude domain="sharedpref" path="scheduled_notifications.xml"/>` (all three apps,
+    `alarmBackupExclusions`), and for RELAY and VIATICUM `<exclude domain="sharedpref"
+    path="dev.fluttercommunity.plus.android_alarm_manager_plugin.xml"/>` (`alarmManagerBackupExclusions` in
+    `package:apsira_jobs/testing.dart`); LYCEUM's `.migrating` marker is a `root`-domain path,
+    `app_flutter/lyceum.sqlite.migrating`. Notification channel ids do not change.

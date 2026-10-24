@@ -1,7 +1,9 @@
 // From viaticum lib/app/services/reminder_sync_service.dart @ 78d38e0 (the
 // diff against the per-install registry, never the database, one operation
 // at a time) and relay lib/domain/reminders/window.dart @ 09b28810 (the
-// window); every wanted alarm is armed again and snoozes are kept (D-APK-022).
+// window); every wanted alarm is armed again, snoozes are kept and the
+// plugin's pending ids this install never registered are cancelled
+// (D-APK-022).
 import 'dart:async';
 
 import 'package:flutter/foundation.dart' show visibleForTesting;
@@ -11,23 +13,29 @@ import 'alarm_scheduler.dart';
 import 'alarm_window.dart';
 import 'snooze_store.dart';
 
-/// What one [AlarmSync.resync] did: alarms armed ([scheduled]), entries and
-/// codes cancelled, and alarms the platform refused or skipped.
+/// What one [AlarmSync.resync] did: alarms armed ([scheduled]), entries,
+/// codes and strangers cancelled ([cancelled], [strangers] among them), and
+/// alarms the platform refused or skipped.
 final class AlarmSyncReport {
   const AlarmSyncReport({
     required this.scheduled,
     required this.cancelled,
     this.refused = 0,
+    this.strangers = 0,
   });
 
   final int scheduled;
   final int cancelled;
   final int refused;
 
+  /// The plugin's pending ids that the registry never handed out (a list a
+  /// restore or a transfer brought), cancelled; counted in [cancelled] too.
+  final int strangers;
+
   @override
   String toString() =>
       'AlarmSyncReport(scheduled $scheduled, cancelled $cancelled, '
-      'refused $refused)';
+      'refused $refused, strangers $strangers)';
 }
 
 /// Brings the platform's alarms to what the app wants, through the
@@ -42,14 +50,19 @@ final class AlarmSyncReport {
 ///    (LYCEUM's notification alarms, which the platform never fires late:
 ///    zero); without it a past alarm is armed and goes off at once;
 /// 3. takes the window ([planAlarms]: the [windowSize] nearest);
-/// 4. cancels on the platform every registry entry outside the window and
-///    every pending code, and only then unregisters them;
+/// 4. cancels on the platform every registry entry outside the window,
+///    every pending code and every id the plugin holds pending
+///    ([AlarmScheduler.pendingPlatformIds]) that the registry does not name,
+///    and only then unregisters them. The plugin's list is read before the
+///    registry, so an alarm another engine registers and arms meanwhile is
+///    never taken for a stranger;
 /// 5. registers the whole window in one write and only then arms every alarm
 ///    in it, the unchanged ones included. A refused alarm is cancelled and
 ///    unregistered.
 ///
 /// The registry decides only what to cancel, so neither a crash nor a copied
-/// registry can leave a wanted alarm unarmed. Operations of one [AlarmSync]
+/// registry can leave a wanted alarm unarmed, and a copied plugin list (the
+/// plugin re-arms it after a reboot) never rings here. Operations of one [AlarmSync]
 /// run one after another; an app keeps one per isolate.
 final class AlarmSync {
   AlarmSync(
@@ -153,18 +166,29 @@ final class AlarmSync {
             (grace == null || now.difference(alarm.atUtc) <= grace))
           alarm,
     ];
+    // Before the registry: whatever is armed after this read was registered
+    // before it was armed, so the registry read below names it.
+    final pending = await _scheduler.pendingPlatformIds();
+    final registered = await _registry.entries();
     final plan = planAlarms(
       wanted: eligible,
-      registered: await _registry.entries(),
+      registered: registered,
       size: windowSize,
     );
 
     final codes = await _registry.pendingCancels();
+    final strangers = pending.difference({
+      for (final e in registered) e.platformId,
+      ...codes,
+    });
     for (final entry in plan.cancel) {
       await _scheduler.cancel(entry.platformId);
     }
     for (final code in codes) {
       await _scheduler.cancel(code);
+    }
+    for (final id in strangers) {
+      await _scheduler.cancel(id);
     }
     afterStep?.call('cancelled');
     await _registry.unregisterAll([
@@ -187,8 +211,9 @@ final class AlarmSync {
     }
     return AlarmSyncReport(
       scheduled: entries.length - refused.length,
-      cancelled: plan.cancel.length + codes.length,
+      cancelled: plan.cancel.length + codes.length + strangers.length,
       refused: refused.length,
+      strangers: strangers.length,
     );
   }
 }

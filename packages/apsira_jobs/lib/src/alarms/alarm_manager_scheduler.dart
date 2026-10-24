@@ -3,9 +3,11 @@
 // alarm-clock fallback, a refusal answered false) and viaticum
 // lib/data/platform/alarm_manager_scheduler.dart @ 78d38e0 (the params a fire
 // gets, onAlarmFired); the registry is apsira_notify's and the platform ids
-// its own (D-APK-022, ruling R-1 Q1-c).
+// its own (D-APK-022, ruling R-1 Q1-c). The plugin's reboot list is read
+// through the package's own channel (F1).
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:apsira_notify/apsira_notify.dart';
+import 'package:flutter/services.dart';
 
 /// The [AlarmScheduler] on `android_alarm_manager_plus`: each alarm is one
 /// exact alarm (`setExactAndAllowWhileIdle`), waking the device, re-armed by
@@ -29,6 +31,11 @@ final class AlarmManagerScheduler implements AlarmScheduler {
 
   /// The fire entry (see the class comment).
   final Function onFire;
+
+  /// The package's channel to the plugin's reboot list: `persistentAlarmIds`
+  /// answers the ids in `persistent_alarm_ids` of the plugin's
+  /// SharedPreferences file (`ApsiraJobsPlugin.kt`).
+  static const listChannel = MethodChannel('apsira_jobs/alarms');
 
   /// RELAY's fallback (its ruling P3-R3): alarms set as alarm clocks
   /// (`setAlarmClock`), which Doze never defers, at the cost of the alarm
@@ -91,6 +98,15 @@ final class AlarmManagerScheduler implements AlarmScheduler {
   /// alarm is cancelled by [onAlarmFired] and every other by `AlarmSync`.
   @override
   Future<void> cancel(int platformId) => AndroidAlarmManager.cancel(platformId);
+
+  /// The ids on the plugin's reboot list (`persistent_alarm_ids`): every
+  /// alarm this scheduler arms is on it until [cancel] or the fire's cancel,
+  /// and a backup that copied the plugin's prefs file brings another
+  /// install's. Read without starting the plugin.
+  @override
+  Future<Set<int>> pendingPlatformIds() async => {
+    ...?await listChannel.invokeListMethod<int>('persistentAlarmIds'),
+  };
 
   @override
   Future<void> openBatteryOptimisationSettings() =>

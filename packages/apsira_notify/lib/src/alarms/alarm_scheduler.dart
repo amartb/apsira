@@ -7,7 +7,10 @@
 /// `apsira_jobs` (RELAY, VIATICUM).
 ///
 /// The port keeps no list of what it armed: the per-install `AlarmRegistry`
-/// is that list, and `AlarmSync` is its only caller.
+/// is that list, and `AlarmSync` is its only caller. The plugin underneath
+/// keeps its own ([pendingPlatformIds]), which a backup may carry to another
+/// install; `AlarmSync` cancels every id in it that the registry never
+/// handed out, so the app arms no alarm of that plugin outside `AlarmSync`.
 abstract interface class AlarmScheduler {
   /// Whether the system currently allows exact alarms.
   Future<bool> canScheduleExact();
@@ -19,6 +22,12 @@ abstract interface class AlarmScheduler {
   /// Cancels the alarm armed under [platformId]; cancelling one that is not
   /// armed does nothing.
   Future<void> cancel(int platformId);
+
+  /// The platform ids the plugin holds pending and re-arms after a reboot:
+  /// its persisted list (the notification plugin's `scheduled_notifications`,
+  /// the alarm manager's `persistent_alarm_ids`), which Android's backup and
+  /// a device transfer copy unless the app's rules exclude it (D-APK-022).
+  Future<Set<int>> pendingPlatformIds();
 
   /// Opens the system's battery-optimisation settings, where the user exempts
   /// the app when its alarms arrive late.
