@@ -15,10 +15,16 @@
 //   solid on its own container, >= 3:1 (07 CB F-1 of unit
 //   p0-unit1-pipeline-foundations; the lowest pair was 3.41:1).
 //
+// - R-10 (D-APK-013): the label a `TextButton` or `OutlinedButton` paints,
+//   under `ApsiraThemeData.build` and `buildFull`, on every surface:
+//   >= 4.5:1. Material's default (`primary`, `accentFill`) is 4.39:1 on
+//   the light `ground`.
+//
 // `border` and `line` are decorative edges, outside the matrix (assumption
 // A5): a card's edge is also carried by the ground -> surface step (D-066).
 import 'package:apsira_ui/apsira_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const double textMinimum = 4.5;
@@ -173,6 +179,45 @@ List<Pair> colorSchemePairs(ColorScheme c) => [
   Pair('outline on surface', c.outline, c.surface, uiMinimum),
 ];
 
+/// The colour [button]'s label paints in under [data], enabled.
+Future<Color> paintedLabel(
+  WidgetTester tester,
+  ThemeData data,
+  Widget Function(Widget label) button,
+) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: data,
+      home: Scaffold(body: Center(child: button(const Text('label')))),
+    ),
+  );
+  final paragraph = tester.renderObject<RenderParagraph>(find.text('label'));
+  return paragraph.text.style!.color!;
+}
+
+/// Each button's label on every surface of [t], at the text minimum.
+Future<List<Pair>> buttonPairs(
+  WidgetTester tester,
+  String builder,
+  ThemeData data,
+  ApsiraTheme t,
+) async {
+  final buttons = <String, Widget Function(Widget)>{
+    'TextButton': (label) => TextButton(onPressed: () {}, child: label),
+    'OutlinedButton': (label) => OutlinedButton(onPressed: () {}, child: label),
+  };
+  return [
+    for (final b in buttons.entries)
+      for (final s in surfaces(t).entries)
+        Pair(
+          '$builder ${b.key} label on ${s.key}',
+          await paintedLabel(tester, data, b.value),
+          s.value,
+          textMinimum,
+        ),
+  ];
+}
+
 void main() {
   for (final theme in [ApsiraTheme.light, ApsiraTheme.dark]) {
     group('tokens_contrast (${theme.brightness.name})', () {
@@ -216,6 +261,25 @@ void main() {
         final scheme = ApsiraThemeData.build(theme).colorScheme;
         expect(scheme.brightness, theme.brightness);
         expect(failures(colorSchemePairs(scheme)), isEmpty);
+      });
+
+      testWidgets('button foregrounds >= 4.5:1 (R-10)', (tester) async {
+        final pairs = [
+          ...await buttonPairs(
+            tester,
+            'build',
+            ApsiraThemeData.build(theme),
+            theme,
+          ),
+          ...await buttonPairs(
+            tester,
+            'buildFull',
+            ApsiraThemeData.buildFull(theme),
+            theme,
+          ),
+        ];
+        expect(pairs, hasLength(2 * 2 * surfaces(theme).length));
+        expect(failures(pairs), isEmpty);
       });
     });
   }

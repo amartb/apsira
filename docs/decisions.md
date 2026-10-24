@@ -27,6 +27,7 @@ becomes Decided on review), Superseded.
 | D-APK-010 | Policy for what the packages carry: device state per install (C1), LYCEUM's export envelope (C2), media layout per app (C3), RELAY's notifications with VIATICUM's alarm registry (C4) | Decided |
 | D-APK-011 | The Tier-1 set at `apsira-v0.2.0` and how each drift is resolved: monotonic UUIDv7, RELAY's FTS rule, `stackHash` with `crypto`, `apsira_jobs`, the session-guard union, the zone channel, one copy of the release scripts | Decided |
 | D-APK-012 | Shared strings: `apsira_l10n`'s key table and its wording, one rule for app phrases, `AppLanguage` and `AppLanguageSetting`; Flutter's `MaterialLocalizations` rejected | Decided |
+| D-APK-013 | `apsira_ui` 0.3: `build()` carries the shared component set (menus, `highlightColor`, the snack theme, `accentText` text and outlined buttons, R-10), every app VIATICUM included; LYCEUM's other sub-themes are builders and `buildFull`; settings rows, menu items and `ThemeModeSetting` | Decided |
 
 ---
 
@@ -491,3 +492,41 @@ becomes Decided on review), Superseded.
   `ApsiraL10n.delegate` beside its own delegates; a package widget in an app without it throws a `FlutterError`
   naming the delegate, never an English fallback. A new shared string is a key added here in both languages,
   with its source, in a new decision.
+
+## D-APK-013 — `apsira_ui` 0.3: the theme carries the shared component themes
+
+- **Status:** Decided (2026-10-24; plan P-2, operator rulings R-10 of Phase 1 and R-2 of Phase 2, Q4-a).
+- **Context:** RELAY (`09b28810`) and LYCEUM (`9f4ff27`) each write the same menu themes and `highlightColor`
+  on top of the tokens, and RELAY styles every snack at its call site (surface, floating, the inset-block edge).
+  Material's `TextButton` and `OutlinedButton` draw their label in `primary` (`accentFill`), 4.39:1 on the light
+  `ground`, under the 4.5:1 text minimum; `apsira_ui` 0.2.0 kept it (D-APK-011). LYCEUM adds eleven more
+  sub-themes that RELAY and VIATICUM do not have. RELAY's settings rows, menu items and theme-mode setting are
+  wanted by `apsira_lock`, the kit and LYCEUM.
+- **Decision:**
+  - `ApsiraThemeData.build(tokens, {extensions})` (signature unchanged) adds exactly the **shared set**:
+    `highlightColor` (`tint`), `popupMenuTheme`, `menuTheme`, `dropdownMenuTheme` and `menuButtonTheme` (RELAY's
+    values: flat bordered `surface`, inset-block radius, `PopupMenuPosition.under`, padding of 2 grid, rows of
+    48 dp with body labels), `snackBarTheme` (RELAY's call-site styling: `surface`, floating, the inset-block edge
+    with `border`, `snippet` in `ink`, the action in `accentText`), and `textButtonTheme` and
+    `outlinedButtonTheme` with the foreground `accentText` (R-10, LYCEUM's choice). Every other sub-theme stays
+    Material's default; the date and time pickers keep 0.2's bordered surface.
+  - The set reaches every app that calls `build()`, **VIATICUM included** (Q4-a): RELAY's menus are unchanged and
+    its snacks look as each call site draws them today; VIATICUM's snacks and its four menus take the shared look,
+    its goldens re-approved citing this entry.
+  - LYCEUM's other sub-themes (divider, FAB, app bar, tabs, card, input decoration, chip, bottom sheet, dialog,
+    drawer) are public builders on `ApsiraComponentThemes` with LYCEUM's values, applied together by
+    `ApsiraThemeData.buildFull`. LYCEUM's `actionIconTheme` stays in LYCEUM: its close and menu glyphs are
+    LYCEUM's `AppIcons`, not chrome glyphs of `ApsiraIcons`.
+  - RELAY's settings rows (`SettingsGroup`, `SettingsDivider`, `SettingsRow`, `SettingsChoiceRow`, whose options
+    become `SettingsOption(value, label)` in place of a record) and menu items (`ApsiraMenuItem`,
+    `ApsiraMenuButtons`) move into the package unchanged but for names.
+  - `ThemeModeSetting` is a hand-written Riverpod `Notifier` (R-1): its initial mode comes from
+    `initialThemeModeProvider` (dark by default, RELAY D-064) and `setMode` writes through the app's
+    `ThemeModeStore`, restoring the previous mode and rethrowing on a failed write, as `AppLanguageSetting` does.
+    RELAY's storage names stay (`dark`, `light`, `system`; anything else reads as dark); each app keeps its key.
+- **Alternatives rejected:** all of LYCEUM's sub-themes in `build()` (moves RELAY's and VIATICUM's cards, dialogs,
+  inputs and app bars, a look change and not a drift fix); the snack set kept out of VIATICUM (Q4-b, two looks for
+  the same snack); `accentFill` kept on light text buttons (fails the 4.5:1 text minimum).
+- **Consequences:** every golden with a light `TextButton` or `OutlinedButton` moves (its label is `accentText`),
+  in all three apps; VIATICUM's snack and menu goldens move. Each app's adoption names the goldens it
+  re-approves and cites R-10 or this entry. `apsira_ui` gains `flutter_riverpod` (R-1).

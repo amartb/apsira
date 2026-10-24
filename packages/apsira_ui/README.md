@@ -1,10 +1,12 @@
 # apsira_ui
 
 The Apsira visual language as a Flutter package: the colour tokens (`ApsiraTheme`, light
-and dark) and the Material `ThemeData` built from them, the type scale, radii, sizes and
-spacing, the chrome icons, and the brand files every app ships: Archivo Expanded,
-Archivo and JetBrains Mono, the reversed Apsira Labs lockup and their licences.
-Extracted from RELAY `5f606e9` (D-APK-001); every extracted file names its source.
+and dark) and the Material `ThemeData` built from them with its component themes, the type
+scale, radii, sizes and spacing, the chrome icons, the settings rows and menu items, the
+theme-mode setting, and the brand files every app ships: Archivo Expanded, Archivo and
+JetBrains Mono, the reversed Apsira Labs lockup and their licences. Extracted from RELAY
+`5f606e9` and `09b28810` and LYCEUM `9f4ff27` (D-APK-001, D-APK-013); every extracted file
+names its source.
 
 ## Consuming
 
@@ -13,7 +15,7 @@ Pin by the shared tag, the same ref for every apsira package (D-APK-007, `../REA
 ```yaml
 dependencies:
   apsira_ui:
-    git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_ui }
+    git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.3.0, path: packages/apsira_ui }
 ```
 
 `import 'package:apsira_ui/apsira_ui.dart';` is the whole public surface.
@@ -36,6 +38,48 @@ declared by this package: a consumer's bundle holds them as `packages/apsira_ui/
 (`ApsiraFonts.archivoQualified`), which every style and `ThemeData.fontFamily` already
 use, so the app declares no `fonts:` of its own.
 
+## Component themes: `build` and `buildFull` (D-APK-013)
+
+`ApsiraThemeData.build` carries the **shared set**, which every app receives: the menus
+(`popupMenuTheme`, `menuTheme`, `dropdownMenuTheme`, `menuButtonTheme`: the flat bordered
+`surface`, below its button), `highlightColor` (`tint`), `snackBarTheme` (`surface`,
+floating, the inset-block edge, `snippet` in `ink`, the action in `accentText`), and text
+and outlined buttons in `accentText` (R-10). Every other sub-theme is Material's default,
+so an app's cards, dialogs, fields and app bars stay its own.
+
+`ApsiraThemeData.buildFull` adds LYCEUM's sub-themes: divider, FAB, app bar, tabs, card,
+input decoration, chip, bottom sheet, dialog and drawer. Each is also a builder on
+`ApsiraComponentThemes` (`cardTheme(t)`, `dialogTheme(t)`, …) for an app that wants one.
+Action icons stay the app's, since their glyphs are:
+
+```dart
+final dark = ApsiraThemeData.buildFull(ApsiraTheme.dark, extensions: [MyRoles.dark])
+    .copyWith(actionIconTheme: myActionIcons);
+```
+
+## Settings rows, menu items and the theme mode
+
+`SettingsGroup`, `SettingsRow`, `SettingsChoiceRow<T>` (with `SettingsOption(value, label)`)
+and `SettingsDivider` are RELAY's Settings pieces; `ApsiraMenuItem` (icon, `danger`, the
+`chosen` mark) and `ApsiraMenuButtons` (paired actions on a menu's top) are its menu rows.
+Labels come from the caller: the package holds no visible string.
+
+`themeModeProvider` (`ThemeModeSetting`) is the mode the root `MaterialApp` reads. The app
+implements `ThemeModeStore` under its own key and overrides two providers:
+
+```dart
+ProviderScope(
+  overrides: [
+    themeModeStoreProvider.overrideWithValue(MyThemeModeStore(settings)),
+    initialThemeModeProvider.overrideWithValue(themeModeFromStorage(stored)),
+  ],
+  child: const MyApp(),
+);
+```
+
+`setMode` writes through the store; a failed write puts the previous mode back and
+rethrows. Stored names are `dark`, `light` and `system`; anything else reads as dark.
+
 ## The brand: `ApsiraBrand`
 
 ```dart
@@ -56,10 +100,13 @@ this repository, byte for byte against `../../apsira-brand/`.
 | Path | Holds |
 |---|---|
 | `lib/src/colors.dart` | The only colour literals of any Apsira package |
-| `lib/src/theme.dart` | `ApsiraTheme`, `ApsiraThemeData` (`light`, `dark`, `build`, `colorScheme`) |
+| `lib/src/theme.dart` | `ApsiraTheme`, `ApsiraThemeData` (`light`, `dark`, `build`, `buildFull`, `colorScheme`) |
+| `lib/src/component_themes.dart` | `ApsiraComponentThemes`: the shared set and LYCEUM's sub-themes |
+| `lib/src/settings.dart`, `theme_mode.dart` | Settings rows and menu items; `ThemeModeSetting` and its store |
 | `lib/src/typography.dart`, `shape.dart`, `icons.dart`, `brand.dart` | Type scale, shape, chrome glyphs, lockup and licences |
 | `lib/fonts/`, `lib/brand/`, `lib/licenses/` | The bundled files and their `SHA256SUMS` |
 | `test/goldens/token_sheet.png` | Every token as a swatch: a value change moves it |
+| `test/goldens/components.png` | The shared set, light and dark: buttons, an open menu, a snack |
 | `example/` | A consumer app whose test proves the qualified fonts, licences and lockup load |
 
 `flutter analyze && flutter test` here; `cd example && rm -rf build && flutter pub get && flutter test` (a stale `build/unit_test_assets` makes the font test lie)

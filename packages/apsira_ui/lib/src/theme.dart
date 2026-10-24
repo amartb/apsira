@@ -1,7 +1,10 @@
-// From relay lib/app/theme/relay_theme.dart @ 5f606e9
+// From relay lib/app/theme/relay_theme.dart @ 5f606e9; `build`'s shared
+// component set from @ 09b28810 and `buildFull` from lyceum
+// lib/app/theme/lyceum_theme.dart @ 9f4ff27 (D-APK-013).
 import 'package:flutter/material.dart';
 
 import 'colors.dart';
+import 'component_themes.dart';
 import 'shape.dart';
 import 'typography.dart';
 
@@ -266,6 +269,11 @@ abstract final class ApsiraThemeData {
   /// extension and the UX §2.3 scale as the text theme (normal-width
   /// Archivo by default, D-055).
   ///
+  /// It carries the shared component set (D-APK-013): `highlightColor`, the
+  /// menu themes, the snack theme and the `accentText` text and outlined
+  /// buttons (R-10), from [ApsiraComponentThemes]. Every other sub-theme is
+  /// Material's default; [buildFull] adds LYCEUM's.
+  ///
   /// [extensions] are an app's own `ThemeExtension`s, attached after the
   /// tokens. The default family is the package-qualified name
   /// ([ApsiraFonts.archivoQualified]), which is how a consumer's bundle
@@ -279,6 +287,19 @@ abstract final class ApsiraThemeData {
     textTheme: ApsiraTypography.textTheme,
     scaffoldBackgroundColor: tokens.ground,
     dividerColor: tokens.line,
+    // The current choice of a menu opened on it (`initialValue`).
+    highlightColor: tokens.tint,
+    popupMenuTheme: ApsiraComponentThemes.popupMenuTheme(tokens),
+    menuTheme: MenuThemeData(style: ApsiraComponentThemes.menuStyle(tokens)),
+    dropdownMenuTheme: DropdownMenuThemeData(
+      menuStyle: ApsiraComponentThemes.menuStyle(tokens),
+    ),
+    menuButtonTheme: MenuButtonThemeData(
+      style: ApsiraComponentThemes.menuItemStyle(tokens),
+    ),
+    snackBarTheme: ApsiraComponentThemes.snackBarTheme(tokens),
+    textButtonTheme: ApsiraComponentThemes.textButtonTheme(tokens),
+    outlinedButtonTheme: ApsiraComponentThemes.outlinedButtonTheme(tokens),
     datePickerTheme: DatePickerThemeData(
       backgroundColor: tokens.surface,
       shape: dialogShape(tokens),
@@ -288,6 +309,28 @@ abstract final class ApsiraThemeData {
       shape: dialogShape(tokens),
     ),
     extensions: [tokens, ...extensions],
+  );
+
+  /// [build] with LYCEUM's sub-themes on top (D-APK-013): divider, FAB, app
+  /// bar, tabs, card, input decoration, chip, bottom sheet, dialog and
+  /// drawer, each a builder of [ApsiraComponentThemes]. The action icons stay
+  /// an app's own, since their glyphs are.
+  static ThemeData buildFull(
+    ApsiraTheme tokens, {
+    List<ThemeExtension<dynamic>> extensions = const [],
+  }) => build(tokens, extensions: extensions).copyWith(
+    dividerTheme: ApsiraComponentThemes.dividerTheme(tokens),
+    floatingActionButtonTheme: ApsiraComponentThemes.floatingActionButtonTheme(
+      tokens,
+    ),
+    appBarTheme: ApsiraComponentThemes.appBarTheme(tokens),
+    tabBarTheme: ApsiraComponentThemes.tabBarTheme(tokens),
+    cardTheme: ApsiraComponentThemes.cardTheme(tokens),
+    inputDecorationTheme: ApsiraComponentThemes.inputDecorationTheme(tokens),
+    chipTheme: ApsiraComponentThemes.chipTheme(tokens),
+    bottomSheetTheme: ApsiraComponentThemes.bottomSheetTheme(tokens),
+    dialogTheme: ApsiraComponentThemes.dialogTheme(tokens),
+    drawerTheme: ApsiraComponentThemes.drawerTheme(tokens),
   );
 
   /// A dialog's surface edge: the group-card radius with its 1 px

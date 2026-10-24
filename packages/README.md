@@ -9,7 +9,7 @@ every app), D-APK-011 (the Tier-1 set at `apsira-v0.2.0`) and D-APK-012 (the sha
 | Package | Kind | Holds | Depends on |
 |---|---|---|---|
 | `apsira_core` | pure Dart | `Result`/`Failure`, the log model with `stackHash`, the `Clock` and `IdGen` ports with the monotonic UUIDv7, the FTS5 match builder, canonical JSON; `testing.dart` with `FakeClock` and `FakeIdGen` | `crypto` |
-| `apsira_ui` | Flutter | `ApsiraTheme` tokens, `ApsiraThemeData.build`, typography, shape, chrome icons, fonts, lockup, licences, provenance; `example/`, the consumer proof | `flutter`, `flutter_lucide` |
+| `apsira_ui` | Flutter | `ApsiraTheme` tokens, `ApsiraThemeData.build` (the shared menu, snack and button themes) and `buildFull`, `ApsiraComponentThemes`, settings rows and menu items, `ThemeModeSetting`, typography, shape, chrome icons, fonts, lockup, licences, provenance; `example/`, the consumer proof | `flutter`, `flutter_lucide`, `flutter_riverpod` |
 | `apsira_tools` | pure Dart, `bin/` | `layering_lint`, `l10n_check`, `coverage_gate`, `deps_check`, `manifest_check` + `tool/apsira_tools.yaml` config; the release and build script skeletons | `yaml` |
 | `apsira_test` | Flutter, dev | the Android font scaler, the large-text layout checker, the golden matrix with bundled fonts, the a11y pass, `prop_core`, pump helpers | `flutter`, `flutter_test`, `apsira_ui` |
 | `apsira_app` | Flutter plugin | error handlers, the rotating file log sink, the start-phase redirect, `RestartableRoot`, the startup-failure app, `SystemClock` + the zone channel, the `PendingPort` stub base, per-install flags, the About page; `testing.dart` with `MemoryLogSink` | `flutter`, `apsira_core`, `apsira_ui` |

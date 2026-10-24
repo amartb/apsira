@@ -3,6 +3,37 @@
 One section per release, naming any migration a consumer must make. From 0.2.0 every
 package shares one tag, `apsira-vX.Y.Z` (D-APK-007); 0.1.0 was `apsira_ui-v0.1.0`.
 
+## 0.3.0 — 2026-10-24
+
+The theme carries the shared component themes; settings rows, menu items and the
+theme-mode setting join the package (D-APK-013). New dependency: `flutter_riverpod ^3.1.0`.
+
+- **`ApsiraThemeData.build`** adds the shared set: `highlightColor` (`tint`), the four menu
+  themes (RELAY's), `snackBarTheme` (RELAY's call-site styling) and the R-10 fix.
+- **R-10: light text buttons are `accentText`: goldens with a light TextButton move.** So do
+  those with an `OutlinedButton`, in both themes: their label was `accentFill`, 4.39:1 on
+  the light `ground`.
+- **`ApsiraThemeData.buildFull`** and the builders of `ApsiraComponentThemes`: LYCEUM's
+  divider, FAB, app bar, tabs, card, input decoration, chip, bottom sheet, dialog and drawer.
+- **`SettingsGroup`, `SettingsRow`, `SettingsChoiceRow`, `SettingsOption`,
+  `SettingsDivider`, `ApsiraMenuItem`, `ApsiraMenuButtons`** (RELAY's) and
+  **`ThemeModeSetting`** with `ThemeModeStore`, `themeModeStoreProvider`,
+  `initialThemeModeProvider`, `themeModeOptions` and RELAY's storage names.
+- `ApsiraSchemeColors.transparent`; the `components.png` golden. `token_sheet.png` is
+  unchanged.
+
+**Migration.** Every app moves the pin to `ref: apsira-v0.3.0`.
+- **RELAY:** `relay_theme.dart` calls `ApsiraThemeData.build` and drops its own menu themes
+  and `highlightColor`; `RelayMenuItem`/`RelayMenuButtons` → `ApsiraMenuItem`/
+  `ApsiraMenuButtons`, its settings rows → the package's (options become `SettingsOption`s),
+  and `theme_mode_provider.dart` → `ThemeModeSetting` with a store on `theme_mode`. The
+  call-site snack styling may go: the theme draws the same snack. Re-approve the goldens
+  with a light text or outlined button (R-10).
+- **VIATICUM:** its snacks and its four menus take the shared look (Q4-a); re-approve those
+  goldens and the R-10 ones, citing D-APK-013.
+- **LYCEUM:** `lyceum_theme.dart` calls `ApsiraThemeData.buildFull` and keeps only its module
+  colours and `actionIconTheme` on top; the copied menu and button themes go.
+
 ## 0.2.0 — 2026-10-24
 
 No change in behaviour; first release under the shared tag `apsira-v0.2.0` (D-APK-007).
