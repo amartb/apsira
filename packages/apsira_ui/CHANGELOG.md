@@ -1,6 +1,14 @@
 # apsira_ui changelog
 
-One section per tag (`apsira_ui-vX.Y.Z`), naming any migration a consumer must make.
+One section per release, naming any migration a consumer must make. From 0.2.0 every
+package shares one tag, `apsira-vX.Y.Z` (D-APK-007); 0.1.0 was `apsira_ui-v0.1.0`.
+
+## 0.2.0 — 2026-10-24
+
+No change in behaviour; first release under the shared tag `apsira-v0.2.0` (D-APK-007).
+
+**Migration.** Move the pin from `ref: apsira_ui-v0.1.0` to `ref: apsira-v0.2.0`, the same
+ref as every other apsira package the app uses.
 
 ## 0.1.0 — 2026-10-21
 

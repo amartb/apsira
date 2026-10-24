@@ -8,12 +8,12 @@ Extracted from RELAY `5f606e9` (D-APK-001); every extracted file names its sourc
 
 ## Consuming
 
-Pin by tag (D-APK-003, `../README.md`):
+Pin by the shared tag, the same ref for every apsira package (D-APK-007, `../README.md`):
 
 ```yaml
 dependencies:
   apsira_ui:
-    git: { url: git@github.com:amartb/apsira.git, ref: apsira_ui-v0.1.0, path: packages/apsira_ui }
+    git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_ui }
 ```
 
 `import 'package:apsira_ui/apsira_ui.dart';` is the whole public surface.

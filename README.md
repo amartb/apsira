@@ -92,20 +92,26 @@ versioned export/import bundle that the central app can consume later.
 
 ## 5. Shared code
 
-`packages/` holds the Dart packages every Flutter app depends on (decision D-APK-001 in
-`docs/decisions.md`):
+`packages/` holds the Dart packages every Flutter app depends on (decisions D-APK-001,
+D-APK-007 and D-APK-011 in `docs/decisions.md`):
 
 | Package | Holds |
 |---|---|
-| `apsira_core` | `Result`/`Failure`, the log model, the `Clock` and `IdGen` ports. Pure Dart, no dependencies. |
+| `apsira_core` | `Result`/`Failure`, the log model, the `Clock` and `IdGen` ports (a monotonic UUIDv7), the FTS5 match builder, canonical JSON. Pure Dart; its one dependency is `crypto`, for the log's `stackHash` (D-APK-011). |
 | `apsira_ui` | The Apsira tokens as a `ThemeExtension`, the `ThemeData` builder, type scale, shape, chrome icons, the fonts, the lockup, their licences and provenance. |
-| `apsira_tools` | The layering lint, the l10n check, the coverage gate and the privacy guards, configured per app by `tool/apsira_tools.yaml`. |
+| `apsira_tools` | The layering lint, the l10n check, the coverage gate and the privacy guards, configured per app by `tool/apsira_tools.yaml`; the release and build script skeletons. |
+| `apsira_test` | The shared test support: font scaler, large-text layout checker, golden matrix, a11y pass, property testing. |
+| `apsira_app` | The app scaffolding every folio repeats: error handlers, file log, start redirect, restartable root, zone channel, per-install flags, About. |
+| `apsira_jobs` | The `BackgroundJobs` port and its WorkManager adapter, for the apps that run background jobs (RELAY, VIATICUM; D-APK-011). |
 
-Apps pin them by git reference to a per-package tag (`apsira_ui-v0.1.0`), never by path
-in a committed `pubspec.yaml` (the one path consumer is `apsira_ui/example`, inside the
-package itself). What is app-specific stays in the app: its own
-`ThemeExtension`s, its ports beyond `Clock`/`IdGen`, its components, its icon art, its
-codegen. Packages never depend on `build_runner`.
+Every package carries one version and the set one shared tag, `apsira-vX.Y.Z`
+(`apsira-v0.2.0`; D-APK-007): apps pin every package by git reference to that tag, never
+by path in a committed `pubspec.yaml` (the one path consumer is `apsira_ui/example`, inside
+the package itself). Packages may depend on each other at the same tag. A package is done
+only when every app uses it (D-APK-009). What is app-specific stays in the app: its own
+`ThemeExtension`s, the ports no package holds (the shared ones live in their package:
+`Clock`/`IdGen` in `apsira_core`, `BackgroundJobs` in `apsira_jobs`, D-APK-011), its
+components, its icon art, its codegen. Packages never depend on `build_runner`.
 
 ## 6. How an app is built
 
@@ -171,7 +177,8 @@ The procedure that brought Lyceum Folio in (planning thread of 2026-10-21):
 |---|---|
 | `apsira-brand/` | The brand standard and every asset |
 | `folios/`, `tomes/` | Briefs, one per app |
-| `packages/` | `apsira_core`, `apsira_ui`, `apsira_tools` |
+| `packages/` | `apsira_core`, `apsira_ui`, `apsira_tools`, `apsira_test`, `apsira_app`, `apsira_jobs` |
 | `docs/decisions.md` | The ecosystem's decision log (`D-APK-nnn`) |
-| `tool/check.sh` | The full check: every package's analyze and tests (the `apsira_ui/example` consumer included), each `version:` against its tag, `sha256sum -c` of fonts and brand; verdict line `check: PASS` |
+| `tool/check.sh` | The full check: every package's and example's analyze and tests, the shared-tag rules (one `version:`, the git form at `apsira-v<version>`, overrides), `sha256sum -c` of fonts and brand; verdict line `check: PASS` |
+| `tool/release.sh` | The operator's tag act: checks, tags `apsira-v<version>`, pushes the tag, proves a consumer resolves it |
 | `.army.toml` | The army's configuration for the `apsira` lane |

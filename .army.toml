@@ -18,20 +18,27 @@ commit_types = ["feat", "fix", "docs", "test", "refactor", "chore", "style", "pe
 gate_setup = "bash -c 'for p in packages/*/; do [ -f \"$p/pubspec.yaml\" ] && (cd \"$p\" && (flutter pub get --offline || flutter pub get)); done; true'"
 
 # Merge gates are static per package and run only when that package changed (paths). Each `requires` keeps a gate
-# `unavailable` until the package exists. The full check (tool/check.sh, verdict line `check: PASS`) runs only when a
-# validator sets APSIRA_FULL_CHECK=1 at a checkpoint or at the unit's end.
+# `unavailable` until the package exists. Every package carries one version and the whole set one tag,
+# `apsira-v<version>` (D-APK-007); `tool/release.sh` cuts it (operator act). The full check (tool/check.sh, verdict
+# line `check: PASS`, the shared-tag rules included) runs only when a validator sets APSIRA_FULL_CHECK=1 at a
+# checkpoint or at the unit's end: until every package carries the release's version its `versions equal` step is red.
 shared_files = ["docs/decisions.md", "packages/README.md", "**/README.md", "tool/check.sh", "**/CHANGELOG.md"]
 gates = [
   { name = "format", cmd = "dart format --output=none --set-exit-if-changed packages", proves = "formatting", paths = ["packages/**/*.dart"], requires = ["file:packages/apsira_core/pubspec.yaml"] },
   { name = "core",   cmd = "bash -c 'cd packages/apsira_core && dart analyze --fatal-infos && dart test'", proves = "apsira_core analyzes and its tests pass", paths = ["packages/apsira_core/**"], requires = ["file:packages/apsira_core/pubspec.yaml"], mem_gb = 1 },
   { name = "tools",  cmd = "bash -c 'cd packages/apsira_tools && dart analyze --fatal-infos && dart test'", proves = "apsira_tools analyzes and its tests (RELAY's lint fixtures) pass", paths = ["packages/apsira_tools/**"], requires = ["file:packages/apsira_tools/pubspec.yaml"], mem_gb = 1 },
   { name = "ui",     cmd = "bash -c 'cd packages/apsira_ui && flutter analyze && flutter test'", proves = "apsira_ui analyzes; tokens, contrast, type scale, fonts and brand provenance tests pass", paths = ["packages/apsira_ui/**", "apsira-brand/**"], requires = ["file:packages/apsira_ui/pubspec.yaml"], mem_gb = 3 },
-  { name = "check",  cmd = "bash -c 'set -o pipefail; mkdir -p .army; bash tool/check.sh 2>&1 | tee .army/check.log; grep -qx \"check: PASS\" .army/check.log'", proves = "every package: analyze + tests (ui example included), each pubspec version matches its tag when one exists, sha256 of fonts and brand", paths = [".army-never-at-merge"], requires = ["file:tool/check.sh", "env:APSIRA_FULL_CHECK"], mem_gb = 3 },
+  { name = "test",   cmd = "bash -c 'cd packages/apsira_test && flutter analyze && flutter test'", proves = "apsira_test analyzes; the layout checker, golden matrix, font scaler and prop_core tests pass", paths = ["packages/apsira_test/**"], requires = ["file:packages/apsira_test/pubspec.yaml"], mem_gb = 3 },
+  { name = "app",    cmd = "bash -c 'cd packages/apsira_app && flutter analyze && flutter test'", proves = "apsira_app analyzes; error handlers, log sink, start redirect, zone channel and install-flag tests pass", paths = ["packages/apsira_app/**"], requires = ["file:packages/apsira_app/pubspec.yaml"], mem_gb = 3 },
+  { name = "jobs",   cmd = "bash -c 'cd packages/apsira_jobs && flutter analyze && flutter test'", proves = "apsira_jobs analyzes; the BackgroundJobs port, WorkManager policy and fake tests pass", paths = ["packages/apsira_jobs/**"], requires = ["file:packages/apsira_jobs/pubspec.yaml"], mem_gb = 3 },
+  { name = "check-rules", cmd = "bash tool/test/shared_tag_check_test.sh", proves = "tool/check.sh's shared-tag release rules: six broken trees fail, one passes, an untagged git dependency resolves offline through its override", paths = ["tool/**"], requires = ["file:tool/test/shared_tag_check_test.sh"], mem_gb = 1 },
+  { name = "release-sh", cmd = "bash tool/test/release_sh_test.sh", proves = "tool/release.sh refuses in a session and on every unmet precondition; --dry-run prints the check, tag and push", paths = ["tool/**"], requires = ["file:tool/test/release_sh_test.sh"], mem_gb = 1 },
+  { name = "check",  cmd = "bash -c 'set -o pipefail; mkdir -p .army; bash tool/check.sh 2>&1 | tee .army/check.log; grep -qx \"check: PASS\" .army/check.log'", proves = "every package and example: analyze + tests; the shared-tag rules (one version, CHANGELOG sections, the git form at apsira-v<version>, overrides = transitive closure); sha256 of fonts and brand", paths = [".army-never-at-merge"], requires = ["file:tool/check.sh", "env:APSIRA_FULL_CHECK"], mem_gb = 3 },
 ]
 
 [assurance]
 critical = []
-subsystems = ["packages/apsira_core/**", "packages/apsira_ui/**", "packages/apsira_tools/**"]
+subsystems = ["packages/apsira_core/**", "packages/apsira_ui/**", "packages/apsira_tools/**", "packages/apsira_test/**", "packages/apsira_app/**", "packages/apsira_jobs/**"]
 security = []
 security_review = false
 final_validation = "full"
@@ -46,7 +53,7 @@ vision = "README.md"
 ecosystem = ["docs/decisions.md", "packages/README.md"]
 
 [network]
-allow = ["pub.dev", "storage.googleapis.com"]   # pub fetches for the packages' few dependencies (flutter_lucide, yaml, test)
+allow = ["pub.dev", "storage.googleapis.com"]   # pub fetches for the packages' few dependencies (flutter_lucide, yaml, crypto, workmanager, test)
 online = false
 
 [resources]

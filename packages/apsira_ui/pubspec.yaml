@@ -3,14 +3,15 @@
 name: apsira_ui
 description: "The Apsira visual language: tokens, theme, type scale, shape, chrome icons, fonts and the lockup."
 publish_to: none
-version: 0.1.0
+version: 0.2.0
 
 environment:
   sdk: ^3.13.0
   # The lowest Flutter any live consumer pins (docs/agent-rules.md).
   flutter: ">=3.47.0"
 
-# apsira_ui depends on no other apsira_* package in v0.x (plan P-1, D-APK-006).
+# apsira_ui needs no other apsira_* package. One that it ever needs is named in the
+# git form at the shared tag, with a committed pubspec_overrides.yaml (D-APK-007).
 dependencies:
   flutter:
     sdk: flutter
