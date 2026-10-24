@@ -12,7 +12,7 @@ every app) and D-APK-011 (the Tier-1 set at `apsira-v0.2.0`).
 | `apsira_ui` | Flutter | `ApsiraTheme` tokens, `ApsiraThemeData.build`, typography, shape, chrome icons, fonts, lockup, licences, provenance; `example/`, the consumer proof | `flutter`, `flutter_lucide` |
 | `apsira_tools` | pure Dart, `bin/` | `layering_lint`, `l10n_check`, `coverage_gate`, `deps_check`, `manifest_check` + `tool/apsira_tools.yaml` config; the release and build script skeletons | `yaml` |
 | `apsira_test` | Flutter, dev | the Android font scaler, the large-text layout checker, the golden matrix with bundled fonts, the a11y pass, `prop_core`, pump helpers | `flutter`, `flutter_test`, `apsira_ui` |
-| `apsira_app` | Flutter plugin | error handlers, the rotating file log sink, the start-phase redirect, `RestartableRoot`, the startup-failure app, `SystemClock` + the zone channel, the `PendingPort` stub base, per-install flags, the About page | `flutter`, `apsira_core`, `apsira_ui` |
+| `apsira_app` | Flutter plugin | error handlers, the rotating file log sink, the start-phase redirect, `RestartableRoot`, the startup-failure app, `SystemClock` + the zone channel, the `PendingPort` stub base, per-install flags, the About page; `testing.dart` with `MemoryLogSink` | `flutter`, `apsira_core`, `apsira_ui` |
 | `apsira_jobs` | Flutter plugin | the `BackgroundJobs` port, `JobConstraints`, the WorkManager adapter (keep/replace policy) and its fake, the zone-change resync receiver (`ZoneResync.kt`); RELAY and VIATICUM only | `flutter`, `workmanager` |
 
 Each library is imported through its barrel (`package:apsira_core/apsira_core.dart`,
@@ -81,7 +81,10 @@ dependency_overrides:
 
 The override applies only when the package is the root, so inside this repository it
 resolves against its siblings, offline and before the tag exists; consumers never see
-it. A `path:` dependency is a defect. `bash tool/check.sh --release` checks the rules.
+it. In a package's `pubspec.yaml` a `path:` dependency is a defect. The one exception is
+each package's `example/` app, which depends on its package by `path: ../` (its
+`pubspec_overrides.yaml`, where it has one, resolves the package's apsira dependencies
+by `../../`): it is the consumer proof, inside the package, and never released. `bash tool/check.sh --release` checks the rules, over the packages only.
 
 ## Releasing
 
@@ -98,11 +101,12 @@ One version, one tag, for every package:
    `cmp` of the fonts and the lockup against `../apsira-brand/`, colour literals only in
    `colors.dart`, `dart format`; then `pub get`, analyze and tests for every package and
    every `example/` (from a clean `build/`).
-3. Merge to `main` and push it. Then, on the operator's computer, `bash tool/release.sh`
-   (`--dry-run` first): it refuses in a session, requires a clean `main` equal to
-   `origin/main`, equal versions and an absent tag, runs `tool/check.sh` itself, tags
-   `apsira-vX.Y.Z`, pushes the tag and proves a scratch consumer resolves every package
-   at it.
+3. Merge to `main` and push it. Then, in the operator's own terminal, `bash
+   tool/release.sh` (`--dry-run` first), never as a `!` line in a Claude Code session:
+   that shell inherits the session's markers, and the script exits 3. It refuses in a
+   session, requires a clean `main` equal to `origin/main`, equal versions and an absent
+   tag, runs `tool/check.sh` itself, tags `apsira-vX.Y.Z`, pushes the tag and proves a
+   scratch consumer resolves every package at it.
 4. Each app adopts in its own adoption lane (D-APK-009) by moving its `ref:` lines.
 
 ## Rules

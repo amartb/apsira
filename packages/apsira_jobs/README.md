@@ -49,11 +49,11 @@ await jobs.schedulePeriodic('backup', every: const Duration(days: 1),
 `constraintsOf`, `firstRunInOf` and `replaced`, and `runNow(name)` runs a registered handler.
 A handler returns `true` when the job ran and `false` when WorkManager would retry it.
 
-## The zone resync receiver (branch 1)
+## The zone resync receiver
 
 `ZoneChangeReceiver` and `enqueueResync` live here, in
 `android/src/main/kotlin/com/apsiralabs/apsira_jobs/ZoneResync.kt`. They are RELAY's and
-VIATICUM's identical code with the package renamed (D-APK-011, ruling R-3, T6 branch 1).
+VIATICUM's identical code with the package renamed (D-APK-011).
 The package manifest declares the receiver, unexported, for `TIMEZONE_CHANGED`,
 `TIME_SET`, `BOOT_COMPLETED` and `MY_PACKAGE_REPLACED`. On each broadcast it enqueues the
 one-time job `reminderResync` (`reminderResyncJob`) through workmanager's own
@@ -73,8 +73,8 @@ Dart test pins the job name, the input key and the manifest.
 From this directory: `flutter analyze` and `flutter test`. The Kotlin compiles only inside
 an app's build, so `example/` is that app: it depends on this package by path and schedules
 one job through `WorkManagerBackgroundJobs` at start, and its debug build compiles
-`ApsiraJobsPlugin.kt` and `ZoneResync.kt` against `workmanager_android`'s `androidx.work`
-(task F1). `tool/check.sh` runs the example's analyze and smoke test; the build is run by
+`ApsiraJobsPlugin.kt` and `ZoneResync.kt` against `workmanager_android`'s `androidx.work`.
+`tool/check.sh` runs the example's analyze and smoke test; the build is run by
 hand, under a build lease, from `example/`:
 
 ```sh

@@ -26,13 +26,14 @@ Migration for every app:
 
 Migration for RELAY: `StartPhase.home` → `StartPhase.ready`; `_redirect` →
 `startRedirect(phase, path, routes: StartRoutes(home: …, firstOpen: …, safeMode: …))`
-(no `pending` route: nothing moves while the gate waits). The zone receiver stays in
-`ZoneModule.kt` until `apsira_jobs` takes it (ruling R-3).
+(no `pending` route: nothing moves while the gate waits). The zone-change receiver
+(`ZoneChangeReceiver`, `enqueueResync` and the manifest `<receiver>`) is deleted with the
+rest of `ZoneModule.kt`: `apsira_jobs` holds it (D-APK-011; its CHANGELOG has the steps).
 
 Migration for VIATICUM: `FirstOpenService` keeps its API over
 `InstallFlag(directory: …, path: 'first_open/done.json')`, so installs keep their flag.
-`SystemClock.nowUtc()` is now truncated to milliseconds. The zone receiver stays as for
-RELAY.
+`SystemClock.nowUtc()` is now truncated to milliseconds. The zone-change receiver goes to
+`apsira_jobs`, as for RELAY.
 
 Migration for LYCEUM: `StartPhase.onboarding` → `firstOpen`, `open` → `ready`, with
 `StartRoutes(home: …, pending: start, firstOpen: onboarding, locked: unlock)`.

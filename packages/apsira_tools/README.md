@@ -1,9 +1,11 @@
 # apsira_tools
 
-RELAY's quality tools for every Apsira Flutter app. Pure Dart, run from the app's
-root as `bin/` commands, and the apps' build and release scripts ("Scripts").
-Decided in `../../docs/decisions.md` D-APK-001, D-APK-002 and D-APK-011.
-Each file names its RELAY source (`// From relay <path> @ 5f606e9`).
+RELAY's quality tools for every Apsira Flutter app, pure Dart, run from the app's
+root as `bin/` commands; and the build and release scripts RELAY, VIATICUM and LYCEUM
+each carried, in one copy ("Scripts"). Decided in `../../docs/decisions.md` D-APK-001,
+D-APK-002 and D-APK-011. Each file names its source: the tools RELAY's
+(`// From relay <path> @ 5f606e9`), the scripts RELAY `09b28810`, VIATICUM `78d38e0`
+and LYCEUM `9f4ff27`.
 
 | Command | Checks | Exit 1 when |
 |---|---|---|
@@ -29,7 +31,7 @@ or shared package, or unparsable YAML exits 2 naming the key and the file.
 | `layering.root` | `lib` | `layering_lint` (`--root` wins) |
 | `layering.domain_packages` | `clock, collection, freezed_annotation, meta, path, rrule, time` | packages `domain/` and `core/` may import |
 | `layering.feature_packages` | RELAY's list (see `tool/apsira_tools.yaml`) | packages `features/` may import |
-| `layering.shared_packages` | `apsira_core, apsira_ui` | `apsira_core` imports as `core/`, `apsira_ui` as `app/theme/` (D-APK-002) |
+| `layering.shared_packages` | `apsira_core, apsira_ui` | `apsira_core` imports as `core/`, `apsira_ui` as `app/theme/` (D-APK-002); no other package may be named |
 | `layering.colour_literal_exempt` | `app/theme/` | path prefixes where colour literals may live |
 | `layering.disabled_rules` | none | rule ids whose findings are dropped |
 | `l10n.config` | `lib/app/l10n/l10n.yaml` | the gen-l10n file (`--l10n-config` wins) |
@@ -58,6 +60,13 @@ reproduces RELAY.
 | `privacy.approved_heading` | `### 11.1` | the section whose table rows (`` `NAME` ``) approve `android.permission.NAME` |
 
 `test/fixtures/viaticum/apsira_tools.yaml` is VIATICUM's file.
+
+`apsira_app` and `apsira_jobs` have no layer of their own: the lint treats them as
+any third-party package. `domain/` and `core/` may import them only when
+`layering.domain_packages` lists them, `features/` only when
+`layering.feature_packages` does, and every other layer freely. An app whose `core/`
+imports the `BackgroundJobs` port lists `apsira_jobs` there; the barrel also exports
+the WorkManager adapter, so the lint then lets `core/` import the adapter too.
 
 ### Stays in VIATICUM
 
@@ -93,9 +102,9 @@ script's `--help` lists every setting and its default.
 | Script | Does | Exit |
 |---|---|---|
 | `session_guard.sh` | sourced; `refuse_in_session <script>` refuses on `CLAUDECODE`, any `CLAUDE_CODE_*`, `AI_AGENT`, `CODESPACES`, `CLOUD_SHELL`, `ARMY_TREE`, `ARMY_TASK` or `HOME=/home/user`, citing D-APK-011 and `APSIRA_GUARD_RECORD` | 3 in a session |
-| `build_apk.sh [--dry-run] [debug\|profile]` | the dev APK, `./gradlew :app:process<Prod>ReleaseManifest`, `APSIRA_MANIFEST_CHECK`, each of `APSIRA_APK_CHECKS`, then `APK:` and `SHA-256:`. It builds no release and reads no key, so it runs in a session too | 1 no SDK or a step failed (`build_apk: FAIL (<step>)`), 2 usage |
+| `build_apk.sh [--dry-run] [debug\|profile]` | the dev APK, `./gradlew :app:process<Prod>ReleaseManifest`, `APSIRA_MANIFEST_CHECK`, each of `APSIRA_APK_CHECKS`, then `APK:` and `SHA-256:`. It builds no release and reads no key, so it runs in a session too | 1 no SDK or a step failed (`build_apk: FAIL (<step>)`), 2 usage or settings |
 | `local_release.sh [--dry-run] v<x.y.z> [--build-number <n>] [--issues <file>]` | refuses in a session first, then the checkout, versionCode, notes, release check, prod build, manifest check, certificate (`APSIRA_SIGNING=release-key`) or the SDK debug key (`debug-key`), and `build/release/<tag>/<id>-<x.y.z>.apk` | 1 an input or step, 2 usage or settings, 3 session |
-| `check.sh`, `codegen.sh` | every step of `APSIRA_CHECK_STEPS` / `APSIRA_CODEGEN_STEPS` (one `<name>: <command>` per line, the script's arguments as `"$@"`), each to the end, `ok <step>` / `FAIL <step>`, then `check: PASS` or `check: FAIL (<steps>)` | 1 a step failed, 2 a bad list |
+| `check.sh`, `codegen.sh` | every step of `APSIRA_CHECK_STEPS` / `APSIRA_CODEGEN_STEPS` (one `<name>: <command>` per line, the script's arguments as `"$@"`), each to the end, `ok <step>` / `FAIL <step>`, then the verdict `check:` / `codegen:` `PASS` or `FAIL (<steps>)` | 1 a step failed, 2 a bad list (`FAIL (settings)`) |
 
 `--dry-run` prints the commands (`flutter build`, the checks, `apksigner`, `gh`) and
 reads, builds and creates nothing; `<versionCode>`, `<ANDROID_HOME>` and `<newest>`

@@ -10,6 +10,10 @@ No change in behaviour; first release under the shared tag `apsira-v0.2.0` (D-AP
 **Migration.** Move the pin from `ref: apsira_ui-v0.1.0` to `ref: apsira-v0.2.0`, the same
 ref as every other apsira package the app uses.
 
+**Known issue, kept.** The light theme's `TextButton` text (`accentFill` on `ground`)
+measures 4.39:1, under the 4.5:1 of Flutter's `textContrastGuideline`. 0.2.0 does not change it (no change in
+behaviour); the component and menu themes of `apsira_ui` 0.3 fix it (D-APK-011).
+
 ## 0.1.0 — 2026-10-21
 
 First release: RELAY's theme at `5f606e9` (`v1.0.0`) as a package (D-APK-001).

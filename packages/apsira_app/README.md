@@ -27,7 +27,7 @@ adoption lane deletes; paths are under the app's root.
 | `StartupFailureApp({title, message, theme, localizationsDelegates, supportedLocales, icon})` | L `lib/app/bootstrap.dart` | — | — | `StartupFailureApp` in `lib/app/bootstrap.dart` |
 | `SystemClock` (`refreshZone`, `useZone`, `forgetZone`) | R `lib/data/platform/system_clock.dart` | `lib/data/platform/system_clock.dart` | `lib/data/platform/system_clock.dart` | `lib/data/platform/system_clock.dart` |
 | `ZoneChannel` on `apsira_app/zone`, `zoneId()` | R `lib/data/platform/zone_channel.dart` | `lib/data/platform/zone_channel.dart` | `lib/data/platform/zone_channel.dart` | `readZoneId` in `lib/data/platform/zone_channel.dart` |
-| `ZoneModule.kt`, `ApsiraAppPlugin.kt` (Android) | L `ZoneModule.kt` (the channel half of R's) | the channel half of `ZoneModule.kt` and its `register` line in `MainActivity.kt`; the receiver stays for `apsira_jobs` (R-3) | the same | `ZoneModule.kt` and its line in `MainActivity.kt` |
+| `ZoneModule.kt`, `ApsiraAppPlugin.kt` (Android) | L `ZoneModule.kt` (the channel half of R's) | `ZoneModule.kt` and its `register` line in `MainActivity.kt`; its receiver half is `apsira_jobs`' `ZoneResync.kt` (D-APK-011) | the same | `ZoneModule.kt` and its line in `MainActivity.kt` |
 | `PendingPort` (`pending()`, `pendingResult()`, `portPending`) | R `lib/data/platform/pending_ports.dart`; V's `Result` stubs | the base class in `lib/data/platform/pending_ports.dart` (its stubs stay) | the same | the same |
 | `InstallFlag({directory, path})`, `isSet()`, `set()` | V `lib/app/services/first_open_service.dart` | — (its flag is in `app_meta`) | the file logic of `FirstOpenService` (`path: 'first_open/done.json'`) | — |
 | `AboutPage({title, versionLabel, licencesLabel, appName, version, developedByLabel, apsiraLabsLabel, tagline, mark, rows})` | L `lib/features/settings/ui/about_page.dart` | — | — | `lib/features/settings/ui/about_page.dart` (its tour and privacy rows passed as `rows`) |
@@ -58,6 +58,6 @@ From this directory: `flutter analyze` and `flutter test` (the `app` gate). The 
 check the Kotlin's source; `example/` compiles it. That app depends on this package by path
 (its `pubspec_overrides.yaml` resolves `apsira_core` and `apsira_ui` from their
 directories) and reads the zone into `SystemClock` at start; its debug build compiles
-`ApsiraAppPlugin.kt` and `ZoneModule.kt` (task F1). `tool/check.sh` runs the example's
+`ApsiraAppPlugin.kt` and `ZoneModule.kt`. `tool/check.sh` runs the example's
 analyze and smoke test; the build is run by hand, under a build lease, from `example/`:
 `flutter build apk --debug && rm -rf build`.

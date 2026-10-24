@@ -25,7 +25,7 @@ becomes Decided on review), Superseded.
 | D-APK-008 | Shared strings live in an `apsira_l10n` package (en/es, its own delegate); apps keep their own ARBs; built in Phase 2 | Decided |
 | D-APK-009 | A package is done only when RELAY, VIATICUM and LYCEUM use it through a patch release; adoption runs in adoption lanes under each app's own rules | Decided |
 | D-APK-010 | Policy for what the packages carry: device state per install (C1), LYCEUM's export envelope (C2), media layout per app (C3), RELAY's notifications with VIATICUM's alarm registry (C4) | Decided |
-| D-APK-011 | The Tier-1 set at `apsira-v0.2.0` and how each drift is resolved: monotonic UUIDv7, RELAY's FTS rule, `stackHash` with `crypto`, `apsira_jobs`, the session-guard union, the zone channel | Decided |
+| D-APK-011 | The Tier-1 set at `apsira-v0.2.0` and how each drift is resolved: monotonic UUIDv7, RELAY's FTS rule, `stackHash` with `crypto`, `apsira_jobs`, the session-guard union, the zone channel, one copy of the release scripts | Decided |
 
 ---
 
@@ -365,7 +365,7 @@ becomes Decided on review), Superseded.
 
 ## D-APK-011 — The Tier-1 set at `apsira-v0.2.0` and the drift resolutions
 
-- **Status:** Decided (2026-10-24: operator ruling R-1; conductor rulings R-2 and R-3). Amends D-APK-001 (`apsira_core`
+- **Status:** Decided (2026-10-24: operator ruling R-1; conductor rulings R-2, R-3, R-8, R-10 and R-11). Amends D-APK-001 (`apsira_core`
   depends on `crypto`) and the charter `README.md` §5.
 - **Context:** Phase 1 packages the near-identical copies (analysis §2 Tier 1) and has to choose one behaviour
   wherever the copies differ. The source of each extracted file is named in its header, `// From <app> <path> @
@@ -401,11 +401,34 @@ becomes Decided on review), Superseded.
     `DART_TASK_KEY` and the top-level `PAYLOAD_PREFIX` are public. Its `androidx.work:work-runtime:2.11.2` is an
     `implementation` dependency, the artifact and version RELAY and VIATICUM already name. So `apsira_jobs`' Android
     build names that project and artifact, adding nothing to either APK, and holds `ZoneResync.kt` and the
-    `<receiver>`. RELAY's debug build proves the compile; if it fails, branch 2 returns as an F-task.
+    `<receiver>`. The debug builds of `apsira_jobs/example` and `apsira_app/example` compile the plugins'
+    Kotlin. `tool/check.sh` does not build them, so the next change under `packages/*/android` builds them by
+    hand as part of its proof.
+  - **The release and build scripts** are one copy in `apsira_tools` (`lib/scripts/`), driven by `APSIRA_*`
+    settings. Changes from the apps' copies: the tag is `v<x.y.z>` without leading zeros in every app (LYCEUM's
+    rule); `build/release/<tag>/` is emptied before the build (RELAY kept old files); the publish lines first
+    check that the repository is private; VIATICUM's `backup fixture: not applicable` line is gone;
+    `build_apk.sh` keeps RELAY's exit codes, 1 for a missing SDK and 2 for usage (VIATICUM's were 2 and 64).
+    Only `local_release.sh` calls the session guard. `build_apk.sh` stays unguarded, as in all three apps: it
+    builds no release and reads no key, and each app's conductor builds the dev APK in a session (ruling R-11).
+    This repository's `tool/release.sh` runs in the operator's own terminal: a `!` line in a Claude Code
+    session inherits the session's markers, and the guard exits 3.
+  - **`RELAY_PROP_*` and `VIATICUM_PROP_*`** are renamed `APSIRA_PROP_SCALE` and `APSIRA_PROP_SEED`
+    (`apsira_test`'s `prop_core`); each app's long or nightly run sets the new names. A rename only.
+  - **Other changes a consumer sees.** RELAY's log lines with a stack gain the `stackHash=<16 hex>` suffix
+    (ruling R-8). VIATICUM's `SystemClock.nowUtc()` is truncated to whole milliseconds (RELAY's, the `Clock`
+    contract). LYCEUM's `readZoneId()` returned `null` where `ZoneChannel.zoneId()` throws; its adoption
+    catches. `apsira_test`'s layout check is LYCEUM's superset, with VIATICUM's `sideways` check behind
+    `LayoutHost.forbidSideways`; VIATICUM loses only false failures (a `Badge` over its child, an
+    `IndexedStack`'s hidden children, text a scroll view carries clear of a floating button, a clip measured
+    against what its scroll view left visible). The golden matrix is LYCEUM's with RELAY's `goldenMatrix`.
+  - **Kept for `apsira_ui` 0.3:** the light theme's `TextButton` text (`accentFill` on `ground`) measures
+    4.39:1, under the 4.5:1 of Flutter's `textContrastGuideline`. `apsira_ui` 0.2.0 changes no behaviour, so
+    the fix goes with the component and menu themes of Phase 2's `apsira_ui` 0.3 (ruling R-10).
 - **Alternatives rejected:** the adapter inside `apsira_app` (reverses LYCEUM D-034) or one per app (the policy
   fork can recur); a hand-written SHA-256 (owns a crypto primitive) or the hash inside `FileLogSink` (changes
   VIATICUM's `LogRecord` and its tests); LYCEUM's token-less `null` (moves RELAY's results).
 - **Consequences:** `apsira_core` is "pure Dart, depends only on `crypto`", and the app ports beyond `Clock` and
   `IdGen` that are shared live in their package (`BackgroundJobs` in `apsira_jobs`); the charter §5 says so.
-  RELAY gains `keep`/`replace`; LYCEUM's ids become monotonic; VIATICUM keeps `stackHash`. Each is a line in the
-  app's decision log at adoption.
+  RELAY gains `keep`/`replace` and the `stackHash=` suffix; LYCEUM's ids become monotonic; VIATICUM keeps
+  `stackHash`. Each is a line in the app's decision log at adoption.

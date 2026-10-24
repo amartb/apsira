@@ -179,6 +179,9 @@ The procedure that brought Lyceum Folio in (planning thread of 2026-10-21):
 | `folios/`, `tomes/` | Briefs, one per app |
 | `packages/` | `apsira_core`, `apsira_ui`, `apsira_tools`, `apsira_test`, `apsira_app`, `apsira_jobs` |
 | `docs/decisions.md` | The ecosystem's decision log (`D-APK-nnn`) |
+| `docs/agent-rules.md` | The non-negotiables every army brief for this repository carries |
+| `docs/sessions/` | Session briefs, analyses, reports and handoffs |
+| `docs/intake/` | Intake briefs that start another project's planning thread |
 | `tool/check.sh` | The full check: every package's and example's analyze and tests, the shared-tag rules (one `version:`, the git form at `apsira-v<version>`, overrides), `sha256sum -c` of fonts and brand; verdict line `check: PASS` |
 | `tool/release.sh` | The operator's tag act: checks, tags `apsira-v<version>`, pushes the tag, proves a consumer resolves it |
 | `.army.toml` | The army's configuration for the `apsira` lane |
