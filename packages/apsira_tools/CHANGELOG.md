@@ -37,11 +37,50 @@ prove each key with one passing and one failing case.
   `l10n_check: no l10n config at <path>`, not 255 with a stack trace (the v0.1
   deferral).
 
+### Scripts (D-APK-011)
+
+`lib/scripts/` holds the apps' shell scripts once, driven by `APSIRA_*` settings, and
+`dart run apsira_tools:script_path <name>` prints a script's path for the app's
+wrapper (README, "Scripts"). Sources: RELAY `09b28810`, VIATICUM `78d38e0`, LYCEUM
+`9f4ff27`, each named in the script's header.
+
+- **`session_guard.sh`** is LYCEUM's: `refuse_in_session` exits 3 on `CLAUDECODE`,
+  any `CLAUDE_CODE_*`, `AI_AGENT`, `CODESPACES`, `CLOUD_SHELL`, `ARMY_TREE`,
+  `ARMY_TASK` or `HOME=/home/user`, the union of VIATICUM's and LYCEUM's markers.
+  RELAY's guard missed `ARMY_TREE` and `ARMY_TASK`. The refusal cites D-APK-011 and
+  the app's `APSIRA_GUARD_RECORD` instead of LYCEUM's D-004.
+- **`build_apk.sh`** is RELAY's, with VIATICUM's `APSIRA_APK_CHECKS` and its
+  `build_apk: FAIL (<step>)` lines, and `--dry-run`. It keeps RELAY's exit codes
+  (1 no SDK, 2 usage): VIATICUM's 2 for a missing SDK and 64 for usage move.
+  It does not call the session guard: it builds no release and reads no key, and
+  each app's conductor builds the dev APK in a session.
+- **`local_release.sh`** reproduces each app's release through settings:
+  `APSIRA_SIGNING=release-key` with `APSIRA_KEY_PREFIX` and either
+  `APSIRA_KEY_FINGERPRINT` (LYCEUM's inline `apksigner` check) or
+  `APSIRA_FINGERPRINT_CHECK` (RELAY's `verify_fingerprint.dart`), or
+  `APSIRA_SIGNING=debug-key` (VIATICUM D-059); `APSIRA_VERSION_CODE=commit-count`
+  (RELAY, `--build-number`) or `version-dart`; `APSIRA_NOTES=issues` (RELAY,
+  VIATICUM) or `changelog` (LYCEUM, before the build); `APSIRA_RELEASE_CHECK`
+  (VIATICUM's `tool/check.sh`); `APSIRA_VERSION_DEFINE` (LYCEUM's
+  `--dart-define`). The guard runs first; `--dry-run` prints the build's commands.
+  Changes from the apps' copies: the tag must be `v<x.y.z>` without leading zeros
+  (LYCEUM's rule) in every app; `build/release/<tag>/` is emptied first in every app
+  (RELAY kept old files); the publish lines always check that the repository is
+  private first; VIATICUM's `backup fixture: not applicable` line is gone.
+- **`check.sh`, `codegen.sh`** are skeletons: the step lists come from
+  `APSIRA_CHECK_STEPS` / `APSIRA_CODEGEN_STEPS`, every step runs to the end, and the
+  verdict is `check: PASS` or `check: FAIL (<steps>)`. `codegen --check`'s
+  back-up-and-compare stays in each app's own step.
+
 ### Migration
 
 None for RELAY or LYCEUM. VIATICUM copies `test/fixtures/viaticum/apsira_tools.yaml`
 with its own paths and keeps the items the README lists under "Stays in
 VIATICUM".
+
+Replace `tool/build_apk.sh` and `tool/release/local_release.sh` with the README's
+wrappers. Tests that pinned VIATICUM's `build_apk.sh` exit codes 2 (no SDK) and 64
+(usage) now expect 1 and 2.
 
 ## 0.1.0 — 2026-10-21
 
