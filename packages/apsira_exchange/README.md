@@ -9,6 +9,7 @@ Its consumers are **RELAY, VIATICUM and LYCEUM**.
 | Library | Holds |
 |---|---|
 | `package:apsira_exchange/apsira_exchange.dart` | `ExportEnvelope` (`format`, `formatVersion` `1.0`, `producedAt`, `producer`, `schemaVersion`, `extra`; `toJson`, `writeHead`, `tail`, `encode`), `Producer`, `formatInstant`; `checkEnvelope` / `checkEnvelopeUtf8` → `EnvelopeOk(envelope, readAs)` · `NotABundle(reason)` · `FormatUnsupported(found)` · `SchemaTooNew(found, supported)`, `EnvelopeInfo`, `LegacyShape`; `exportedTables`, `JsonDump` (`DumpLayout`, `RowRedaction`, `jsonFieldRedaction`), `writeExport`, `formatExportReal`; `buildDatabaseFrom` → `Result<LoadSummary, LoadRefused>` (`LoadRefusal`), `loadOrderOf`, `LoadStepHook`. |
+| `package:apsira_exchange/envelope.dart` | The envelope alone: `ExportEnvelope`, `Producer`, `formatInstant`, `exportFormatVersion`, `envelopeKeys`; `checkEnvelope` / `checkEnvelopeUtf8` with their outcomes, `EnvelopeInfo`, `LegacyShape`, `isReadableFormatVersion`. It reaches only `apsira_core` and the SDK's core libraries, never drift, sqlite3, `dart:io` or Flutter (`test/envelope_library_test.dart` runs it in a plain Dart program). |
 
 ## The envelope
 
@@ -18,6 +19,10 @@ app_version}`, `schema_version` (an integer ≥ 1). The document is canonical JS
 `writeSortedJson`) with `tables` last, so a dump streams it between `writeHead` and `tail`. An
 app adds its own keys through `extra` (none may be an envelope key or sort after `tables`);
 readers ignore the keys they do not know. Backup manifests are not envelopes.
+
+A pure-Dart domain layer (VIATICUM's exchange readers, which may not import drift or `dart:io`)
+imports `envelope.dart`; the data layer, which dumps and loads, imports the barrel. Both export the
+same envelope types, so a value passes from one to the other.
 
 `checkEnvelope` never throws. The app passes its formats, its schema version and the legacy
 shapes it still reads, and maps the four outcomes to its own codes:

@@ -16,6 +16,9 @@ First release (D-APK-019): LYCEUM's envelope for every app's export (ruling C2).
 - `buildDatabaseFrom`, `loadOrderOf`: LYCEUM `lib/data/db/json_load.dart` @ `9f4ff27`, with
   the app's database, upgrade steps, `afterLoad`, load order and pragmas passed in; refusals
   as `LoadRefused` (`loadNotABundle`, `loadSchemaTooNew`, `loadStorageFull`).
+- `package:apsira_exchange/envelope.dart` (ruling R-11): the envelope and its reader alone, with
+  no drift, sqlite3, `dart:io` or Flutter, for an app's pure-Dart domain layer; the barrel's
+  exports are unchanged.
 - `tool/validate_examples.py`: VIATICUM's and LYCEUM's validators as one, with its unittest.
 - Migration, LYCEUM: `ExportEnvelope(appVersion:, …)` → `ExportEnvelope(format: 'lyceum-export',
   producer: Producer('lyceum', v), extra: {'app_version': v}, …)`; map `NotABundle`,
@@ -26,5 +29,6 @@ First release (D-APK-019): LYCEUM's envelope for every app's export (ruling C2).
   jsonExportTables`, its `settings` redactions through `jsonFieldRedaction` and
   `DumpLayout.rowPerLine`; the reader passes `LegacyShape.relayExportV1`.
 - Migration, VIATICUM: results gain `schema_version`; the readers pass
-  `LegacyShape.viaticumExchangeV1`; `validate_examples.py --schemas … --examples … --check`,
-  and `--schema` mode now exits 1 on an invalid file.
+  `LegacyShape.viaticumExchangeV1`, the domain's through `envelope.dart`;
+  `validate_examples.py --schemas … --examples … --check`, and `--schema` mode now exits 1 on an
+  invalid file.

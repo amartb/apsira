@@ -831,7 +831,9 @@ becomes Decided on review), Superseded.
   its list and redactions as parameters; its reader takes `LegacyShape.relayExportV1`. VIATICUM: the results
   writer adds `schema_version`; the seed, package and results readers take `LegacyShape.viaticumExchangeV1`.
   LYCEUM: `envelope.dart`, `json_dump.dart` and `json_load.dart` become the package's, its top-level
-  `app_version` an `extra` key. Each is a line in the app's decision log at adoption.
+  `app_version` an `extra` key. Each is a line in the app's decision log at adoption. A pure-Dart domain
+  layer imports `package:apsira_exchange/envelope.dart` (ruling R-11, from VIATICUM's adoption): the envelope and
+  its reader alone, reaching no drift, sqlite3, `dart:io` or Flutter; the barrel exports the same and more.
 
 ## D-APK-020 — `apsira_zip`: RELAY's and LYCEUM's streaming ZIP
 
