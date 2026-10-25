@@ -106,7 +106,9 @@ registry: `data_extraction_rules.xml` (both sections, and `full_backup_content`)
 path="dev.fluttercommunity.plus.android_alarm_manager_plugin.xml"/>`. The adoption checks
 it with `apsira_notify`'s `expectExcludedFromDeviceBackup(…, excluded:
 [...alarmBackupExclusions, ...alarmManagerBackupExclusions])`, the second list from
-`package:apsira_jobs/testing.dart`.
+`package:apsira_jobs/testing.dart`. The scheduler reaches the vendored
+`flutter_local_notifications` through `apsira_notify`, so `android/app` enables Java library
+desugaring as `apsira_notify`'s README says (`example/` does).
 
 | Symbol | Source | Replaces in RELAY | in VIATICUM |
 |---|---|---|---|
