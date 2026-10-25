@@ -50,7 +50,7 @@ them records the exception in its own decision log with the reason.
 
 | Class | Form | Reference | Members |
 |---|---|---|---|
-| **folio** | Phone app (Android, Flutter) | RELAY | RELAY, VIATICUM, LYCEUM |
+| **folio** | Phone app (Android, Flutter) | RELAY | RELAY, VIATICUM, LYCEUM, ATRIUM |
 | **tome** | PC app (native desktop; Fedora and Windows) | QUIRE | QUIRE, PRISM (PC first) |
 | **the central app** | The one Apsira-branded app that ties the roster together; the only place sync will live (§4) | — | not yet planned |
 
@@ -181,6 +181,7 @@ The procedure that brought Lyceum Folio in (planning thread of 2026-10-21):
 | QUIRE | tome | `amartb/quire` | M6 merged (app shell and editor); Typst PDF pipeline live |
 | PRISM | tome | — | brief only |
 | LYCEUM | folio | `amartb/lyceum` | v1.0.0 released privately (2026-10-24); the creative hub, offline, RELAY v2's look |
+| ATRIUM | folio | `amartb/atrium` | planned (2026-10-25): the viewer and organiser for every file through the phone; P1–P6 kickoffs written |
 | the central app | — | — | direction stated (§4); not planned |
 
 ## 9. Repository map
