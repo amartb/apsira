@@ -28,6 +28,11 @@ settings.
 | R7 | Photo route | **Proton's own Android photo backup**, plus a copy on amb811. |
 | R8 | Extra storage in amb811 | **An SSD** in the free bay (no HDD). |
 | R9 | Governance | Only Apsira's charter and decision logs govern this. amb811 also hosts KEYSTONE, but KEYSTONE's rules do not apply to Apsira's use of it. |
+| R10 | Two devices change the same field | **Both are kept.** Sync never discards an edit; clashes are surfaced with a badge and a "View edits" history (§2.3). |
+| R11 | Edited on one device, deleted on the other | **Restore it and flag it**: the edit wins, the item leaves the trash with a badge saying it was deleted on the other device. |
+| R12 | What a clashing item shows until resolved | **The newest version, with a "2 versions" badge**, the same on every device; the other version is one tap away. |
+| R13 | Where a synced reminder rings | **Chosen per reminder, the phone by default**; dismissing it on one device dismisses it on the others at the next sync. |
+| R14 | Text both devices changed | **A merge suggestion is offered** when the edits touched different parts, beside both originals; never applied silently. |
 
 ---
 
@@ -59,25 +64,81 @@ settings.
   are not Flutter, so a Dart package alone cannot be the contract. A shared Dart implementation for the
   folios sits on top of the spec.
 
-### 2.3 Merge rules (*Claude's call*, from R2)
+### 2.3 Conflicts and version history (R10–R14)
 
-- **Newest edit wins, per field**, not per row: a title changed on the phone and a tag changed on the
-  tablet both survive.
-- **Timestamps from a hybrid logical clock** rather than the wall clock alone, so a device whose clock is
-  off cannot silently win or lose; `apsira_core`'s `Clock` port and monotonic UUIDv7 are the starting point.
-- **Deletes are soft** (`deleted_at`) and travel like any other change.
-- **Safety net for long text:** when an incoming change overwrites a note body or other long text, the
-  replaced version is kept in history, not dropped. The rare clash stays recoverable without CRDT cost.
+Sync is **additive: no edit is ever discarded.** Merging per field means a title changed on the phone and
+a tag changed on the tablet both survive without a clash; what follows covers the rest.
 
-### 2.4 What the apps already have, and what they will need
+- **Every edit is a version.** Each change records the version it was made from, its device and its time.
+  The change log and each item's version history are the same record.
+- **Clashes are found by what each edit was based on, never by timestamps.** Two edits made from the same
+  version are concurrent, whatever their clocks say. Timestamps (from a hybrid logical clock, starting from
+  `apsira_core`'s `Clock` port) only pick which version every device **shows first** (R12), so all devices
+  agree; they never decide what is kept.
+- **Both versions are kept** and the item carries a **"2 versions" badge** (R12). A **Conflicts** list in
+  the central app gathers every open clash across the apps, so none is forgotten.
+- **"View edits" on every item:** the timeline of its versions (device, time), a side-by-side comparison,
+  and *restore any version*. Restoring adds a new version; nothing is rewritten.
+- **Resolving is additive too:** pick one, keep both, or combine by hand. The resolution syncs like any
+  change; the versions not chosen stay in history. For text, since the common starting version is known,
+  a **merge suggestion** is offered when the edits touched different parts (R14).
+- **Retention:** history is kept forever by default; any pruning is the user's choice, per app
+  (*Claude's call*, customization first).
+
+### 2.4 Edge cases
+
+*Claude's calls* except where a ruling is named. Each app's planning thread applies them to its own data.
+
+| # | Case | Handling |
+|---|---|---|
+| **Content** | | |
+| 1 | Same field changed on two devices | Both kept, badge, View edits (§2.3; R10, R12) |
+| 2 | Both devices make the identical change | Not a clash. Values compare after normalisation (e.g. RELAY's Markdown round-trip), so cosmetic differences raise no false clash |
+| 3 | Fields that only make sense together (a recurrence's frequency, interval and end) | Declared as a **field group** that clashes as a unit, never half-merged into an invalid combination |
+| 4 | Sets (tags, checklist items, attachment lists) | Merged as adds and removes: both devices' additions survive; a removal applies only to what that device had seen |
+| 5 | Derived data (RELAY's checkbox→task links, search indexes, caches) | Never synced; rebuilt on each device from the synced source |
+| 6 | Rules across rows (one default, unique order) | The app checks its rules after applying a batch; a broken rule is flagged, never silently "fixed" |
+| **Deletes** | | |
+| 7 | Edited on one device, deleted on the other | Restored and flagged (R11) |
+| 8 | Purged (trash emptied) on one device while edited on the other | A purge leaves a permanent delete marker that travels; a later edit to a purged item is flagged, its content kept |
+| 9 | An old device or backup reintroducing deleted items | Delete markers are kept indefinitely (they are tiny) |
+| **Structure** | | |
+| 10 | Item moved to different folders on two devices | A same-field clash: one folder shown, badge, the other move kept as a version |
+| 11 | Item moved into a folder the other device deleted | The folder is restored and flagged; nothing is orphaned |
+| 12 | Folder A moved into B on one device, B into A on the other | The cycle is detected and broken by the same rule on every device, then flagged |
+| 13 | Manual order changed on both devices | Sortable position keys that merge without a prompt |
+| **Identity** | | |
+| 14 | The same tag, type or property created separately on both devices | Both kept; the app offers "merge these two?" and never merges by itself |
+| 15 | A device that already has its own data when sync is first turned on | Everything is kept, then a one-time duplicate review |
+| **Per device or shared** | | |
+| 16 | State that belongs to one install: backup-folder grants, the alarm registry (D-APK-022), install flags, possibly lock settings | Every table is declared **shared** or **device-only**; device-only data never syncs |
+| 17 | A reminder present on several devices | Rings where chosen per reminder, the phone by default; dismissing on one dismisses on the others at the next sync (R13) |
+| **Versions and time** | | |
+| 18 | Devices on different app versions | An app never applies a change from a schema it does not know; the change waits until that app is updated, never dropped |
+| 19 | A migration that fills values on every device | Changes written by a migration are marked as such and never count as clashes |
+| 20 | A device with a wrong clock | Clocks only order what is shown first (§2.3); absurd timestamps are flagged |
+| **Files** | | |
+| 21 | An item arrives before its attachment | A placeholder until the file lands |
+| 22 | An attachment replaced (a photo cropped) | The new file is a new version; the original stays in history |
+| **Lifecycle** | | |
+| 23 | Interrupted sync, or the same batch arriving twice | Each app applies a batch in one transaction; applying a change twice is a no-op |
+| 24 | A device restored from an old backup | It rejoins as a new device; its old state loses to newer versions; delete markers keep deleted items deleted |
+| 25 | A device lost or stolen | Revoked from another device; the mailbox refuses it from then on |
+| 26 | Losing the sync encryption key | A recovery copy of the key (printed, or kept in Proton); new devices pair by QR code at home |
+| 27 | Edits made away from home live on one device until the next sync at home (a consequence of R1) | The device's own scheduled backup still runs; known and accepted |
+| 28 | History growing without bound | Kept forever by default; pruning is the user's choice, per app (§2.3) |
+
+### 2.5 What the apps already have, and what they will need
 
 - **Have** (charter §1.4, RELAY D-014/D-023): UUIDv7 ids, `created_at`, `updated_at`, `deleted_at` on
   every user-data row; a versioned full export.
-- **Will need:** a change log (or equivalent change capture) per app; per-field timestamps or an
-  equivalent; a way to apply incoming changes inside the app's single write path; and the endpoint the
-  central app talks to (§2.5). Each app's planning thread rules its own shape.
+- **Will need:** a change log per app that records each field version and the version it was based on
+  (§2.3); a way to apply incoming changes inside the app's single write path; the version-history, badge
+  and "View edits" screens; each table declared shared or device-only and each field group declared
+  (§2.4); and the endpoint the central app talks to (§2.6). Each app's planning thread rules its own shape;
+  the history and conflict screens are candidates for a shared package.
 
-### 2.5 How the central app reaches the apps on Android
+### 2.6 How the central app reaches the apps on Android
 
 An app without the `INTERNET` permission cannot open **any** socket, including one to `localhost` on the
 same phone. So the central app cannot talk to RELAY over a local port. It must use Android's on-device
@@ -93,7 +154,7 @@ Locking that channel to Apsira apps needs a permission only Apsira apps hold. Tw
 This is a decision to take before the central app is built. The KAIROS link contract
 (`relay/docs/kairos/05-link-contract.md`) already does mutual verification between two apps and is prior art.
 
-### 2.6 The Fedora PC
+### 2.7 The Fedora PC
 
 On the PC, the central app's role is a small background service the tomes talk to, speaking the same
 format. Whether the folios also get PC builds is out of scope here.
@@ -146,10 +207,10 @@ That is the 3-2-1 rule: three copies, two kinds of storage, one offsite.
 
 ## 4. Open questions for the central app's planning thread
 
-1. Signing: one key for every Apsira app, or `knownSigner` (§2.5)?
+1. Signing: one key for every Apsira app, or `knownSigner` (§2.6)?
 2. What runs on amb811 for the mailbox: plain SSH/SFTP to a restricted account, or a small service of the
    central app's own (§3.2)? Then the charter amendment.
-3. Change capture per app: a log table written in the same transaction, or triggers (§2.4)?
+3. Change capture per app: a log table written in the same transaction, or triggers (§2.5)?
 4. The device-to-device fallback: built at the start, or only the mailbox first?
 5. The photo copy route onto amb811 (§3.3).
 6. Where the documents archive's master copy lives: amb811 with Proton as offsite, or Proton with amb811

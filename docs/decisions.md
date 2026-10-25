@@ -37,7 +37,7 @@ becomes Decided on review), Superseded.
 | D-APK-020 | `apsira_zip`: RELAY's streaming ZIP writer, CRC-32 and one-pass reader, the apps' parts as hooks (entry names, an entry check, extraction, the keep limit); refusals as `ZipRefusal`, mapped by each app; consumers RELAY and LYCEUM | Decided |
 | D-APK-021 | `apsira_notify`: RELAY's notifier with app-defined channels (no channel id moves), at most three actions, the lock-screen public version, the permission flow with a per-install asked flag, the package's own settings intents; RELAY's patched `flutter_local_notifications` moves to `packages/third_party/` | Decided |
 | D-APK-022 | The per-install alarm registry: VIATICUM's `alarms/registry.json` in `apsira_notify` with a per-install `SnoozeStore`, `AlarmSync` (re-arms every wanted alarm, cancels what the registry names and every plugin-pending id it never handed out), RELAY's window; `FlnAlarmScheduler` (LYCEUM) and `AlarmManagerScheduler` in `apsira_jobs` (Q1-c); every consumer excludes `alarms/` and the plugins' persisted lists from Android's backup | Decided (amended by F1, 2026-10-24) |
-| D-APK-023 | Sync and storage direction: home-network-only sync by a transport-agnostic change log carried by the central app, newest edit wins per field; amb811 as the home hub with its own SSD, Proton Drive as the encrypted offsite copy; no NAS for now | Decided as direction (2026-10-25); may change |
+| D-APK-023 | Sync and storage direction: home-network-only sync by a transport-agnostic change log carried by the central app, merged per field and additive (no edit discarded: same-field clashes keep both versions behind a badge and a version history); amb811 as the home hub with its own SSD, Proton Drive as the encrypted offsite copy; no NAS for now | Decided as direction (2026-10-25); may change |
 
 ---
 
@@ -1068,8 +1068,13 @@ becomes Decided on review), Superseded.
   - Each app records its own changes; the central app carries them, encrypted, through a
     **transport-agnostic** change log (a mailbox on amb811, or device to device), in a documented,
     language-neutral format. Applying a change is each app's own logic.
-  - **Newest edit wins per field**; deletes are soft and travel; overwritten long text is kept in history.
-    No CRDT.
+  - **Additive merge: no edit is ever discarded.** Changes merge per field; every edit is a version that
+    records the version it was based on, so clashes are found by causality, not by clocks. When two
+    devices change the same field both versions are kept: every device shows the newest with a
+    "2 versions" badge, the item's "View edits" history compares and restores any version, and the central
+    app lists open clashes. An edit beats a concurrent delete (the item is restored and flagged); a
+    synced reminder rings where chosen per reminder, the phone by default; for text a merge suggestion is
+    offered, never applied silently. No CRDT. The edge cases are settled in the roadmap note's §2.4.
   - **amb811** is the home hub (mailbox, local backups, photo copy, documents archive) on its own SSD;
     **Proton Drive** holds the encrypted offsite copy. No NAS for now.
 - **Alternatives rejected:** a hosted sync engine inside each app (puts network access in every app); a
