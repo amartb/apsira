@@ -13,10 +13,6 @@ No change in behaviour. Migration: move every apsira `ref:` to
 Its `apsira_core` and `apsira_ui` dependencies move to `ref: apsira-v0.3.0`. Migration:
 move every apsira `ref:` to `apsira-v0.3.0`.
 
-- `AboutPage` draws its rows as list tiles in cards unless the app passes `rowBuilder` (the
-  version and licences rows, as `AboutRow`) and `sectionBuilder` (the brand and rows
-  sections): LYCEUM keeps its kit's rows and cards. Without them it looks as in 0.2.0.
-
 ## 0.2.0 — 2026-10-24
 
 First release (D-APK-011): the app shell RELAY, VIATICUM and LYCEUM each carried, as one
@@ -30,7 +26,9 @@ app files it replaces.
 - `startRedirect` with `StartPhase` and `StartRoutes`: RELAY's and LYCEUM's redirects in
   one pure function, with the app's routes as its targets.
 - `RestartableRoot`, `StartupFailureApp`, `AboutPage`, `ZoneModule.kt`: LYCEUM @ `9f4ff27`,
-  every string a parameter.
+  every string a parameter. `AboutPage` draws its rows as list tiles in cards unless the
+  app passes `rowBuilder` (the version and licences rows, as `AboutRow`) and
+  `sectionBuilder` (the brand and rows sections): LYCEUM keeps its kit's rows and cards.
 - `InstallFlag`: VIATICUM's `FirstOpenService` file logic, the path verbatim.
 - `testing.dart`: `MemoryLogSink`.
 - `clock.dart`: `SystemClock` alone, with no Flutter library, for plain Dart processes
