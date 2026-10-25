@@ -373,6 +373,11 @@ becomes Decided on review), Superseded.
   the base (no actions, no public version).
 - **Consequences:** C1 applies from Phase 1 (`apsira_app`'s install flags); C2 and C4 land in Phase 3, each with
   its D-APK record and crash-matrix tests before any code moves.
+- **Consequences (F6, 2026-10-25): a fake flag.** `InstallFlag` is an `interface class` (was `final`): its
+  constructor and file behaviour are unchanged, a test implements it, nothing outside its library extends it.
+  `package:apsira_app/testing.dart` gives `FakeInstallFlag` (in memory, `value` readable and settable), so an
+  app's widget tests settle in fake time without file I/O (RELAY's R3 finding: its late-card and
+  notification-asked flags).
 
 ## D-APK-011 — The Tier-1 set at `apsira-v0.2.0` and the drift resolutions
 
@@ -777,6 +782,12 @@ becomes Decided on review), Superseded.
 - **Consequences:** RELAY and VIATICUM keep their files and port names; LYCEUM keeps its names through its
   layout. Each app deletes its copies and records the change in its own log at adoption (R3, V3, L3); L3 checks
   that its restore always finds a live file, since RELAY's protocol copies it into the safety copy.
+- **Consequences (F6, 2026-10-25): a Flutter-free entry.** `package:apsira_db/plain.dart` exports the
+  plain-Dart part of the barrel (connection, migration wrapper, snapshot, swap, layout, fsync, `StepHook`); the
+  opener and the server, which reach Flutter, stay in `apsira_db.dart` only. RELAY's app database library and
+  its kill-writer and kill-snapshot children import it instead of `src/` with `implementation_imports`
+  ignores (R3's finding); `plain_library_test.dart` runs a child under the Dart VM, where a library that
+  reaches `dart:ui` does not compile.
 
 ## D-APK-019 — `apsira_exchange`: LYCEUM's envelope for every export
 
@@ -1033,3 +1044,14 @@ becomes Decided on review), Superseded.
     path="dev.fluttercommunity.plus.android_alarm_manager_plugin.xml"/>` (`alarmManagerBackupExclusions` in
     `package:apsira_jobs/testing.dart`); LYCEUM's `.migrating` marker is a `root`-domain path,
     `app_flutter/lyceum.sqlite.migrating`. Notification channel ids do not change.
+- **Consequences (F6, 2026-10-25): the fire's cancel and ids kept across fires.** An alarm id keeps its
+  platform id while it stays registered, so an id may serve several fires: `AlarmSync.snooze` re-arms the same
+  id (the notification's +10 min), and VIATICUM's ids name a reminder's day, not its instant. `onAlarmFired`'s
+  last step cancelled the fired platform id whatever happened meanwhile, so a +10 min tapped, or a resync
+  that armed the id's next fire, while the fire was still delivering lost that next fire and its place on the
+  plugin's reboot list (RELAY's R3 finding; RELAY names one alarm id per fire, its snooze does not). The cancel
+  is now left out when the registry holds the fired platform id at another instant once `deliver` is done:
+  `oneShotAt` under that id already replaced the fired alarm on the list. A registry that cannot be read
+  leaves the cancel in, as before. A re-arm registered after that read and before the cancel can still lose
+  its fire until the next resync re-arms it (the resync re-arms every alarm of its window). A change from
+  VIATICUM's `onAlarmFired` @ `78d38e0`; apps need no change.

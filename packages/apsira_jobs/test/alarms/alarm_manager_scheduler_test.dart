@@ -355,5 +355,63 @@ void main() {
       expect(named('Alarm.oneShotAt'), isEmpty);
       expect(await registry().entries(), isEmpty);
     });
+
+    // An alarm id kept across fires keeps its platform id (AlarmRegistry),
+    // so the fired alarm's cancel would take the next fire armed under it.
+    test('an alarm snoozed while its fire delivers (+10 min tapped before '
+        'the fire ends) stays armed and on the reboot list', () async {
+      final scheduler = AlarmManagerScheduler(_onFire);
+      final sync = AlarmSync(
+        scheduler,
+        registry(),
+        snoozes: SnoozeStore(() async => dir),
+      );
+      await sync.resync(wanted: [entry().alarm], now: t0);
+      final platformId = oneShotArgs().first! as int;
+      final params = (oneShotArgs()[8]! as Map<Object?, Object?>)
+          .cast<String, dynamic>();
+      final until = entry().atUtc.add(const Duration(minutes: 10));
+      await onAlarmFired(
+        platformId: platformId,
+        params: params,
+        firedUtc: entry().atUtc,
+        registry: registry(),
+        deliver: (alarm) async {
+          expect(await sync.snooze(alarm, until: until), isTrue);
+        },
+      );
+      expect(persistent, {platformId});
+      expect(named('Alarm.cancel'), isEmpty);
+      expect((await registry().registered()).single.atUtc, until);
+    });
+
+    test('an alarm id armed again for its next fire while this one delivers '
+        'is not cancelled by this fire', () async {
+      final scheduler = AlarmManagerScheduler(_onFire);
+      final sync = AlarmSync(scheduler, registry());
+      await sync.resync(wanted: [entry().alarm], now: t0);
+      final platformId = oneShotArgs().first! as int;
+      final params = (oneShotArgs()[8]! as Map<Object?, Object?>)
+          .cast<String, dynamic>();
+      final next = entry(after: const Duration(days: 1)).alarm;
+      await onAlarmFired(
+        platformId: platformId,
+        params: params,
+        firedUtc: entry().atUtc,
+        registry: registry(),
+        deliver: (_) =>
+            sync.resync(wanted: [next], now: entry().atUtc).then((_) {}),
+      );
+      expect(persistent, {platformId});
+      expect(named('Alarm.cancel'), isEmpty);
+      expect(await registry().registered(), [
+        RegisteredAlarm(
+          alarmId: next.alarmId,
+          platformId: platformId,
+          atUtc: next.atUtc,
+          content: next.content,
+        ),
+      ]);
+    });
   });
 }

@@ -4,7 +4,8 @@
 // lib/data/platform/alarm_manager_scheduler.dart @ 78d38e0 (the params a fire
 // gets, onAlarmFired); the registry is apsira_notify's and the platform ids
 // its own (D-APK-022, ruling R-1 Q1-c). The plugin's reboot list is read
-// through the package's own channel (F1).
+// through the package's own channel (F1). The fire's cancel is left out for
+// an id armed again meanwhile (F6, D-APK-022).
 import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
 import 'package:apsira_notify/apsira_notify.dart';
 import 'package:flutter/services.dart';
@@ -147,6 +148,16 @@ ScheduledAlarm alarmFromParams(Map<String, Object?> params) {
 /// from the plugin's reboot list. Each step runs whatever the one before
 /// did; the first failure is thrown at the end. Params that are not an
 /// alarm's are a [FormatException] before anything happens.
+///
+/// An alarm id keeps its platform id while it stays registered, so an id may
+/// serve several fires (a snooze, `AlarmSync.snooze`, re-arms the same id;
+/// VIATICUM's ids name a day, not an instant). When the registry holds
+/// [platformId] at another instant than this fire's by the time [deliver]
+/// is done (the next fire was registered, and so armed or about to be,
+/// meanwhile: a +10 min tapped on the notification, a resync), the cancel
+/// is left out: `oneShotAt` under that id already replaced the fired alarm
+/// on the reboot list, and the cancel would drop the next fire (D-APK-022).
+/// A registry that cannot be read leaves the cancel in.
 Future<void> onAlarmFired({
   required int platformId,
   required Map<String, dynamic> params,
@@ -177,6 +188,25 @@ Future<void> onAlarmFired({
     ),
   );
   await step(() => deliver(alarm));
-  await step(() => AndroidAlarmManager.cancel(platformId));
+  await step(() async {
+    if (await _armedAgain(registry, platformId, alarm.atUtc)) return;
+    await AndroidAlarmManager.cancel(platformId);
+  });
   if (failure case final e?) Error.throwWithStackTrace(e, stack!);
+}
+
+/// Whether [registry] holds [platformId] at another instant than [firedAtUtc]:
+/// its next fire. False when the registry cannot be read.
+Future<bool> _armedAgain(
+  AlarmRegistry registry,
+  int platformId,
+  DateTime firedAtUtc,
+) async {
+  try {
+    return (await registry.entries()).any(
+      (e) => e.platformId == platformId && e.atUtc != firedAtUtc,
+    );
+  } on Object {
+    return false;
+  }
 }

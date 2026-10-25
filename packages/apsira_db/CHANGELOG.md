@@ -10,6 +10,8 @@ First release (D-APK-018): RELAY `09b28810`'s opener, background open, server (w
 generic over the app's database and its `DatabaseLayout`; VIATICUM's `integrityCheckPasses`
 and `readSnapshot`; LYCEUM's step hook on every step, and its recovery of a 1.0.x marker. The
 backup snapshot is now written through `<path>.tmp`, flushed, renamed and synced (KP-S1).
+`package:apsira_db/plain.dart` is the Flutter-free part (everything but the opener and the
+server), for plain Dart child processes (F6).
 
 **Every app.** Delete the copies this package holds (README, "What replaces what") and pass
 the database's `name` to every opener call; exclude `layout.perInstallPaths` from Android's

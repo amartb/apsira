@@ -99,6 +99,11 @@ Future<void> reminderAlarmFired(int platformId, Map<String, dynamic> params) asy
 `onAlarmFired` records the fire first (the next resync never arms it again at that
 instant), then delivers, then cancels the platform alarm; each step runs whatever the one
 before did, and params that are not an alarm's are a `FormatException` before anything.
+An alarm id keeps its platform id while it stays registered, so ids may serve several fires
+(a snooze re-arms the same id): when the registry holds the fired platform id at another
+instant once `deliver` is done (a +10 min tapped, or a resync that armed the next fire, while
+this one delivered), the cancel is left out, since that re-arm already replaced the fired
+alarm on the plugin's reboot list (D-APK-022, F6).
 
 **Consumer requirement:** the plugin's SharedPreferences file is per-install, like the
 registry: `data_extraction_rules.xml` (both sections, and `full_backup_content`) holds

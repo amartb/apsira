@@ -13,6 +13,9 @@ cancel) and `alarmParams`/`alarmFromParams`. Depends on `apsira_notify` at the s
 `pendingPlatformIds` reads the plugin's reboot list (`persistent_alarm_ids`) through
 `ApsiraJobsPlugin`'s channel `apsira_jobs/alarms`, so `AlarmSync` cancels the ids a restore
 brought; `testing.dart` adds `alarmManagerBackupExclusions`, the plugin's prefs file.
+`onAlarmFired` leaves its final cancel out when the registry holds the fired platform id at
+another instant once delivery is done (a snooze or the id's next fire armed meanwhile), so
+alarm ids may serve several fires (F6, D-APK-022).
 
 Migration: move every apsira `ref:` to `apsira-v0.4.0`. RELAY and VIATICUM delete their
 `lib/data/platform/alarm_manager_scheduler.dart` and bind this one (VIATICUM passes its

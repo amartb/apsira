@@ -18,8 +18,11 @@ dependencies:
 
 `package:apsira_db/apsira_db.dart` is the public surface; `package:apsira_db/testing.dart`
 holds the crash-matrix helpers. It depends on `apsira_core` (the `Log`), `drift ^2.35.2`,
-`sqlite3 ^3.7.1` and Flutter. Only `src/server.dart` needs `dart:ui`; the swap, snapshot and
-fsync libraries are plain Dart, so a test's hard-kill child runs them under `dart`. No
+`sqlite3 ^3.7.1` and Flutter. Only the opener and the server reach Flutter;
+`package:apsira_db/plain.dart` exports everything else (connection, `migrateWithForeignKeysOff`,
+snapshot, swap, layout, fsync, `StepHook`) for a plain Dart process or isolate that cannot load
+`dart:ui`: an app database library a child process shares, a test's hard-kill child. Import it
+there instead of `src/`; the app keeps the barrel, which exports the same symbols. No
 `build_runner`, no generated code.
 
 ```dart
