@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:lyceum:exchange:1.0:export-manifest",
+  "title": "LYCEUM export manifest (lyceum-export-manifest) 1.0 — export-manifest.json",
+  "description": "The last entry of an export bundle: what the zip holds, so a reader can check it without LYCEUM. Unknown keys are allowed, so a later 1.x may add one. Rules 1-5 are those of exchange/README.md. That each media path names its own sha256 and that no path appears twice are checked by tool/exchange/validate_examples.py; that the manifest describes the bundle's own lyceum.json and files is the reader's check.",
+  "type": "object",
+  "required": ["counts", "format", "format_version", "lyceum_json", "media", "schema_version"],
+  "properties": {
+    "counts": {
+      "description": "Rows per table in lyceum.json.",
+      "type": "object",
+      "propertyNames": { "$ref": "#/$defs/tableName" },
+      "additionalProperties": { "type": "integer", "minimum": 0 }
+    },
+    "format": { "description": "Rule 1.", "const": "lyceum-export-manifest" },
+    "format_version": { "$ref": "#/$defs/formatVersion" },
+    "lyceum_json": {
+      "type": "object",
+      "required": ["path", "sha256", "size"],
+      "properties": {
+        "path": { "const": "lyceum.json" },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "size": { "$ref": "#/$defs/size" }
+      }
+    },
+    "media": {
+      "description": "The media files the zip holds, in path order.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256", "size"],
+        "properties": {
+          "path": { "$ref": "#/$defs/mediaPath" },
+          "sha256": { "$ref": "#/$defs/sha256" },
+          "size": { "$ref": "#/$defs/size" }
+        }
+      }
+    },
+    "missing_media": {
+      "description": "Media files a row names that the store did not have (missing) or not whole (damaged) when the export ran, in path order; recorded, never fatal. May be absent.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "reason"],
+        "properties": {
+          "path": { "$ref": "#/$defs/mediaPath" },
+          "reason": { "enum": ["missing", "damaged"] }
+        }
+      }
+    },
+    "schema_version": { "$ref": "#/$defs/schemaVersion" }
+  },
+  "$defs": {
+    "formatVersion": {
+      "description": "Rule 2: MAJOR.MINOR in plain decimal; this schema reads major 1, any minor.",
+      "type": "string",
+      "pattern": "^1\\.(0|[1-9][0-9]*)$"
+    },
+    "schemaVersion": {
+      "description": "Rule 3: LyceumDatabase.currentVersion of the app that wrote the bundle.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "sha256": {
+      "description": "Rule 4: 64 lower-case hex digits.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "size": { "description": "Bytes.", "type": "integer", "minimum": 0 },
+    "mediaPath": {
+      "description": "media/<h[0:2]>/<h[2:4]>/<sha256>, the file's content-addressed store path under media/.",
+      "type": "string",
+      "pattern": "^media/[0-9a-f]{2}/[0-9a-f]{2}/[0-9a-f]{64}$"
+    },
+    "tableName": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }
+  }
+}

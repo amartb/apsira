@@ -93,25 +93,37 @@ versioned export/import bundle that the central app can consume later.
 ## 5. Shared code
 
 `packages/` holds the Dart packages every Flutter app depends on (decisions D-APK-001,
-D-APK-007 and D-APK-011 in `docs/decisions.md`):
+D-APK-007, D-APK-011, for Tier 2 D-APK-012 to D-APK-017 and, for Tier 3, D-APK-018 to
+D-APK-022 in `docs/decisions.md`):
 
 | Package | Holds |
 |---|---|
 | `apsira_core` | `Result`/`Failure`, the log model, the `Clock` and `IdGen` ports (a monotonic UUIDv7), the FTS5 match builder, canonical JSON. Pure Dart; its one dependency is `crypto`, for the log's `stackHash` (D-APK-011). |
-| `apsira_ui` | The Apsira tokens as a `ThemeExtension`, the `ThemeData` builder, type scale, shape, chrome icons, the fonts, the lockup, their licences and provenance. |
+| `apsira_ui` | The Apsira tokens as a `ThemeExtension`, the `ThemeData` builder with its component and menu themes, type scale, shape, chrome icons, the fonts, the lockup, their licences and provenance; the component kit (layout, state views, overlays, the undo snack, pills, search, the drawer chrome) and the settings rows. |
 | `apsira_tools` | The layering lint, the l10n check, the coverage gate and the privacy guards, configured per app by `tool/apsira_tools.yaml`; the release and build script skeletons. |
 | `apsira_test` | The shared test support: font scaler, large-text layout checker, golden matrix, a11y pass, property testing. |
 | `apsira_app` | The app scaffolding every folio repeats: error handlers, file log, start redirect, restartable root, zone channel, per-install flags, About. |
-| `apsira_jobs` | The `BackgroundJobs` port and its WorkManager adapter, for the apps that run background jobs (RELAY, VIATICUM; D-APK-011). |
+| `apsira_jobs` | The `BackgroundJobs` port and its WorkManager adapter, and the alarm-manager adapter of the alarm registry, for the apps that run background work (RELAY, VIATICUM; D-APK-011, D-APK-022). |
+| `apsira_l10n` | The strings the shared widgets show, in English and Spanish, with their own delegate; `AppLanguage` and the language setting (D-APK-012). |
+| `apsira_onboarding` | The first-open intro, the language step, tours, the Help shell and the one-time tips (D-APK-017). |
+| `apsira_storage` | The backup target over the Storage Access Framework and the other storage ports with their Android adapters (D-APK-015). |
+| `apsira_lock` | The app lock: the authenticator, the lock controller, the lock cover, hiding from recent apps and its settings section (D-APK-016). |
+| `apsira_db` | The database plumbing: the opener with its pre-migration snapshot and safe mode, the database server, the restore swap, the snapshot, migrations and directory fsync, each app's file layout a parameter (D-APK-018). |
+| `apsira_exchange` | LYCEUM's export envelope for every app's export (ruling C2), the released legacy shapes, the table dump and its loader (D-APK-019). |
+| `apsira_zip` | RELAY's streaming ZIP: the writer, CRC-32 and the one-pass reader that refuses anything outside its profile; for RELAY and LYCEUM, whose backups and bundles are zips (D-APK-020). |
+| `apsira_notify` | RELAY's notifications with app-defined channels, actions and a public version, the permission flow, and the per-install alarm registry (D-APK-021, D-APK-022). |
 
 Every package carries one version and the set one shared tag, `apsira-vX.Y.Z`
-(`apsira-v0.2.0`; D-APK-007): apps pin every package by git reference to that tag, never
+(`apsira-v0.4.0`; D-APK-007): apps pin every package by git reference to that tag, never
 by path in a committed `pubspec.yaml` (the path consumers are the packages' own `example/`
 apps, inside the packages themselves). Packages may depend on each other at the same tag. A package is done
 only when every app uses it (D-APK-009). What is app-specific stays in the app: its own
 `ThemeExtension`s, the ports no package holds (the shared ones live in their package:
-`Clock`/`IdGen` in `apsira_core`, `BackgroundJobs` in `apsira_jobs`, D-APK-011), its
-components, its icon art, its codegen. Packages never depend on `build_runner`.
+`Clock`/`IdGen` in `apsira_core`, `BackgroundJobs` in `apsira_jobs`, D-APK-011; `BackupTarget`,
+`StorageSpace`, `DocumentPicker`, `Sharer` and `PhotoSource` in `apsira_storage`, D-APK-015;
+`Authenticator`, `ScreenPrivacy` and `LockSettingsStore` in `apsira_lock`, D-APK-016), its
+components beyond `apsira_ui`'s kit, `apsira_onboarding` and `apsira_lock`, its own text
+beyond `apsira_l10n`'s keys, its icon art, its codegen. Packages never depend on `build_runner`.
 
 ## 6. How an app is built
 
@@ -177,7 +189,7 @@ The procedure that brought Lyceum Folio in (planning thread of 2026-10-21):
 |---|---|
 | `apsira-brand/` | The brand standard and every asset |
 | `folios/`, `tomes/` | Briefs, one per app |
-| `packages/` | `apsira_core`, `apsira_ui`, `apsira_tools`, `apsira_test`, `apsira_app`, `apsira_jobs` |
+| `packages/` | `apsira_core`, `apsira_ui`, `apsira_tools`, `apsira_test`, `apsira_app`, `apsira_jobs`, `apsira_l10n`, `apsira_onboarding`, `apsira_storage`, `apsira_lock` |
 | `docs/decisions.md` | The ecosystem's decision log (`D-APK-nnn`) |
 | `docs/agent-rules.md` | The non-negotiables every army brief for this repository carries |
 | `docs/sessions/` | Session briefs, analyses, reports and handoffs |

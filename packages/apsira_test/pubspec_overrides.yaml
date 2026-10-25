@@ -1,2 +1,3 @@
 dependency_overrides:
+  apsira_l10n: { path: ../apsira_l10n }
   apsira_ui: { path: ../apsira_ui }

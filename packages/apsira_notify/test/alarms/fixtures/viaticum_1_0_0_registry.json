@@ -1,0 +1,1 @@
+{"nextPlatformId":4,"alarms":[{"alarmId":"reminder:order_deadline:o1:2026-11-03","atUtcMs":1793692800000,"channel":"alerts","title":"Pedido AHN","body":"Vence mañana","platformId":1},{"alarmId":"reminder:morning_card:d4:2026-11-10","atUtcMs":1794294000000,"channel":"quiet","title":"Hoy: AHN","body":"Abre 08:00","platformId":3}]}

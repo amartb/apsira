@@ -15,12 +15,14 @@ Pin by the shared tag, the same ref for every apsira package (D-APK-007, `../REA
 
 ```yaml
 dependencies:
-  apsira_jobs: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_jobs } }
+  apsira_jobs: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_jobs } }
 ```
 
 `package:apsira_jobs/apsira_jobs.dart` is the public surface; `package:apsira_jobs/testing.dart`
-holds `FakeBackgroundJobs`. It depends on `flutter` and `workmanager: ^0.10.10` (the pin
-both apps already have), and on no apsira package.
+holds `FakeBackgroundJobs` and `alarmManagerBackupExclusions`. It depends on `flutter`,
+`workmanager: ^0.10.10` and `android_alarm_manager_plus: ^5.1.2` (the pins both apps
+already have), and on `apsira_notify` at the shared tag (D-APK-022), whose closure
+`pubspec_overrides.yaml` resolves here.
 
 ## The policy
 
@@ -64,13 +66,66 @@ deletes its own copy and its manifest `<receiver>`; the `<app>/zone` method chan
 
 The Android build adds no artifact to either APK. It names the `workmanager_android`
 project and `androidx.work:work-runtime:2.11.2`, the version `workmanager_android` 0.10.9
-pins. Both are already in each app's closure. `ApsiraJobsPlugin` registers nothing: the
-Flutter tool builds a plugin's Android half only when the pubspec names a plugin class. A
-Dart test pins the job name, the input key and the manifest.
+pins. Both are already in each app's closure. `ApsiraJobsPlugin` answers one channel,
+`apsira_jobs/alarms` (`persistentAlarmIds`, below); the Flutter tool builds a plugin's
+Android half only when the pubspec names a plugin class. A Dart test pins the job name, the
+input key and the manifest.
+
+## The alarm-manager scheduler
+
+`AlarmManagerScheduler(onFire, {alarmClock, canScheduleExact, settings})` is the
+`AlarmScheduler` of `apsira_notify`'s per-install registry (D-APK-022) on
+`android_alarm_manager_plus`: one exact alarm per `RegisteredAlarm`, under its platform id,
+waking, allowed while idle, re-armed by the plugin after a reboot; `schedule` answers false
+when the platform refuses; `cancel` is the only call that prunes the plugin's reboot list;
+`pendingPlatformIds` reads that list (`persistent_alarm_ids` in the plugin's
+SharedPreferences file) through `ApsiraJobsPlugin.kt`, so `AlarmSync` cancels the ids a
+restored or transferred list brought (D-APK-022).
+It lives here, not in `apsira_notify`, so LYCEUM's APK never carries the plugin (ruling R-1,
+Q1-c). `AlarmSync` drives it; the app never calls it directly.
+
+```dart
+@pragma('vm:entry-point')
+Future<void> reminderAlarmFired(int platformId, Map<String, dynamic> params) async {
+  final firedUtc = DateTime.now().toUtc();
+  WidgetsFlutterBinding.ensureInitialized();
+  DartPluginRegistrant.ensureInitialized();
+  await onAlarmFired(platformId: platformId, params: params, firedUtc: firedUtc,
+      registry: AlarmRegistry(getApplicationSupportDirectory),
+      deliver: (alarm) => notifier.show(notificationFor(alarm)));
+}
+```
+
+`onAlarmFired` records the fire first (the next resync never arms it again at that
+instant), then delivers, then cancels the platform alarm; each step runs whatever the one
+before did, and params that are not an alarm's are a `FormatException` before anything.
+An alarm id keeps its platform id while it stays registered, so ids may serve several fires
+(a snooze re-arms the same id): when the registry holds the fired platform id at another
+instant once `deliver` is done (a +10 min tapped, or a resync that armed the next fire, while
+this one delivered), the cancel is left out, since that re-arm already replaced the fired
+alarm on the plugin's reboot list (D-APK-022, F6).
+
+**Consumer requirement:** the plugin's SharedPreferences file is per-install, like the
+registry: `data_extraction_rules.xml` (both sections, and `full_backup_content`) holds
+`<exclude domain="sharedpref"
+path="dev.fluttercommunity.plus.android_alarm_manager_plugin.xml"/>`. The adoption checks
+it with `apsira_notify`'s `expectExcludedFromDeviceBackup(…, excluded:
+[...alarmBackupExclusions, ...alarmManagerBackupExclusions])`, the second list from
+`package:apsira_jobs/testing.dart`. The scheduler reaches the vendored
+`flutter_local_notifications` through `apsira_notify`, so `android/app` enables Java library
+desugaring as `apsira_notify`'s README says (`example/` does).
+
+| Symbol | Source | Replaces in RELAY | in VIATICUM |
+|---|---|---|---|
+| `AlarmManagerScheduler` | R `lib/data/platform/alarm_manager_scheduler.dart` | that file | its `AlarmManagerScheduler` |
+| `alarmManagerBackupExclusions` (`testing.dart`) | the plugin's `AlarmService.java` | — | — |
+| `onAlarmFired`, `alarmParams`, `alarmFromParams` | V `lib/data/platform/alarm_manager_scheduler.dart` | the fire entry's bookkeeping in `bootstrap.dart` | the same functions |
 
 ## Checks
 
-From this directory: `flutter analyze` and `flutter test`. The Kotlin compiles only inside
+From this directory: `flutter analyze` and `flutter test` (with `test/alarms/`: RELAY's and
+VIATICUM's scheduler cases against the plugin's channel, the fire entry, and KP-A10 on the
+plugin's reboot list). The Kotlin compiles only inside
 an app's build, so `example/` is that app: it depends on this package by path and schedules
 one job through `WorkManagerBackgroundJobs` at start, and its debug build compiles
 `ApsiraJobsPlugin.kt` and `ZoneResync.kt` against `workmanager_android`'s `androidx.work`.

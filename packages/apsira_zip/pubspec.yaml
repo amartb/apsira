@@ -1,0 +1,25 @@
+# From relay pubspec.yaml @ 09b28810 (the crypto pin, and archive as the
+# tests' independent decoder). D-APK-020.
+name: apsira_zip
+description: >-
+  RELAY's streaming ZIP for RELAY's backups and LYCEUM's export bundles: a
+  writer with back-pressure and ZIP64, CRC-32, and a one-pass reader that
+  refuses anything outside the profile, with the apps' parts as hooks.
+version: 0.4.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.0
+
+# apsira_* in the git form at the shared tag, with the committed
+# pubspec_overrides.yaml (D-APK-007).
+dependencies:
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
+  crypto: ^3.0.7
+
+dev_dependencies:
+  # The independent decoder of every archive the tests write (RELAY's dev
+  # pin); never a runtime dependency (RELAY ruling R-15).
+  archive: ^4.5.2
+  lints: ^6.1.0
+  test: ^1.31.0

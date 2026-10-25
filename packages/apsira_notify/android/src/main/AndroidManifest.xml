@@ -1,0 +1,5 @@
+<!-- The plugin declares nothing: opening a settings screen needs no
+     permission. POST_NOTIFICATIONS is each app's (README); the patched
+     flutter_local_notifications declares its own receivers. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+</manifest>

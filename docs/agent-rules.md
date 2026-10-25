@@ -8,7 +8,7 @@
 - **A package requires the lowest Flutter any live consumer pins** (`apsira_ui`: `>=3.47.0`).
 - **Behaviour is the source app's, named in the header.** Every extracted file names its source app, path and commit in a header comment (`// From relay <path> @ 09b28810`, `// From viaticum <path> @ 78d38e0`, `// From lyceum <path> @ 9f4ff27`). A change in behaviour from the source needs a `D-APK-nnn` entry; a rename is not a change in behaviour.
 - **Apsira lanes never edit an app repository** (`relay/`, `viaticum/`, `lyceum/`); from here they are read-only references. Adoption runs in an **adoption lane** in the app's own repository, branch and ledger, under that app's `CLAUDE.md`, `docs/agent-rules.md` and decision log (D-APK-009).
-- **Versions and tags match:** every package carries the same `version:`, and a release is one shared tag `apsira-vX.Y.Z` (D-APK-007). An apsira dependency is exactly `apsira_<pkg>: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-vX.Y.Z, path: packages/apsira_<pkg> } }`, never `path:` (each package's `example/` app, the consumer proof, excepted), with a committed `pubspec_overrides.yaml` holding the path overrides of its transitive closure. Tags and pushes are operator acts (`tool/release.sh`).
+- **Versions and tags match:** every package carries the same `version:`, and a release is one shared tag `apsira-vX.Y.Z` (D-APK-007). An apsira dependency is exactly `apsira_<pkg>: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-vX.Y.Z, path: packages/apsira_<pkg> } }`, never `path:` (each package's `example/` app, the consumer proof, excepted), with a committed `pubspec_overrides.yaml` holding the path overrides of its transitive closure (dev_dependencies included, the package itself excepted). Tags and pushes are operator acts (`tool/release.sh`).
 
 ## How work is recorded here
 - Decisions: `docs/decisions.md`, append-only, `D-APK-nnn`.
@@ -17,5 +17,5 @@
 - Reports and handoffs: `docs/sessions/`.
 
 ## This host
-- A shared PC (`~/.army/host.toml`): one Flutter gate at a time; `dart test` for the pure packages is cheap, `flutter test` for each Flutter package (`apsira_ui`, `apsira_test`, `apsira_app`, `apsira_jobs`) declares 3 GB.
+- A shared PC (`~/.army/host.toml`): one Flutter gate at a time; `dart test` for the pure packages is cheap, `flutter test` for each Flutter package (every one but `apsira_core` and `apsira_tools`) declares 3 GB.
 - No CI. `tool/check.sh` is the full check; its verdict line `check: PASS` is what counts.

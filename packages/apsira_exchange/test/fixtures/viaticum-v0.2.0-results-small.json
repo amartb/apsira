@@ -1,0 +1,214 @@
+{
+  "format": "viaticum.results",
+  "format_version": "1.0",
+  "artifact_id": "9d4c7e12-6a3b-4c58-8e21-000000000005",
+  "produced_at": "2026-11-12T18:20:00Z",
+  "producer": {
+    "app": "viaticum",
+    "app_version": "0.5.0"
+  },
+  "trip": {
+    "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000001",
+    "vellum_trip_id": "3e8b1d27-5c90-4f6a-b4d3-000000000001",
+    "revision": 1,
+    "title": "Villanueva y Santa Prueba — prueba corta",
+    "start_date": "2026-11-09",
+    "end_date": "2026-11-11",
+    "phase": "handover",
+    "last_package": {
+      "artifact_id": "9d4c7e12-6a3b-4c58-8e21-000000000001",
+      "version": 1
+    },
+    "archive_days": [
+      {
+        "date": "2026-11-09",
+        "archive_ref": {
+          "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801"
+        }
+      },
+      {
+        "date": "2026-11-10",
+        "archive_ref": {
+          "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802"
+        }
+      },
+      {
+        "date": "2026-11-11",
+        "archive_ref": {
+          "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000900"
+        }
+      }
+    ]
+  },
+  "archives_new": [
+    {
+      "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000900",
+      "name": "Archivo de la Cofradía de Ejemplo",
+      "city": "Villanueva del Ejemplo",
+      "country": "España",
+      "tz": "Europe/Madrid"
+    }
+  ],
+  "items": [
+    {
+      "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000101",
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000101",
+      "origin": "vellum",
+      "archive": {
+        "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801"
+      },
+      "priority_override": "must",
+      "excluded": false,
+      "outcome": "consulted",
+      "relevance": "key",
+      "notes": "Acuerdo del pósito en el folio 34.",
+      "consulted_on": [
+        "2026-11-09"
+      ],
+      "sub_entries": [
+        {
+          "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000111",
+          "kind": "folios",
+          "label": "Acuerdo del pósito",
+          "folio_from": "34",
+          "folio_to": "35v",
+          "relevance": "key",
+          "photos": [
+            {
+              "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000121",
+              "file": "photos/019a3f6c-2d41-7b8e-9c05-000000000121.jpg",
+              "media_type": "image/jpeg",
+              "sha256": "84e875877c2cad0f42e43428080fed0319f9b96bdc98451cdf11e711ca749e6d",
+              "bytes": 2292757,
+              "taken_at": "2026-11-09T09:41:07.123Z",
+              "sequence": 1,
+              "folio_hint": "34"
+            },
+            {
+              "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000122",
+              "file": "photos/019a3f6c-2d41-7b8e-9c05-000000000122.jpg",
+              "media_type": "image/jpeg",
+              "sha256": "d0e59c281ed350482d06d720cadfd696aff13a5178f255d4122be0017b9a41ee",
+              "bytes": 2293770,
+              "taken_at": "2026-11-09T09:41:52Z",
+              "sequence": 2,
+              "folio_hint": "34v"
+            }
+          ]
+        }
+      ],
+      "photos": [
+        {
+          "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000123",
+          "file": "photos/019a3f6c-2d41-7b8e-9c05-000000000123.heic",
+          "media_type": "image/heic",
+          "sha256": "e8d70f1af68f72fa4c7bfb819156316de6bf2683e3226e05656129162a93f0c3",
+          "bytes": 2294783,
+          "taken_at": "2026-11-09T09:30:00Z",
+          "sequence": 1
+        }
+      ]
+    },
+    {
+      "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000102",
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000102",
+      "origin": "vellum",
+      "archive": {
+        "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801"
+      },
+      "excluded": false,
+      "outcome": "partial",
+      "reason": "out_of_time",
+      "relevance": "some",
+      "consulted_on": [
+        "2026-11-09"
+      ],
+      "sub_entries": [
+        {
+          "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000112",
+          "kind": "expediente",
+          "label": "Cuartel de San Juan",
+          "folio_from": "s/f"
+        }
+      ]
+    },
+    {
+      "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000103",
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000103",
+      "origin": "vellum",
+      "archive": {
+        "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802"
+      },
+      "excluded": false,
+      "outcome": "not_consulted",
+      "reason": "not_delivered"
+    },
+    {
+      "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000104",
+      "vellum_id": "6f2a9c41-3b7d-4e18-9a05-000000000104",
+      "origin": "vellum",
+      "archive": {
+        "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000802"
+      },
+      "priority_override": "demote",
+      "excluded": true,
+      "outcome": "not_consulted",
+      "reason": "deprioritised"
+    },
+    {
+      "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000105",
+      "origin": "phone",
+      "archive": {
+        "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000900"
+      },
+      "excluded": false,
+      "catalogue": {
+        "signatura": "Libro de cuentas 2",
+        "fondo": "Cofradía de la Vera Cruz",
+        "title": "Cuentas de la cofradía",
+        "date_text": "1745-1770"
+      },
+      "outcome": "consulted",
+      "relevance": "some",
+      "consulted_on": [
+        "2026-11-11"
+      ],
+      "photos": [
+        {
+          "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000124",
+          "file": "photos/019a3f6c-2d41-7b8e-9c05-000000000124.jpg",
+          "media_type": "image/jpeg",
+          "sha256": "3cdb5609ec2b063ab05e2df6e828f11c4732b5e9c94a604eb11287b836abee1b",
+          "bytes": 2295796,
+          "taken_at": "2026-11-11T11:05:00Z",
+          "sequence": 1
+        }
+      ]
+    }
+  ],
+  "research_todos": [
+    {
+      "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000201",
+      "kind": "new_lead",
+      "text": "El inventario cita un libro de cuentas de la cofradía.",
+      "signatura": "Libro de cuentas 2",
+      "archive": {
+        "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000900"
+      },
+      "converted_item": {
+        "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000105"
+      }
+    },
+    {
+      "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000202",
+      "kind": "follow_up",
+      "text": "Volver por los folios 36-40 del libro de acuerdos.",
+      "archive": {
+        "vellum_id": "0c1e2f30-4a5b-4c6d-8e7f-000000000801"
+      },
+      "item": {
+        "viaticum_id": "019a3f6c-2d41-7b8e-9c05-000000000101"
+      }
+    }
+  ]
+}

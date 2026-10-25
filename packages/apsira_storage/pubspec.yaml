@@ -1,0 +1,49 @@
+# From relay pubspec.yaml @ 09b28810 (the saf_stream, saf_util, share_plus,
+# image_picker, image_picker_android and image_picker_platform_interface pins
+# RELAY already has; VIATICUM pins the same saf_*, share_plus and
+# image_picker). D-APK-015, ruling R-1 Q2.
+name: apsira_storage
+description: >-
+  The storage ports every Apsira app shares, with their Android adapters and
+  fakes: the SAF backup folder, free space over one storage channel (and its
+  Kotlin), the document picker, the share sheet and the photo source.
+publish_to: none
+version: 0.4.0
+
+environment:
+  sdk: ^3.13.0
+  # The lowest Flutter any live consumer pins (docs/agent-rules.md).
+  flutter: ">=3.47.0"
+
+# apsira_* in the git form at the shared tag, with the committed
+# pubspec_overrides.yaml (D-APK-007).
+dependencies:
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
+  flutter:
+    sdk: flutter
+  # ImagePickerPhotoSource: the camera and the photo picker, no permission.
+  image_picker: ^1.2.4
+  # Imported beside image_picker to turn on the system photo picker
+  # (ImagePickerAndroid.useAndroidPhotoPicker), as RELAY's adapter does.
+  image_picker_android: ^0.8.13+25
+  image_picker_platform_interface: ^2.11.2
+  # SafBackupTarget and SafDocumentPicker: saf_util picks, lists, renames and
+  # deletes; saf_stream streams files in and out.
+  saf_stream: ^4.0.2
+  saf_util: ^3.1.1
+  # SharePlusSharer: ACTION_SEND with the plugin's own FileProvider grant.
+  share_plus: ^13.3.1
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  # A plugin for its Android half: ApsiraStoragePlugin registers
+  # StorageModule.kt's channel apsira_storage/storage on the UI engine.
+  plugin:
+    platforms:
+      android:
+        package: com.apsiralabs.apsira_storage
+        pluginClass: ApsiraStoragePlugin

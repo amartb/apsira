@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0 — 2026-10-24
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.4.0`.
+
+- `InstallFlag` is an `interface class` (was `final`), and `testing.dart` adds
+  `FakeInstallFlag`, in memory, for widget tests (F6). Callers are unchanged.
+
+## 0.3.0 — 2026-10-24
+
+Its `apsira_core` and `apsira_ui` dependencies move to `ref: apsira-v0.3.0`. Migration:
+move every apsira `ref:` to `apsira-v0.3.0`.
+
 ## 0.2.0 — 2026-10-24
 
 First release (D-APK-011): the app shell RELAY, VIATICUM and LYCEUM each carried, as one

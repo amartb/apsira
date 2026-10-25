@@ -13,6 +13,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        // flutter_local_notifications (vendored, reached through apsira_notify
+        // since the alarm scheduler, F1) needs Java library desugaring, as in
+        // every app that consumes apsira_jobs (RELAY's and VIATICUM's android/app).
+        isCoreLibraryDesugaringEnabled = true
     }
 
     defaultConfig {
@@ -34,4 +38,9 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // RELAY's pin, as apsira_notify's example.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

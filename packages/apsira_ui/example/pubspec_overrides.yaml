@@ -1,0 +1,4 @@
+# apsira_ui pins apsira_l10n by the shared tag; inside the repository the
+# example resolves it from its directory (D-APK-007).
+dependency_overrides:
+  apsira_l10n: { path: ../../apsira_l10n }

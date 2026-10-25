@@ -1,0 +1,22 @@
+name: apsira_l10n
+description: "The strings the shared Apsira widgets show, in English and Spanish: ApsiraL10n and its delegate, AppLanguage and the language setting."
+publish_to: none
+version: 0.4.0
+
+environment:
+  sdk: ^3.13.0
+  # The lowest Flutter any live consumer pins (docs/agent-rules.md).
+  flutter: ">=3.47.0"
+
+# D-APK-012: flutter and flutter_riverpod (ruling R-1, LYCEUM's floor) only; no
+# intl, no flutter_localizations, no generated code (D-APK-001). No apsira_*
+# dependency.
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^3.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter

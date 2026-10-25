@@ -171,13 +171,18 @@ abstract final class ApsiraDarkColors {
   };
 }
 
-/// The two fixed values of the Material mapping (`ApsiraThemeData.colorScheme`)
-/// that are not tokens: RELAY wrote them inline in its theme folder; here
-/// they live with the other literals.
+/// The fixed values of the Material mapping (`ApsiraThemeData.colorScheme`)
+/// and the component themes that are not tokens: RELAY wrote them inline in
+/// its theme folder; here they live with the other literals.
 abstract final class ApsiraSchemeColors {
   /// The dark theme's `ColorScheme.shadow`.
   static const shadowDark = Color(0xFF000000);
 
   /// `ColorScheme.surfaceTint`: none, depth comes from `border` (D-066).
   static const surfaceTint = Color(0x00000000);
+
+  /// No colour: the surface tint the component themes give menus, cards,
+  /// sheets, dialogs and the drawer, flat by their `border` (D-066). RELAY
+  /// and LYCEUM wrote it inline (`Color(0x00000000)`, `Colors.transparent`).
+  static const transparent = Color(0x00000000);
 }

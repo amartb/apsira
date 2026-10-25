@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:lyceum:exchange:1.0:lyceum-export",
+  "title": "LYCEUM export (lyceum-export) 1.0 — lyceum.json",
+  "description": "The document of an export bundle: the envelope and every exported table. Unknown keys are allowed, so a later 1.x may add one. Rules 1-5 are those of exchange/README.md. The bytes (UTF-8 without a byte-order mark, keys sorted, a final LF) and the schema version not newer than the reader's are not stated here (exchange/README.md).",
+  "type": "object",
+  "required": ["app_version", "format", "format_version", "produced_at", "producer", "schema_version", "tables"],
+  "properties": {
+    "app_version": { "$ref": "#/$defs/nonEmpty" },
+    "format": { "description": "Rule 1.", "const": "lyceum-export" },
+    "format_version": { "$ref": "#/$defs/formatVersion" },
+    "produced_at": { "$ref": "#/$defs/instant" },
+    "producer": {
+      "type": "object",
+      "required": ["app", "app_version"],
+      "properties": {
+        "app": { "description": "LYCEUM writes lyceum.", "$ref": "#/$defs/nonEmpty" },
+        "app_version": { "type": "string" }
+      }
+    },
+    "schema_version": { "$ref": "#/$defs/schemaVersion" },
+    "tables": {
+      "description": "Table name to its rows, in primary-key order, soft-deleted rows included. A row is one object, column name to the value as stored: integer, real, text, BLOB as base64 text, or null. Each table's row is stated by schemas/tables/<table>.schema.json through lyceum-tables.schema.json, both generated from the database.",
+      "$ref": "urn:lyceum:exchange:1.0:lyceum-tables"
+    }
+  },
+  "$defs": {
+    "formatVersion": {
+      "description": "Rule 2: MAJOR.MINOR in plain decimal; this schema reads major 1, any minor.",
+      "type": "string",
+      "pattern": "^1\\.(0|[1-9][0-9]*)$"
+    },
+    "schemaVersion": {
+      "description": "Rule 3: LyceumDatabase.currentVersion of the app that wrote the bundle.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "instant": {
+      "description": "UTC ISO 8601 with Z, fraction of a second optional (up to microseconds). The calendar check (no 30 February) is the reader's.",
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]{1,6})?Z$"
+    },
+    "nonEmpty": { "type": "string", "minLength": 1 }
+  }
+}

@@ -1,0 +1,50 @@
+# From relay pubspec.yaml @ 09b28810 (the local_auth pins and the lints).
+name: apsira_lock
+description: >-
+  The app lock every Apsira app shares: the Authenticator port and its
+  local_auth adapter, hide in recent apps (FLAG_SECURE through the package's own
+  Kotlin), LockController, the cover, the shield and the Settings rows.
+publish_to: none
+version: 0.4.0
+
+environment:
+  sdk: ^3.13.0
+  # The lowest Flutter any live consumer pins (docs/agent-rules.md).
+  flutter: ">=3.47.0"
+
+# D-APK-016 (ruling R-1): the local_auth adapter lives here (Q2) at RELAY's
+# pins, and FLAG_SECURE is the package's own Kotlin (Q3), so no window-manager
+# plugin. apsira_* in the git form at the shared tag, with the committed
+# pubspec_overrides.yaml (D-APK-007).
+dependencies:
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
+  apsira_l10n: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_l10n } }
+  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_ui } }
+  flutter:
+    sdk: flutter
+  # Hand-written Notifiers, no codegen (ruling R-1, LYCEUM's floor).
+  flutter_riverpod: ^3.1.0
+  # The system prompt; every consumer's MainActivity is a
+  # FlutterFragmentActivity and its manifest declares USE_BIOMETRIC.
+  local_auth: ^3.0.2
+  local_auth_android: ^2.3.0
+
+dev_dependencies:
+  # The EN/ES × 100/200 % layout check of the cover and the Settings rows.
+  apsira_test: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_test } }
+  flutter_lints: ^6.0.0
+  # The Spanish MaterialLocalizations for the EN/ES widget tests only.
+  flutter_localizations:
+    sdk: flutter
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  # The cover and the Settings rows draw Material icons (Icons.lock_outline);
+  # the apps set it too.
+  uses-material-design: true
+  plugin:
+    platforms:
+      android:
+        package: com.apsiralabs.apsira_lock
+        pluginClass: ApsiraLockPlugin

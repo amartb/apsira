@@ -1,0 +1,43 @@
+# From relay pubspec.yaml @ 09b28810 (the drift and sqlite3 pins and the
+# lints). D-APK-018.
+name: apsira_db
+description: >-
+  The database plumbing every Apsira app shares: the opener with its
+  pre-migration snapshot and safe mode, the background open, the drift server,
+  the restore swap, the backup snapshot, directory fsync and the migration
+  wrapper, over the app's own drift database and file names.
+publish_to: none
+version: 0.4.0
+
+environment:
+  sdk: ^3.13.0
+  # The lowest Flutter any live consumer pins (docs/agent-rules.md).
+  flutter: ">=3.47.0"
+
+# apsira_* in the git form at the shared tag, with the committed
+# pubspec_overrides.yaml (D-APK-007). No build_runner and no drift_dev: the
+# package ships no generated code (D-APK-001), and the tests' database is
+# hand-written.
+dependencies:
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
+  drift: ^2.35.2
+  # Only src/server.dart needs Flutter (dart:ui's IsolateNameServer); the
+  # swap, snapshot and fsync libraries run under plain Dart too.
+  flutter:
+    sdk: flutter
+  sqlite3: ^3.7.1
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+# The package's own tests use the host's libsqlite3 instead of the build
+# hook's download. Hooks read this from the root package only, so the apps,
+# which bundle sqlite3's own library, are unaffected.
+hooks:
+  user_defines:
+    sqlite3:
+      source: system
+      name:
+        linux: /lib/x86_64-linux-gnu/libsqlite3.so.0

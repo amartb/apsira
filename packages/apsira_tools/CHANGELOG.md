@@ -1,5 +1,20 @@
 # Changelog — apsira_tools
 
+## 0.4.0 — 2026-10-24
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.4.0`.
+
+## 0.3.0 — 2026-10-24
+
+Migration: move every apsira `ref:` to `apsira-v0.3.0`, and replace each `package:apsira_tools/src/<check>.dart` import or export
+with `package:apsira_tools/<check>.dart` (dropping `implementation_imports`).
+
+- Public libraries for the checks (README "Libraries"): `config.dart`,
+  `coverage_gate.dart`, `deps_check.dart`, `l10n_check.dart`, `layering_lint.dart`,
+  `manifest_check.dart`, each re-exporting its `src/` file whole, and the barrel
+  `apsira_tools.dart` exporting all six. Additive: `src/` is unchanged and stays private.
+
 ## 0.2.0 — 2026-10-24
 
 ### VIATICUM's deltas as configuration (D-APK-002)

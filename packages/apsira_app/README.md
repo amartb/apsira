@@ -9,7 +9,7 @@ storage directory in (`getApplicationSupportDirectory`), so the package does not
 
 ```yaml
 dependencies:
-  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.2.0, path: packages/apsira_app } }
+  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_app } }
 ```
 
 ## Entry libraries
@@ -19,7 +19,7 @@ dependencies:
   Dart process or isolate that cannot load `dart:ui`, such as RELAY's kill-during-typing
   child (`test/support/kill_writer/`). Import it there instead of `src/`; the app keeps the
   barrel, which exports the same class.
-- `package:apsira_app/testing.dart`: the test helpers.
+- `package:apsira_app/testing.dart`: the test helpers (`MemoryLogSink`, `FakeInstallFlag`).
 
 ## What it holds, and what each app deletes
 
@@ -41,6 +41,7 @@ adoption lane deletes; paths are under the app's root.
 | `InstallFlag({directory, path})`, `isSet()`, `set()` | V `lib/app/services/first_open_service.dart` | — (its flag is in `app_meta`) | the file logic of `FirstOpenService` (`path: 'first_open/done.json'`) | — |
 | `AboutPage({title, versionLabel, licencesLabel, appName, version, developedByLabel, apsiraLabsLabel, tagline, mark, rows, rowBuilder, sectionBuilder})`, `AboutRow`, `AboutRowKind`, `AboutSection` | L `lib/features/settings/ui/about_page.dart` | — | — | `lib/features/settings/ui/about_page.dart` (its tour and privacy rows passed as `rows`; its `EntityRow`, `GroupCard` and `LyceumCard` through the builders) |
 | `MemoryLogSink` (`testing.dart`) | R `test/app/error_handlers_test.dart` | the tests' memory sinks | the same | the same |
+| `FakeInstallFlag({path, set})`, `value` (`testing.dart`) | new (F6) | — | — | — |
 
 ## Behaviour notes
 
@@ -63,6 +64,8 @@ adoption lane deletes; paths are under the app's root.
   VIATICUM's (`startsWith('portPending')`) all accept (D-APK-011).
 - `InstallFlag.set()` writes `{"done":true}` to `<path>.tmp`, flushes and renames; a flag
   already there is kept byte for byte; a leftover `.tmp` alone reads as unset.
+- `InstallFlag` is an `interface class`: a widget test passes `FakeInstallFlag` (in memory,
+  no file I/O, so it settles in fake time) wherever the app takes an `InstallFlag`.
 - `StartupFailureApp` reads its strings through the app's delegates, so it follows the
   phone's language: `title: (context) => AppLocalizations.of(context).appName`.
 

@@ -1,0 +1,5 @@
+dependency_overrides:
+  apsira_core: { path: ../apsira_core }
+  apsira_l10n: { path: ../apsira_l10n }
+  apsira_test: { path: ../apsira_test }
+  apsira_ui: { path: ../apsira_ui }

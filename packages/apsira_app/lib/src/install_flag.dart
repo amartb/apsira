@@ -9,7 +9,11 @@ import 'dart:io';
 ///
 /// [path] is used verbatim, so an app keeps the file its installs already
 /// have (VIATICUM: `first_open/done.json`).
-final class InstallFlag {
+///
+/// An interface class, so a test implements it (`FakeInstallFlag` in
+/// `package:apsira_app/testing.dart`, in memory) and an app's widget tests
+/// settle without file I/O; nothing outside this library extends it.
+interface class InstallFlag {
   /// [directory] is app storage: the app's private support directory.
   InstallFlag({required this._directory, required this.path});
 

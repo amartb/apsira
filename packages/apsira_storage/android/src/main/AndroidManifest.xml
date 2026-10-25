@@ -1,0 +1,4 @@
+<!-- The plugin declares nothing: StatFs needs no permission, and the SAF,
+     share and photo plugins declare their own. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+</manifest>

@@ -1,0 +1,417 @@
+// From relay test/data/platform/alarm_manager_scheduler_test.dart @ 09b28810
+// and viaticum test/data/platform/alarm_manager_scheduler_test.dart
+// @ 78d38e0: exact, waking, allow-while-idle alarms that survive a reboot,
+// under the registry's platform ids; cancel, which prunes the plugin's reboot
+// list; and the fire entry, which records the fire, delivers it and cancels
+// the platform alarm (D-APK-022, ruling R-1 Q1-c); the plugin's reboot list,
+// read through the package's own channel, and KP-A10 on it (F1). The plugin's
+// own Dart code runs; its method channel is answered by a recording handler
+// that keeps the reboot list as the plugin's AlarmService does. That an alarm
+// fires on time on the phone, in Doze and after a reboot, is a device check.
+import 'dart:io';
+import 'dart:ui' show CallbackHandle;
+
+import 'package:android_alarm_manager_plus/android_alarm_manager_plus.dart';
+import 'package:apsira_jobs/apsira_jobs.dart';
+import 'package:apsira_jobs/testing.dart';
+import 'package:apsira_notify/apsira_notify.dart';
+import 'package:apsira_notify/testing.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+/// The fire entry the tests hand the scheduler; never called here.
+@pragma('vm:entry-point')
+Future<void> _onFire(int platformId, Map<String, dynamic> params) async {}
+
+const _firedHandle = 42;
+const _dispatcherHandle = 7;
+
+final t0 = DateTime.utc(2026, 10, 24, 7);
+
+RegisteredAlarm entry({
+  int platformId = 41,
+  String id = 'reminder:order_deadline:o1:2026-11-03',
+  Duration after = const Duration(hours: 2),
+}) => RegisteredAlarm(
+  alarmId: id,
+  platformId: platformId,
+  atUtc: t0.add(after),
+  content: const {'channel': 'quiet', 'title': 'Pedido', 'body': 'Mañana'},
+);
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  final messenger =
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+  late List<MethodCall> calls;
+  late bool accepted;
+  late Directory dir;
+  // The plugin's persistent_alarm_ids: oneShotAt with rescheduleOnReboot
+  // adds, cancel removes (AlarmService.java).
+  late Set<int> persistent;
+  late List<MethodCall> listCalls;
+
+  setUp(() {
+    calls = [];
+    listCalls = [];
+    persistent = {};
+    accepted = true;
+    dir = Directory.systemTemp.createTempSync('alarm_manager_');
+    messenger.setMockMethodCallHandler(AndroidAlarmManager.channel, (
+      call,
+    ) async {
+      calls.add(call);
+      final args = call.arguments;
+      if (args is List && args.isNotEmpty && args.first is int) {
+        final id = args.first as int;
+        if (call.method == 'Alarm.oneShotAt' && accepted) persistent.add(id);
+        if (call.method == 'Alarm.cancel') persistent.remove(id);
+      }
+      return call.method == 'Alarm.oneShotAt' ? accepted : true;
+    });
+    messenger.setMockMethodCallHandler(AlarmManagerScheduler.listChannel, (
+      call,
+    ) async {
+      listCalls.add(call);
+      return call.method == 'persistentAlarmIds' ? [...persistent] : null;
+    });
+    AndroidAlarmManager.setTestOverrides(
+      getCallbackHandle: (callback) => CallbackHandle.fromRawHandle(
+        identical(callback, _onFire) ? _firedHandle : _dispatcherHandle,
+      ),
+    );
+  });
+
+  tearDown(() {
+    messenger.setMockMethodCallHandler(AndroidAlarmManager.channel, null);
+    messenger.setMockMethodCallHandler(AlarmManagerScheduler.listChannel, null);
+    dir.deleteSync(recursive: true);
+  });
+
+  Iterable<MethodCall> named(String method) =>
+      calls.where((c) => c.method == method);
+
+  List<Object?> oneShotArgs() =>
+      named('Alarm.oneShotAt').last.arguments as List<Object?>;
+
+  group('schedule', () {
+    test('starts the service once, then sets an exact, idle-proof, waking '
+        'alarm that survives a reboot, under the registry\'s id, carrying '
+        'the alarm to the fire entry', () async {
+      final scheduler = AlarmManagerScheduler(_onFire);
+      expect(await scheduler.schedule(entry()), isTrue);
+      expect(await scheduler.schedule(entry(platformId: 42)), isTrue);
+      expect(calls.map((c) => c.method), [
+        'AlarmService.start',
+        'Alarm.oneShotAt',
+        'Alarm.oneShotAt',
+      ]);
+      expect(calls.first.arguments, [_dispatcherHandle]);
+      final args = named('Alarm.oneShotAt').first.arguments as List<Object?>;
+      // [id, alarmClock, allowWhileIdle, exact, wakeup, startMillis,
+      //  rescheduleOnReboot, callbackHandle, params]
+      expect(args.sublist(0, 8), [
+        41,
+        false,
+        true,
+        true,
+        true,
+        entry().atUtc.millisecondsSinceEpoch,
+        true,
+        _firedHandle,
+      ]);
+      final params = (args[8]! as Map<Object?, Object?>)
+          .cast<String, Object?>();
+      expect(alarmFromParams(params), entry().alarm);
+    });
+
+    test('the alarmClock flag (RELAY\'s P3-R3) sets an alarm clock', () async {
+      await AlarmManagerScheduler(_onFire, alarmClock: true).schedule(entry());
+      expect(oneShotArgs()[1], isTrue);
+    });
+
+    test('a refused alarm answers false', () async {
+      final scheduler = AlarmManagerScheduler(_onFire);
+      accepted = false;
+      expect(await scheduler.schedule(entry()), isFalse);
+    });
+
+    test('a platform id the system cannot take, or a local instant, is '
+        'refused before any call', () async {
+      final scheduler = AlarmManagerScheduler(_onFire);
+      for (final id in [-1, 1 << 31]) {
+        await expectLater(
+          scheduler.schedule(entry(platformId: id)),
+          throwsArgumentError,
+        );
+      }
+      await expectLater(
+        scheduler.schedule(
+          RegisteredAlarm(
+            alarmId: 'r',
+            platformId: 1,
+            atUtc: DateTime(2026, 10, 24, 9),
+          ),
+        ),
+        throwsArgumentError,
+      );
+      expect(calls, isEmpty);
+    });
+  });
+
+  test(
+    'cancel calls the plugin\'s cancel, which prunes its reboot list',
+    () async {
+      await AlarmManagerScheduler(_onFire).cancel(41);
+      expect(calls.single.method, 'Alarm.cancel');
+      expect(calls.single.arguments, [41]);
+    },
+  );
+
+  test(
+    'canScheduleExact: USE_EXACT_ALARM by default, or the app\'s answer',
+    () async {
+      expect(await AlarmManagerScheduler(_onFire).canScheduleExact(), isTrue);
+      var answer = false;
+      final scheduler = AlarmManagerScheduler(
+        _onFire,
+        canScheduleExact: () async => answer,
+      );
+      expect(await scheduler.canScheduleExact(), isFalse);
+      answer = true;
+      expect(await scheduler.canScheduleExact(), isTrue);
+    },
+  );
+
+  test(
+    'the battery-optimisation settings open through SystemSettings',
+    () async {
+      final settings = FakeSystemSettings();
+      await AlarmManagerScheduler(
+        _onFire,
+        settings: settings,
+      ).openBatteryOptimisationSettings();
+      expect(settings.batterySettingsOpened, 1);
+    },
+  );
+
+  test('construction touches no platform channel', () {
+    AlarmManagerScheduler(_onFire);
+    expect(calls, isEmpty);
+    expect(listCalls, isEmpty);
+  });
+
+  group('the plugin\'s reboot list (F1)', () {
+    test('pendingPlatformIds reads persistent_alarm_ids through the '
+        'package\'s channel, without starting the plugin', () async {
+      persistent.addAll({3, 41});
+      final scheduler = AlarmManagerScheduler(_onFire);
+      expect(await scheduler.pendingPlatformIds(), {3, 41});
+      expect(listCalls.single.method, 'persistentAlarmIds');
+      expect(calls, isEmpty);
+      persistent.clear();
+      expect(await scheduler.pendingPlatformIds(), isEmpty);
+    });
+
+    test('KP-A10 a restored list the registry never handed out: after the '
+        'resync only this install\'s alarms are on it', () async {
+      // The backup copied the plugin's prefs file; its boot receiver would
+      // re-arm these after the next reboot.
+      persistent.addAll({0, 5, 9});
+      final sync = AlarmSync(
+        AlarmManagerScheduler(_onFire),
+        AlarmRegistry(() async => dir),
+      );
+      final report = await sync.resync(
+        wanted: [
+          entry().alarm,
+          entry(id: 'reminder:b', platformId: 1).alarm,
+        ],
+        now: t0,
+      );
+      expect(persistent, {
+        for (final e in await AlarmRegistry(() async => dir).entries())
+          e.platformId,
+      });
+      expect([
+        for (final c in named('Alarm.cancel')) (c.arguments as List).first,
+      ], containsAll([0, 5, 9]));
+      expect(report.strangers, 3);
+    });
+
+    test('the per-install set names the plugin\'s prefs file', () {
+      expect(alarmManagerBackupExclusions, const [
+        BackupPath.sharedPref(
+          'dev.fluttercommunity.plus.android_alarm_manager_plugin.xml',
+        ),
+      ]);
+      const viaticum = '''
+<data-extraction-rules>
+  <cloud-backup><exclude domain="file" path="alarms/" /></cloud-backup>
+  <device-transfer><exclude domain="file" path="alarms/" /></device-transfer>
+</data-extraction-rules>
+''';
+      expect(
+        backupExclusionGaps(viaticum, excluded: alarmManagerBackupExclusions),
+        hasLength(2),
+      );
+      final fixed = viaticum.replaceAll(
+        '<exclude domain="file" path="alarms/" />',
+        '<exclude domain="file" path="alarms/" />'
+            '<exclude domain="sharedpref" '
+            'path="dev.fluttercommunity.plus.android_alarm_manager_plugin.xml" />',
+      );
+      expect(
+        backupExclusionGaps(fixed, excluded: alarmManagerBackupExclusions),
+        isEmpty,
+      );
+    });
+  });
+
+  group('the fire entry', () {
+    AlarmRegistry registry() => AlarmRegistry(() async => dir);
+
+    Future<Map<String, dynamic>> scheduledParams() async {
+      await AlarmManagerScheduler(_onFire).schedule(entry(platformId: 1));
+      return (oneShotArgs()[8]! as Map<Object?, Object?>).cast();
+    }
+
+    test('records the fire, delivers the alarm, then cancels the platform '
+        'alarm', () async {
+      final params = await scheduledParams();
+      final fired = entry().atUtc.add(const Duration(seconds: 3));
+      final delivered = <ScheduledAlarm>[];
+      await onAlarmFired(
+        platformId: 1,
+        params: params,
+        firedUtc: fired,
+        registry: registry(),
+        deliver: (alarm) async => delivered.add(alarm),
+      );
+      expect(await registry().fires(), [
+        FiredAlarm(
+          alarmId: entry().alarmId,
+          platformId: 1,
+          scheduledAtUtc: entry().atUtc,
+          firedAtUtc: fired,
+        ),
+      ]);
+      expect(delivered, [entry().alarm]);
+      expect(named('Alarm.cancel').single.arguments, [1]);
+    });
+
+    test('a delivery that fails still leaves the fire recorded and the '
+        'platform alarm cancelled, and is thrown', () async {
+      final params = await scheduledParams();
+      await expectLater(
+        onAlarmFired(
+          platformId: 1,
+          params: params,
+          firedUtc: t0,
+          registry: registry(),
+          deliver: (_) async => throw PlatformException(code: 'boom'),
+        ),
+        throwsA(isA<PlatformException>()),
+      );
+      expect(await registry().fires(), hasLength(1));
+      expect(named('Alarm.cancel'), hasLength(1));
+    });
+
+    test('params that are not an alarm\'s are refused before anything is '
+        'recorded or delivered', () async {
+      var delivered = 0;
+      await expectLater(
+        onAlarmFired(
+          platformId: 1,
+          params: const {'alarmId': 'r-1'},
+          firedUtc: t0,
+          registry: registry(),
+          deliver: (_) async => delivered++,
+        ),
+        throwsFormatException,
+      );
+      expect(await registry().fires(), isEmpty);
+      expect(delivered, 0);
+      expect(calls, isEmpty);
+    });
+
+    test('through AlarmSync: a fired alarm is not armed again at its '
+        'instant, and its entry is dropped', () async {
+      final scheduler = AlarmManagerScheduler(_onFire);
+      final sync = AlarmSync(scheduler, registry());
+      final wanted = [entry().alarm];
+      await sync.resync(wanted: wanted, now: t0);
+      final params = (oneShotArgs()[8]! as Map<Object?, Object?>)
+          .cast<String, dynamic>();
+      await onAlarmFired(
+        platformId: oneShotArgs().first! as int,
+        params: params,
+        firedUtc: entry().atUtc,
+        registry: registry(),
+        deliver: (_) async {},
+      );
+      calls.clear();
+      await sync.resync(wanted: wanted, now: entry().atUtc);
+      expect(named('Alarm.oneShotAt'), isEmpty);
+      expect(await registry().entries(), isEmpty);
+    });
+
+    // An alarm id kept across fires keeps its platform id (AlarmRegistry),
+    // so the fired alarm's cancel would take the next fire armed under it.
+    test('an alarm snoozed while its fire delivers (+10 min tapped before '
+        'the fire ends) stays armed and on the reboot list', () async {
+      final scheduler = AlarmManagerScheduler(_onFire);
+      final sync = AlarmSync(
+        scheduler,
+        registry(),
+        snoozes: SnoozeStore(() async => dir),
+      );
+      await sync.resync(wanted: [entry().alarm], now: t0);
+      final platformId = oneShotArgs().first! as int;
+      final params = (oneShotArgs()[8]! as Map<Object?, Object?>)
+          .cast<String, dynamic>();
+      final until = entry().atUtc.add(const Duration(minutes: 10));
+      await onAlarmFired(
+        platformId: platformId,
+        params: params,
+        firedUtc: entry().atUtc,
+        registry: registry(),
+        deliver: (alarm) async {
+          expect(await sync.snooze(alarm, until: until), isTrue);
+        },
+      );
+      expect(persistent, {platformId});
+      expect(named('Alarm.cancel'), isEmpty);
+      expect((await registry().registered()).single.atUtc, until);
+    });
+
+    test('an alarm id armed again for its next fire while this one delivers '
+        'is not cancelled by this fire', () async {
+      final scheduler = AlarmManagerScheduler(_onFire);
+      final sync = AlarmSync(scheduler, registry());
+      await sync.resync(wanted: [entry().alarm], now: t0);
+      final platformId = oneShotArgs().first! as int;
+      final params = (oneShotArgs()[8]! as Map<Object?, Object?>)
+          .cast<String, dynamic>();
+      final next = entry(after: const Duration(days: 1)).alarm;
+      await onAlarmFired(
+        platformId: platformId,
+        params: params,
+        firedUtc: entry().atUtc,
+        registry: registry(),
+        deliver: (_) =>
+            sync.resync(wanted: [next], now: entry().atUtc).then((_) {}),
+      );
+      expect(persistent, {platformId});
+      expect(named('Alarm.cancel'), isEmpty);
+      expect(await registry().registered(), [
+        RegisteredAlarm(
+          alarmId: next.alarmId,
+          platformId: platformId,
+          atUtc: next.atUtc,
+          content: next.content,
+        ),
+      ]);
+    });
+  });
+}
