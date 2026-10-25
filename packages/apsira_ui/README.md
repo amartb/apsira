@@ -92,7 +92,7 @@ same under `build` and `buildFull`.
 | Group | Widgets |
 |---|---|
 | Layout | `CardSlice`, `CardPart` (`first`, `middle`, `last`, `only`; `CardPart.at`), `GroupHeader`, `GroupCard`, `PageTitle`, `SectionHeader`, `OverlineLabel` |
-| State | `EmptyState` (`actionLabel`/`onAction`/`actionKey`, the action as the tonal pill) |
+| State | `EmptyState` (`actionLabel`/`onAction`/`actionKey`, the action as the tonal pill; `actionIcon` before its label; `secondaryActionLabel`/`onSecondaryAction`/`secondaryActionKey`, a second pill under it; `EmptyState.inline`, RELAY's cardless tint block with its `accentText` text button, keys `EmptyState.blockKey`/`iconTileKey`) |
 | Overlays | `showApsiraSheet`, `ApsiraSheet`, `SheetHandle`, `showApsiraDialog`, `ApsiraDialog`, `confirmDestructive`, `confirmAction`, `destructiveButtonStyle` |
 | Feedback | `showUndoSnack` (RELAY's; VIATICUM's failure snack, `persist`) |
 | Pills | `FilterPill`, `AddFilterPill`, `TagPill`, `StatusDot`, `FamilyPill`, `SearchFilterBar`, `ActiveFilterPills`, `PillButtons` |

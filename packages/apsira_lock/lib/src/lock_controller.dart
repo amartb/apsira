@@ -295,6 +295,16 @@ final class LockController extends Notifier<LockState> {
     }
   }
 
+  /// Locks now, from the app's own "Lock now" (LYCEUM's Settings row,
+  /// D-APK-016): covered with the prompt due, as after the background
+  /// timeout. Only while the lock is on and the app is shown; already
+  /// covered, or with the lock off, nothing changes. Never a lock-out: a
+  /// device that cannot prompt leaves the app open with the log's code.
+  Future<void> lockNow() async {
+    if (!_settings.enabled || state.phase != LockPhase.unlocked) return;
+    await _engage();
+  }
+
   /// Shows the system prompt with [prompt]'s text ([AuthPrompt.of]).
   /// Passed unlocks; failed or cancelled stays locked with the retry; an
   /// unavailable or throwing Authenticator unlocks.

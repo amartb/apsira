@@ -5,8 +5,16 @@ package shares one tag, `apsira-vX.Y.Z` (D-APK-007); 0.1.0 was `apsira_ui-v0.1.0
 
 ## 0.4.0 — 2026-10-24
 
-No change in behaviour. Migration: move every apsira `ref:` to
-`apsira-v0.4.0`.
+Migration: move every apsira `ref:` to `apsira-v0.4.0`. Additive only; no default moves.
+
+- **`EmptyState.actionIcon`** (D-APK-014, F3): the action's glyph before its label, 20 px.
+- **`EmptyState`'s second action**: `secondaryActionLabel`, `onSecondaryAction`,
+  `secondaryActionKey`, a tonal pill under the first.
+- **`EmptyState.inline`** (D-APK-014, F3): RELAY's cardless empty state (`lib/app/theme/empty_state.dart`
+  @ `09b28810`), a bordered `tint` block with its icon tile, the line in `ink2` and an
+  `accentText` text button; keys `EmptyState.blockKey`, `EmptyState.iconTileKey`. Migration for
+  RELAY: `EmptyState(line:, action:)` becomes `EmptyState.inline(title:, actionLabel:)`. No
+  golden moves.
 
 ## 0.3.0 — 2026-10-24
 

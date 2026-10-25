@@ -39,6 +39,7 @@ class LockShield extends ConsumerStatefulWidget {
     this.isExempt,
     this.exemptChanges,
     this.promptHeld,
+    this.coverIcon,
   });
 
   final Widget child;
@@ -58,6 +59,10 @@ class LockShield extends ConsumerStatefulWidget {
 
   /// Whether the prompt must wait, the cover staying up; null: never.
   final bool Function()? promptHeld;
+
+  /// The app's lock glyph on the cover ([LockCover.icon]); null: Material's
+  /// `lock_outline`.
+  final Widget? coverIcon;
 
   @override
   ConsumerState<LockShield> createState() => _LockShieldState();
@@ -198,6 +203,7 @@ class _LockShieldState extends ConsumerState<LockShield>
             appTitle: widget.appTitle,
             onUnlock: lock.canUnlock ? _unlock : null,
             showRetry: lock.showRetry,
+            icon: widget.coverIcon,
           ),
       ],
     );

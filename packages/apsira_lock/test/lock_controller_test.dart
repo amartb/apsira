@@ -302,6 +302,64 @@ void main() {
     });
   });
 
+  group('lock now', () {
+    Future<ProviderContainer> unlocked({Authenticator? authenticator}) async {
+      final c = start(authenticator: authenticator);
+      await settle();
+      await controllerOf(c).unlock(enPrompt);
+      expect(stateOf(c).phase, LockPhase.unlocked);
+      return c;
+    }
+
+    test('locks at once with the prompt due; passed unlocks', () async {
+      final auth = FakeAuthenticator();
+      final c = await unlocked(authenticator: auth);
+      await controllerOf(c).lockNow();
+      expect(stateOf(c), const LockState(LockPhase.locked, promptDue: true));
+      expect(stateOf(c).covered, isTrue);
+
+      await controllerOf(c).unlock(enPrompt);
+      expect(stateOf(c).phase, LockPhase.unlocked);
+      expect(auth.prompts, 2);
+    });
+
+    test('lock off: nothing happens', () async {
+      final c = start(settings: const LockSettings());
+      await settle();
+      await controllerOf(c).lockNow();
+      expect(stateOf(c), const LockState(LockPhase.unlocked));
+    });
+
+    test(
+      'never a lock-out: an unavailable Authenticator leaves it open',
+      () async {
+        final auth = FakeAuthenticator();
+        final c = await unlocked(authenticator: auth);
+        auth.available = false;
+        await controllerOf(c).lockNow();
+        expect(stateOf(c).phase, LockPhase.unlocked);
+        expect(sink.lines.where((l) => l.contains('lock.notEngaged')), [
+          'WARNING lock.notEngaged code=unavailable',
+        ]);
+      },
+    );
+
+    test(
+      'already covered: the cover and its prompt stay as they are',
+      () async {
+        final c = start(
+          authenticator: FakeAuthenticator(script: [AuthOutcome.cancelled]),
+        );
+        await settle();
+        await controllerOf(c).unlock(enPrompt);
+        final retry = stateOf(c);
+        expect(retry.showRetry, isTrue);
+        await controllerOf(c).lockNow();
+        expect(stateOf(c), retry);
+      },
+    );
+  });
+
   group('never a lock-out: unavailable', () {
     List<String> skips() => [
       for (final line in sink.lines)

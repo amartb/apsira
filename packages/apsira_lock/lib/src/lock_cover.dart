@@ -1,6 +1,7 @@
 // From relay lib/features/lock/ui/lock_cover.dart @ 09b28810, unchanged but
 // for names: the tokens are apsira_ui's, the strings ApsiraL10n's and the
-// wordmark the app's title ([LockCover.appTitle]).
+// wordmark the app's title ([LockCover.appTitle]); the lock glyph may be the
+// app's own ([LockCover.icon], D-APK-016).
 import 'package:apsira_l10n/apsira_l10n.dart';
 import 'package:apsira_ui/apsira_ui.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,7 @@ import 'package:flutter/material.dart';
 /// The branded cover shown while the app is locked: a blank branded screen,
 /// so no content flashes before the prompt.
 ///
-/// The `ground` screen with one bordered `surface` card: a lock icon, the
+/// The `ground` screen with one bordered `surface` card: a lock [icon], the
 /// app's [appTitle] as the wordmark and a line, in tokens only. [onUnlock]
 /// adds the Unlock button (a primary action, the one accent fill);
 /// [showRetry] says the last attempt did not unlock. It shows no content,
@@ -19,6 +20,7 @@ class LockCover extends StatelessWidget {
     required this.appTitle,
     this.onUnlock,
     this.showRetry = false,
+    this.icon,
   });
 
   /// The app's name, as its wordmark.
@@ -29,6 +31,11 @@ class LockCover extends StatelessWidget {
   final VoidCallback? onUnlock;
 
   final bool showRetry;
+
+  /// The app's lock glyph (LYCEUM's Lucide lock, `Icon(AppIcons.lock)`),
+  /// drawn at the cover's size in `accentText` unless it sets its own;
+  /// `null` draws Material's `lock_outline`.
+  final Widget? icon;
 
   @override
   Widget build(BuildContext context) {
@@ -57,10 +64,12 @@ class LockCover extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.lock_outline,
-                      size: ApsiraSizes.checkboxInTaskSheet,
-                      color: tokens.accentText,
+                    IconTheme.merge(
+                      data: IconThemeData(
+                        size: ApsiraSizes.checkboxInTaskSheet,
+                        color: tokens.accentText,
+                      ),
+                      child: icon ?? const Icon(Icons.lock_outline),
                     ),
                     const SizedBox(height: ApsiraSpacing.betweenCards),
                     Text(

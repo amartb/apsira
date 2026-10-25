@@ -5,8 +5,11 @@ one tag, `apsira-vX.Y.Z` (D-APK-007).
 
 ## 0.4.0 — 2026-10-24
 
-No change in behaviour. Migration: move every apsira `ref:` to
-`apsira-v0.4.0`.
+Migration: move every apsira `ref:` to `apsira-v0.4.0`. Additive only; no default moves.
+
+- **`FirstOpenIntro.semanticsLabel`** (D-APK-017, F3): the tap target's label, read before
+  the hint, so the intro passes the labelled-tap-target guideline; LYCEUM drops its
+  `MergeSemantics` wrapper.
 
 ## 0.3.0 — 2026-10-24
 

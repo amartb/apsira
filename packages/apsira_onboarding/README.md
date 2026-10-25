@@ -31,7 +31,8 @@ final flow = FirstOpenFlow(MyStep.values);       // .current, .next(), .back(), 
   title as the wordmark, then "Developed by" and the Apsira Labs lockup
   (`ApsiraBrand.lockupReversed` unless `lockup` is given), on the dark ground in both themes.
   About 4.5 s; under reduce motion a 1 s cross-fade, nothing drawn or moved. A tap, or
-  TalkBack's button, skips it; `onDone` is called once. Keys `firstOpen/intro[/brand|/name|/credit]`.
+  TalkBack's button, skips it; `onDone` is called once. `semanticsLabel` labels that button
+  ("Skip the introduction"), read before the hint. Keys `firstOpen/intro[/brand|/name|/credit]`.
 - `LanguageStep` offers English and Español (`options` for others); `LanguageStep.preselect`
   picks a stored choice, else the phone's (`es` → Spanish, anything else English). Keys
   `firstOpen/language/<option>` and `firstOpen/language/continue`.

@@ -24,6 +24,7 @@ Future<void> _pump(
   bool reduceMotion = false,
   Widget? lockup,
   Locale locale = const Locale('en'),
+  String? semanticsLabel,
 }) async {
   _mark = null;
   _done = 0;
@@ -42,6 +43,7 @@ Future<void> _pump(
         );
       },
       lockup: lockup,
+      semanticsLabel: semanticsLabel,
       onDone: () => _done++,
     ),
     locale: locale,
@@ -129,6 +131,25 @@ void main() {
       ),
     );
     expect(find.bySemanticsLabel('The Relay mark'), findsOneWidget);
+    semantics.dispose();
+    await tester.tap(byKey('firstOpen/intro'));
+  });
+
+  testWidgets('with the app\'s label, TalkBack hears a labelled button', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await _pump(tester, semanticsLabel: 'Skip the introduction');
+    expect(
+      tester.getSemantics(byKey('firstOpen/intro')),
+      isSemantics(
+        label: 'Skip the introduction',
+        isButton: true,
+        hasTapAction: true,
+        hint: en.firstOpenIntroSkipHint,
+      ),
+    );
+    await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
     semantics.dispose();
     await tester.tap(byKey('firstOpen/intro'));
   });

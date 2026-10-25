@@ -2,7 +2,8 @@
 // (itself RELAY's, with the reduce-motion cross-fade, the Material ground
 // and the TalkBack button), on relay
 // lib/features/first_open/ui/first_open_intro.dart @ 09b28810's type and
-// tokens; the app's mark and title are parameters (D-APK-017).
+// tokens; the app's mark and title are parameters (D-APK-017), and so is
+// the tap target's label (LYCEUM's "Skip the introduction").
 import 'package:apsira_l10n/apsira_l10n.dart';
 import 'package:apsira_ui/apsira_ui.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,8 @@ import 'package:flutter/material.dart';
 /// and fade out (3.0–3.5 s), then "Developed by" and the Apsira Labs lockup
 /// (3.5–4.0 s). Under reduce motion nothing draws or moves: the whole mark
 /// and name, then a 1 s cross-fade to the lockup. It calls [onDone] once,
-/// at the end or on the first tap; TalkBack hears a button that skips it.
+/// at the end or on the first tap; TalkBack hears a button that skips it,
+/// labelled [semanticsLabel] when the app gives one.
 class FirstOpenIntro extends StatefulWidget {
   const FirstOpenIntro({
     super.key,
@@ -22,6 +24,7 @@ class FirstOpenIntro extends StatefulWidget {
     required this.mark,
     required this.onDone,
     this.lockup,
+    this.semanticsLabel,
   });
 
   /// The app's name, set upper case as its wordmark.
@@ -37,6 +40,10 @@ class FirstOpenIntro extends StatefulWidget {
   /// default [ApsiraBrand.lockupReversed] at [lockupWidth], used as
   /// supplied and never recoloured.
   final Widget? lockup;
+
+  /// The tap target's label for TalkBack ("Skip the introduction"), read
+  /// before the package's hint ("Tap to skip"); none by default.
+  final String? semanticsLabel;
 
   /// The full-motion intro, after which the flow continues by itself.
   static const fullDuration = Duration(milliseconds: 4500);
@@ -121,6 +128,7 @@ class _FirstOpenIntroState extends State<FirstOpenIntro>
       container: true,
       explicitChildNodes: true,
       button: true,
+      label: widget.semanticsLabel,
       hint: l10n.firstOpenIntroSkipHint,
       onTap: _finish,
       child: GestureDetector(

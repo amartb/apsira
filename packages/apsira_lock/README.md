@@ -85,6 +85,9 @@ stored settings any other way (a restore) calls `ref.invalidate(lockSettingsProv
   return. A pause while the prompt is up (the credential screen) is not a background.
 - Turning the lock on while open locks at the next launch or timeout; turning it off brings
   the cover down.
+- **Lock now:** `lockNow()` (an app's "Lock now" row) locks at once with the prompt due, as
+  after the timeout, only while the lock is on and the app is shown; otherwise it changes
+  nothing.
 - **Never a lock-out:** a store that throws or does not answer within 2 s, or an
   `Authenticator` that is unavailable or throws, leaves the lock off and logs
   `WARNING lock.notEngaged code=<unavailable|authenticatorError|settingsUnreadable>`, with
@@ -103,13 +106,15 @@ the user.
 
 ## Widgets
 
-- `LockShield({child, appTitle, promptReason, isExempt, exemptChanges, promptHeld})` in
+- `LockShield({child, appTitle, promptReason, isExempt, exemptChanges, promptHeld, coverIcon})` in
   `MaterialApp.builder`: the cover from the first frame; the content stays built, out of
   semantics, not hit-tested, tickers paused, and offstage once locked; Back while covered
   leaves the app. `isExempt` (with `exemptChanges`, the listenable that says when its
   answer changes) lets an app show some screens without the lock, as RELAY's KAIROS space.
-- `LockCover({appTitle, onUnlock, showRetry})`: the `ground` screen with one bordered
-  `surface` card, the app's title as the wordmark; never any content.
+- `LockCover({appTitle, onUnlock, showRetry, icon})`: the `ground` screen with one bordered
+  `surface` card, the lock glyph, the app's title as the wordmark; never any content. `icon`
+  (the shield's `coverIcon`) is the app's glyph, `Icon(AppIcons.lock)`, drawn at the cover's
+  size in `accentText`; without it, Material's `lock_outline`.
 - `LockSettingsSection({note})`: **App lock**, **Lock after** (Immediately, 1, 5, 15, 30
   minutes, and a stored value outside the list) and **Hide in recent apps**, on
   `apsira_ui`'s settings rows, rows only (the app places them in its card); `note` is a line

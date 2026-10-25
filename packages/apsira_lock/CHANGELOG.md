@@ -2,8 +2,13 @@
 
 ## 0.4.0 — 2026-10-24
 
-No change in behaviour. Migration: move every apsira `ref:` to
-`apsira-v0.4.0`.
+Migration: move every apsira `ref:` to `apsira-v0.4.0`. Additive only; no default moves.
+
+- **`LockController.lockNow()`** (D-APK-016, F3): locks at once with the prompt due while the
+  lock is on and the app is shown; an unavailable device leaves the app open (never a
+  lock-out). LYCEUM's "Lock now" calls it.
+- **`LockCover.icon`** and **`LockShield.coverIcon`**: the app's lock glyph at the cover's size
+  in `accentText`; `null` keeps Material's `lock_outline`.
 
 ## 0.3.0 — 2026-10-24
 

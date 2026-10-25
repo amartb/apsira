@@ -581,6 +581,13 @@ becomes Decided on review), Superseded.
 - **Consequences:** RELAY's 14 empty states take LYCEUM's card when RELAY adopts the kit, and their goldens
   are re-approved citing this entry; LYCEUM's sheets and dialogs look as they do. Each app's adoption maps its
   module or status to `ApsiraFamily` once and names the goldens it re-approves.
+- **Consequences (F3, 2026-10-25): LYCEUM's actions.** `EmptyState` takes an optional `actionIcon` (the glyph
+  before the label, 20 px: LYCEUM's `FilledButton.tonalIcon` +) and an optional second action
+  (`secondaryActionLabel`, `onSecondaryAction`, `secondaryActionKey`), a tonal pill under the first (LYCEUM's mic
+  rationale's Cancel). `EmptyState.inline` is RELAY's cardless variant (`lib/app/theme/empty_state.dart` @
+  `09b28810`: a bordered `tint` block, a `surface` icon tile, the line in `ink2`, an `accentText` text button,
+  RELAY's keys), so RELAY's 14 empty states keep their look and its copy goes (conductor ruling to F3). Each
+  defaults to none, so every existing empty state and golden is unchanged.
 
 ## D-APK-015 — `apsira_storage`: the storage ports, their adapters, one storage channel
 
@@ -673,6 +680,12 @@ becomes Decided on review), Superseded.
   store and gains `app_lock_hide_in_recents` (off); VIATICUM gains `local_auth`, the lock off by default, and
   supersedes its D-036 in its own log. Each app's adoption builds a debug APK, since mocked channel tests cannot
   see a mismatch between the Dart and Kotlin halves.
+- **Consequences (F3, 2026-10-25): Lock now and the app's glyph.** `LockController.lockNow()` locks at once with
+  the prompt due, as after the timeout, only while the lock is on and the app is shown; a device that cannot
+  prompt leaves the app open with `lock.notEngaged code=unavailable` (never a lock-out). LYCEUM's Settings
+  "Lock now" calls it, so its `AuthService` state machine can go. `LockCover.icon` and `LockShield.coverIcon`
+  take the app's lock glyph (LYCEUM's Lucide lock), drawn at the cover's size in `accentText`; by default the
+  cover keeps Material's `lock_outline`.
 
 ## D-APK-017 — `apsira_onboarding`: first open, tours, Help and tips
 
@@ -715,6 +728,10 @@ becomes Decided on review), Superseded.
   and take RELAY's `accentText`. Help's app bar wraps a title too long for one line and grows to hold it (T12's
   finding: RELAY's `tour_screen` cut "Recordatorios y repeticiones" with an ellipsis at large text); a title that
   fits keeps the standard bar. Each change is a line in the app's decision log at adoption.
+- **Consequences (F3, 2026-10-25): the intro's label.** `FirstOpenIntro.semanticsLabel` labels the tap target
+  ("Skip the introduction" in LYCEUM), read before the package's hint, so the intro passes Android's
+  labelled-tap-target guideline without the app wrapping it in `MergeSemantics`; without it the target carries
+  the hint alone, as before.
 
 ## D-APK-018 — `apsira_db`: RELAY's opener, server, restore swap and snapshot, with VIATICUM's and LYCEUM's additions
 
