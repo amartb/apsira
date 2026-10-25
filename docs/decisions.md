@@ -37,6 +37,7 @@ becomes Decided on review), Superseded.
 | D-APK-020 | `apsira_zip`: RELAY's streaming ZIP writer, CRC-32 and one-pass reader, the apps' parts as hooks (entry names, an entry check, extraction, the keep limit); refusals as `ZipRefusal`, mapped by each app; consumers RELAY and LYCEUM | Decided |
 | D-APK-021 | `apsira_notify`: RELAY's notifier with app-defined channels (no channel id moves), at most three actions, the lock-screen public version, the permission flow with a per-install asked flag, the package's own settings intents; RELAY's patched `flutter_local_notifications` moves to `packages/third_party/` | Decided |
 | D-APK-022 | The per-install alarm registry: VIATICUM's `alarms/registry.json` in `apsira_notify` with a per-install `SnoozeStore`, `AlarmSync` (re-arms every wanted alarm, cancels what the registry names and every plugin-pending id it never handed out), RELAY's window; `FlnAlarmScheduler` (LYCEUM) and `AlarmManagerScheduler` in `apsira_jobs` (Q1-c); every consumer excludes `alarms/` and the plugins' persisted lists from Android's backup | Decided (amended by F1, 2026-10-24) |
+| D-APK-023 | Sync and storage direction: home-network-only sync by a transport-agnostic change log carried by the central app, merged per field and additive (no edit discarded: same-field clashes keep both versions behind a badge and a version history); amb811 as the home hub with its own SSD, Proton Drive as the encrypted offsite copy; no NAS for now | Decided as direction (2026-10-25); may change |
 
 ---
 
@@ -1055,3 +1056,31 @@ becomes Decided on review), Superseded.
   leaves the cancel in, as before. A re-arm registered after that read and before the cancel can still lose
   its fire until the next resync re-arms it (the resync re-arms every alarm of its window). A change from
   VIATICUM's `onAlarmFired` @ `78d38e0`; apps need no change.
+
+## D-APK-023 — Sync and storage direction
+
+- **Status:** Decided as direction (2026-10-25); early-stage, may change.
+- **Context:** Brainstorm thread of 2026-10-25 on the two future completions the central app owns
+  (D-APK-005): sync between devices and a home for backups. The full record, options weighed and open
+  questions are in `docs/roadmap/sync-and-storage.md`.
+- **Decision:**
+  - Sync runs on the **home network only**, between the Android phone, the Android tablet and the Fedora PC.
+  - Each app records its own changes; the central app carries them, encrypted, through a
+    **transport-agnostic** change log (a mailbox on amb811, or device to device), in a documented,
+    language-neutral format. Applying a change is each app's own logic.
+  - **Additive merge: no edit is ever discarded.** Changes merge per field; every edit is a version that
+    records the version it was based on, so clashes are found by causality, not by clocks. When two
+    devices change the same field both versions are kept: every device shows the newest with a
+    "2 versions" badge, the item's "View edits" history compares and restores any version, and the central
+    app lists open clashes. An edit beats a concurrent delete (the item is restored and flagged); a
+    synced reminder rings where chosen per reminder, the phone by default; for text a merge suggestion is
+    offered, never applied silently. No CRDT. The edge cases are settled in the roadmap note's §2.4.
+  - **amb811** is the home hub (mailbox, local backups, photo copy, documents archive) on its own SSD;
+    **Proton Drive** holds the encrypted offsite copy. No NAS for now.
+- **Alternatives rejected:** a hosted sync engine inside each app (puts network access in every app); a
+  CRDT database (cost unjustified, edit clashes practically never happen); a NAS now (amb811 and Proton
+  cover the need).
+- **Consequences:** charter §1.1's "runs no service on the KEYSTONE host" needs rewording when the central
+  app's planning thread rules what runs on amb811. The central app reaches the other apps through Android
+  IPC (bound service or content provider), so the signing-key question (one key or `knownSigner`) is
+  ruled before it is built.

@@ -90,6 +90,9 @@ app carrying its own. It is early-stage and may change. Until it exists, the app
 obligations are the ones in §1.4: stable identifiers, timestamps, soft deletes, and a
 versioned export/import bundle that the central app can consume later.
 
+The direction for sync and backups (home-network-only sync, amb811 as the home hub, Proton Drive
+offsite, no NAS for now) is D-APK-023, recorded in `docs/roadmap/sync-and-storage.md`.
+
 ## 5. Shared code
 
 `packages/` holds the Dart packages every Flutter app depends on (decisions D-APK-001,
