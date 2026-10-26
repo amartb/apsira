@@ -23,7 +23,7 @@ From the brainstorm of 2026-10-26 (thread "APSIRA ECOSYSTEM BRAINSTORM"). A list
 
 ## Modules for existing or planned apps
 
-- **ATRIUM**: Gallery (the photo life: his own structures, cleanup by triage, backup), Renta year box (tax-relevant items marked all year and checked against the draft return in April), document validity (expiry with renewal lead times).
+- **ATRIUM**: Gallery (the photo life: his own structures, cleanup by triage, backup), Renta year box (tax-relevant items marked all year and checked against the draft return in April), document validity (expiry with renewal lead times), and files into the field from STYLUS (insert a kept or standing file into the field he is typing in, such as a chat, from the keyboard; ATRIUM offers the files through a contract STYLUS calls, so the keyboard never reads ATRIUM's store; recorded by the STYLUS planning thread, 2026-10-26, for after STYLUS V1).
 - **RELAY**: offline transcription of voice memos.
 - **Central app**: homelab console (amb811 health, backups, sync mailbox), notification inbox (rule-based triage that feeds Money's capture), phone automation (rules as code), build shelf (installing his own APKs), alongside sync and the network gateway.
 
