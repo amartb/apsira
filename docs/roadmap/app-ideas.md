@@ -11,7 +11,7 @@ From the brainstorm of 2026-10-26 (thread "APSIRA ECOSYSTEM BRAINSTORM"). A list
 ## Order
 
 1. **STYLUS**, the keyboard. [Brief](../../folios/STYLUS-brief.md).
-2. **ASTROLABE**, utilities: clock, alarms, timers, calculator, converter, measuring. [Brief](../../folios/ASTROLABE-brief.md). Its planning (2026-10-26) moved scanning and creating codes to ATRIUM: [atrium-scanning.md](atrium-scanning.md).
+2. **ASTROLABE**, utilities: clock, alarms, timers, calculator, converter, measuring. [Brief](../../folios/ASTROLABE-brief.md). Its planning (2026-10-26) moved scanning and creating codes to ATRIUM: [atrium-expansions.md](atrium-expansions.md).
 3. **PRISM on the phone**, after the central app exists, because mail needs its network gateway. Proton could be kept by running Proton Bridge headless on amb811, or dropped from the phone version.
 
 ## Other folio candidates (unordered)
@@ -23,7 +23,7 @@ From the brainstorm of 2026-10-26 (thread "APSIRA ECOSYSTEM BRAINSTORM"). A list
 
 ## Modules for existing or planned apps
 
-- **ATRIUM**: Gallery (the photo life: his own structures, cleanup by triage, backup), Renta year box (tax-relevant items marked all year and checked against the draft return in April), document validity (expiry with renewal lead times), scanning and creating codes (routed from ASTROLABE: [atrium-scanning.md](atrium-scanning.md)).
+- **ATRIUM**: Gallery (the photo life: his own structures, cleanup by triage, backup), Renta year box (tax-relevant items marked all year and checked against the draft return in April), document validity (expiry with renewal lead times), scanning and creating codes (routed from ASTROLABE), editing screenshots (crop, draw a circle or an arrow): [atrium-expansions.md](atrium-expansions.md).
 - **RELAY**: offline transcription of voice memos.
 - **Central app**: homelab console (amb811 health, backups, sync mailbox), notification inbox (rule-based triage that feeds Money's capture), phone automation (rules as code), build shelf (installing his own APKs), alongside sync and the network gateway.
 
