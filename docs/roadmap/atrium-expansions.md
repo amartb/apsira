@@ -4,6 +4,11 @@ Features the operator has routed to ATRIUM from outside ATRIUM's own threads. A 
 plan: nothing is decided for ATRIUM here, and nothing is written in ATRIUM's repository until its own thread takes
 these up.
 
+**Taken up (2026-10-27):** the ATRIUM v2 PLANNING thread ruled both expansions into ATRIUM v2 (`amartb/atrium`
+`docs/02-decision-log.md` D-040): scanning and creating codes in `v1.2.0` (D-045–D-047; the engine is zxing-cpp,
+forked and decoding in a sandboxed process, D-046), editing screenshots in `v1.1.0` (the image editor, D-044). The
+questions below are answered there.
+
 | Expansion | From | Date |
 |---|---|---|
 | [Scanning and creating codes](#1-scanning-and-creating-codes) | ASTROLABE planning thread | 2026-10-26 |
