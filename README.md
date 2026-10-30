@@ -20,13 +20,20 @@ uses himself. The qualities below are the membership test. An app that breaks on
 them records the exception in its own decision log with the reason.
 
 1. **Standalone.** It runs on its own, with no backend, no account and no shared
-   infrastructure. It is **not a KEYSTONE project**: it runs no service on the KEYSTONE
-   host, attaches to none of its shared services, and is not governed by KEYSTONE's
-   architecture or standards (VIATICUM D-001). Its `.army.toml` says `keystone = false`.
+   infrastructure: with the hub unreachable or the central app missing it works as
+   before. It is **not a KEYSTONE project**: it attaches to none of KEYSTONE's shared
+   services and is not governed by KEYSTONE's architecture or standards (VIATICUM
+   D-001). Its `.army.toml` says `keystone = false`. amb811, the home hub, also hosts
+   KEYSTONE; Apsira keeps **its own area** there — dedicated accounts, its own storage
+   and services, no port, database, proxy or container shared with KEYSTONE — governed
+   only by this charter and the Apsira decision logs (D-APK-023 R9, D-APK-025).
 2. **Offline and private by construction.** A phone app ships with **no `INTERNET`
    permission** (RELAY D-041); a PC app makes only explicit, user-triggered network
-   actions. No telemetry, no cloud, no AI features inside the apps. Content is never
-   logged.
+   actions. **Two apps hold network access by charter, not by exception:** the central
+   app, APSIRA (sync, backups, the network gateway, the build shelf), and the console
+   (control of the home PCs). Each reaches only the hosts its own decision log names
+   (APSIRA D-005), and they never share keys, stores or accounts (D-APK-024). No
+   telemetry, no cloud, no AI features inside the apps. Content is never logged.
 3. **Apps meet through contracts, not shared databases.** Each app owns one domain.
    Where two apps exchange data, they do it through a **versioned, documented file
    format** carried by hand (VIATICUM `05-exchange-format.md`, RELAY D-131), or a
@@ -52,7 +59,8 @@ them records the exception in its own decision log with the reason.
 |---|---|---|---|
 | **folio** | Phone app (Android, Flutter) | RELAY | RELAY, VIATICUM, LYCEUM, ATRIUM |
 | **tome** | PC app (native desktop; Fedora and Windows) | QUIRE | QUIRE, PRISM (PC first) |
-| **the central app** | The one Apsira-branded app that ties the roster together; the only place sync will live (§4) | — | not yet planned |
+| **the central app** | The one Apsira-branded app that ties the roster together: sync, backups home, the network gateway, the build shelf, the notification regime (§4); an Android app plus its hub on amb811 | APSIRA | APSIRA |
+| **the console** | The Apsira app that controls the home PCs (health, allowlisted actions) and follows the agent army; separate from the central app by privilege | — | planned after APSIRA |
 
 The briefs are filed by class: `folios/` and `tomes/`. A brief is the input to a planning
 thread; it states what the app is for and which needs it answers, never its design.
@@ -92,6 +100,13 @@ versioned export/import bundle that the central app can consume later.
 
 The direction for sync and backups (home-network-only sync, amb811 as the home hub, Proton Drive
 offsite, no NAS for now) is D-APK-023, recorded in `docs/roadmap/sync-and-storage.md`.
+
+The central app is **APSIRA** (`master-app/` in this repository; its documents in
+`master-app/docs/`). Its v1 carries backups home, the build shelf, the gateway, the
+notification regime and the sync core; the folios adopt sync in its v2. Apps reach it
+through `apsira_link` (§5), and every app works without it. Backups and archived
+documents are **sealed on the device** before they leave it; the hub on amb811 never
+holds a key that opens them (APSIRA D-028).
 
 ## 5. Shared code
 
@@ -150,7 +165,10 @@ same things in the same places:
   `test/critical/`; goldens EN/ES × dark/light × 100/200 % text.
 - Identity: `com.apsiralabs.<app>` with a `.dev` flavour; sideloaded APKs from
   **private** GitHub Releases, built only on Alejandro's computer. A release key is the
-  app's choice (RELAY has one, D-090; VIATICUM signs with the SDK debug key, D-059).
+  app's choice (RELAY has one, D-090; VIATICUM signs with the SDK debug key, D-059), with
+  one consequence: the central app trusts, and its build shelf offers, **only apps signed
+  with their own release key**. An app signed with a debug key works alone but is outside
+  the central app's link and shelf until it has one (APSIRA D-031, D-APK-027).
 - Phases are planned in the app's planning thread and opened by a `docs/sessions/
   P<n>-KICKOFF.md` brief; one thread runs one phase.
 
@@ -187,7 +205,8 @@ The procedure that brought Lyceum Folio in (planning thread of 2026-10-21):
 | ASTROLABE | folio | — | brief only (2026-10-26): clock, alarms, calculator, converter, scanner |
 | LYCEUM | folio | `amartb/lyceum` | v1.0.0 released privately (2026-10-24); the creative hub, offline, RELAY v2's look |
 | ATRIUM | folio | `amartb/atrium` | planned (2026-10-25): the viewer and organiser for every file through the phone; P1–P6 kickoffs written |
-| the central app | — | — | direction stated (§4); not planned |
+| APSIRA | the central app | `amartb/apsira` (`master-app/`) | planned (2026-10-30): planning documents written; v1 is five slices (APSIRA D-006) |
+| the console | the console | — | ruled (2026-10-30, M5): planned after APSIRA |
 
 ## 9. Repository map
 
@@ -203,3 +222,4 @@ The procedure that brought Lyceum Folio in (planning thread of 2026-10-21):
 | `tool/check.sh` | The full check: every package's and example's analyze and tests, the shared-tag rules (one `version:`, the git form at `apsira-v<version>`, overrides), `sha256sum -c` of fonts and brand; verdict line `check: PASS` |
 | `tool/release.sh` | The operator's tag act: checks, tags `apsira-v<version>`, pushes the tag, proves a consumer resolves it |
 | `.army.toml` | The army's configuration for the `apsira` lane |
+| `master-app/` | APSIRA, the central app: the Android app, its hub (`hub/`) and its planning documents (`docs/`) |

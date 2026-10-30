@@ -19,7 +19,7 @@ becomes Decided on review), Superseded.
 | D-APK-002 | `apsira_tools` v0.1 is RELAY's tooling with per-app configuration; VIATICUM's deltas become config knobs in v0.2 | Decided (amended by D-APK-006) |
 | D-APK-003 | Apps pin packages by git reference to a per-package tag; path overrides only for co-development, never committed | Decided (per-package tags superseded by D-APK-007) |
 | D-APK-004 | Classes of app: folio (phone), tome (PC), the central app; the charter's membership test | Decided |
-| D-APK-005 | Sync lives only in the future central app; individual apps stay network-free and master-app ready | Decided (direction; may change) |
+| D-APK-005 | Sync lives only in the future central app; individual apps stay network-free and master-app ready | Decided (direction; may change); amended by D-APK-024 |
 | D-APK-006 | What the v0.1 extraction settled: no package depends on another in v0.x; RELAY's fonts layout; `l10n_check --l10n-config`; no `args`; `disabled_rules` in v0.1; barrel imports | Proposed (P-1 superseded by D-APK-007) |
 | D-APK-007 | One version and one shared tag `apsira-v<version>` for every package; packages may depend on each other in the git form at that tag, with a committed `pubspec_overrides.yaml` | Decided |
 | D-APK-008 | Shared strings live in an `apsira_l10n` package (en/es, its own delegate); apps keep their own ARBs; built in Phase 2 | Decided |
@@ -38,6 +38,10 @@ becomes Decided on review), Superseded.
 | D-APK-021 | `apsira_notify`: RELAY's notifier with app-defined channels (no channel id moves), at most three actions, the lock-screen public version, the permission flow with a per-install asked flag, the package's own settings intents; RELAY's patched `flutter_local_notifications` moves to `packages/third_party/` | Decided |
 | D-APK-022 | The per-install alarm registry: VIATICUM's `alarms/registry.json` in `apsira_notify` with a per-install `SnoozeStore`, `AlarmSync` (re-arms every wanted alarm, cancels what the registry names and every plugin-pending id it never handed out), RELAY's window; `FlnAlarmScheduler` (LYCEUM) and `AlarmManagerScheduler` in `apsira_jobs` (Q1-c); every consumer excludes `alarms/` and the plugins' persisted lists from Android's backup | Decided (amended by F1, 2026-10-24) |
 | D-APK-023 | Sync and storage direction: home-network-only sync by a transport-agnostic change log carried by the central app, merged per field and additive (no edit discarded: same-field clashes keep both versions behind a badge and a version history); amb811 as the home hub with its own SSD, Proton Drive as the encrypted offsite copy; no NAS for now | Decided as direction (2026-10-25); may change |
+| D-APK-024 | The central app is APSIRA; two network-holding Apsira apps (APSIRA and the console), split by privilege | Decided |
+| D-APK-025 | Apsira's own area on amb811, independent of KEYSTONE | Decided |
+| D-APK-026 | `apsira_link` and the package changes the central app needs | Proposed |
+| D-APK-027 | The central app trusts only apps signed with their own release key | Decided |
 
 ---
 
@@ -209,7 +213,7 @@ becomes Decided on review), Superseded.
 
 ## D-APK-005 — Sync lives only in the central app
 
-- **Status:** Decided as direction (2026-10-21); early-stage, may change.
+- **Status:** Decided as direction (2026-10-21); early-stage, may change. Amended by D-APK-024 (2026-10-30).
 - **Decision:** No individual app carries a sync mechanism. A future central Apsira app
   owns synchronisation for the whole roster through one path. Until then every app is
   **master-app ready**: UUIDv7 ids, `created_at`/`updated_at`/`deleted_at` (RELAY D-023),
@@ -1084,3 +1088,54 @@ becomes Decided on review), Superseded.
   app's planning thread rules what runs on amb811. The central app reaches the other apps through Android
   IPC (bound service or content provider), so the signing-key question (one key or `knownSigner`) is
   ruled before it is built.
+
+## D-APK-024 — The central app is APSIRA; two network-holding apps
+
+- **Status:** Decided (2026-10-30; roadmap `master-app.md` M1–M7; APSIRA D-001, D-002, D-020).
+- **Decision:** the central app of D-APK-004 and D-APK-005 is **APSIRA** (`com.apsiralabs.apsira`, the Apsira
+  symbol unchanged as its icon), in this repository under `master-app/`. It is one of **two** Apsira apps that hold
+  network access: APSIRA (sync, backups, the gateway, the build shelf, the notification regime) and the **console**
+  (PC control and the army companion), split by privilege so that a compromise of one never reaches the other's
+  keys. Every other app keeps no network (charter §1.2).
+- **Amends D-APK-005:** sync still lives only in the central app; "one program with network access" becomes two,
+  each limited to the hosts its own log names.
+- **Consequences:** charter §1.2, §2, §4, §8, §9 as `master-app/docs/charter-amendments.md`.
+
+## D-APK-025 — Apsira's own area on amb811
+
+- **Status:** Decided (2026-10-30; D-APK-023 R9; APSIRA D-014).
+- **Decision:** amb811 hosts APSIRA's hub: dedicated system accounts (`apsira`, `apsira-store`), its own data root
+  and services, a LAN-only port. Nothing is shared with KEYSTONE, and KEYSTONE's rules do not govern it. An Apsira
+  app never depends on the hub to work.
+- **Consequences:** charter §1.1's "runs no service on the KEYSTONE host" is reworded (§1 above). The hub's steps are
+  `master-app/docs/10-hub-runbook.md`.
+
+## D-APK-026 — `apsira_link` and the package changes for the central app
+
+- **Status:** Proposed (APSIRA D-016, D-017); becomes Decided when the apsira lane builds it at a shared tag.
+- **Decision:**
+  - A new package **`apsira_link`**: the client of the on-device link to APSIRA (content providers on both sides,
+    called through `ContentResolver.call`), with the KAIROS trust pattern on every call (package name and
+    signing-certificate SHA-256 against a recorded fingerprint; RELAY `docs/kairos/05-link-contract.md` §2, ATRIUM
+    D-055). APSIRA missing is "unavailable", never an error. It also carries `F_APSIRA`, the gateway calls and the
+    app-side `restore_offer` handler (APSIRA D-034).
+  - **`apsira_storage`:** an APSIRA adapter of the unchanged `BackupTarget` port, so an app ships its backups home
+    with no new backup code; APSIRA seals them with the vault key before they leave the device (APSIRA D-028).
+  - **`apsira_notify`:** the `Notifier` asks APSIRA's notification policy before posting (quiet hours and focus,
+    priority, digests); without APSIRA it behaves as today.
+  - **`apsira_lock`:** a mandatory mode (the lock cannot be turned off) for APSIRA.
+  - Gateway delivery as `apsira_link` calls, by kind and the app's own parameter (APSIRA D-033).
+- **Rationale:** the client side of the central app is shared code by construction; nothing is copied into an app
+  (D-APK-009's adoption lanes carry it into each app).
+- **Consequences:** three shared tags, each before the APSIRA slice that first needs it (APSIRA D-017 addendum);
+  each app adopts them in its own repository. The contract is `master-app/docs/contracts/app-link.md`.
+
+## D-APK-027 — The central app trusts only apps with their own release key
+
+- **Status:** Decided (2026-10-30; APSIRA D-031).
+- **Decision:** the central app's fingerprint table, and so its link and its build shelf, hold only apps signed with
+  **their own release key**. A release central app never trusts a debug certificate: on the operator's PC every dev
+  build shares the SDK debug key, so trusting it would trust any of them. VIATICUM (D-059) is outside the link and the
+  shelf until its own thread gives it a release key.
+- **Consequences:** charter §6's identity bullet gains the sentence in §4a above. VIATICUM's thread is asked for a
+  release key (APSIRA D-036).
