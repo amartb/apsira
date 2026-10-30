@@ -17,6 +17,7 @@ Rulings are Alejandro's; everything marked *Claude's call* is a recommendation p
 | M4 | Reach | **Home network now, a self-run VPN later** (recorded, not built). Same as sync's R1 until then. |
 | M5 | One app or split by privilege | **Two apps**: the master app (sync, backups, gateway and the slices in §3) and a separate **console** (PC control and the army companion). A compromise of one never reaches the other's keys. |
 | M6 | Older recorded slices | **All kept**: build shelf, notification inbox, phone automation, cross-app overview (§3). |
+| M7 | Sequence | **STYLUS, then the master app, then the console** (`app-ideas.md`, "Sequence"). TRANSIT and PRISM on the phone follow the master app; their order and the phone editor's are decided when it lands. |
 
 **Consequence for the charter (to amend in planning):** §1.2 and D-APK-005 name one program with network access.
 M5 makes it two Apsira apps: the master app and the console. Folios and tomes are unchanged.
