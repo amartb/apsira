@@ -14,8 +14,14 @@ import '../src/link_failure.dart';
 /// whose bytes are not the item's stores nothing (`checksum_mismatch`); a
 /// fetch of an item it does not hold is `not_found`. [unavailable] fails
 /// every call. [calls] records each method's wire name, never its content.
+/// `archiveList(since:)` filters on the instant a put stored the item, read
+/// from [clock], exclusive (AO §3), never on the item's `kept_utc`.
 final class FakeApsiraArchiveLink implements ApsiraArchiveLink {
-  FakeApsiraArchiveLink();
+  /// [clock] gives the store time of a put; the default is the wall clock.
+  FakeApsiraArchiveLink({DateTime Function()? clock})
+    : _clock = clock ?? (() => DateTime.now().toUtc());
+
+  final DateTime Function() _clock;
 
   /// The hub is not reachable.
   bool away = false;
@@ -29,7 +35,11 @@ final class FakeApsiraArchiveLink implements ApsiraArchiveLink {
   /// The wire name of each call, in order.
   final calls = <String>[];
 
-  final _held = <String, ({LinkArchiveEntry entry, List<int> bytes})>{};
+  final _held =
+      <
+        String,
+        ({LinkArchiveEntry entry, List<int> bytes, DateTime storedAt})
+      >{};
 
   /// Marks [itemId] secured, as the next hub snapshot does; a [StateError]
   /// when the archive does not hold it.
@@ -42,6 +52,7 @@ final class FakeApsiraArchiveLink implements ApsiraArchiveLink {
         state: LinkArchiveState.secured,
       ),
       bytes: held.bytes,
+      storedAt: held.storedAt,
     );
   }
 
@@ -73,6 +84,7 @@ final class FakeApsiraArchiveLink implements ApsiraArchiveLink {
     _held[item.itemId] = (
       entry: LinkArchiveEntry(item: item, state: LinkArchiveState.stored),
       bytes: List.unmodifiable(read),
+      storedAt: _clock().toUtc(),
     );
     return const Ok(LinkArchiveState.stored);
   }
@@ -92,8 +104,7 @@ final class FakeApsiraArchiveLink implements ApsiraArchiveLink {
       Ok(
         List.unmodifiable([
           for (final held in _held.values)
-            if (since == null || !held.entry.item.keptUtc.isBefore(since))
-              held.entry,
+            if (since == null || held.storedAt.isAfter(since)) held.entry,
         ]),
       );
 

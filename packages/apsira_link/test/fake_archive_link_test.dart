@@ -131,19 +131,32 @@ void main() {
     );
   });
 
-  test('list since keeps the items kept at or after it', () async {
-    final archive = FakeApsiraArchiveLink();
+  test('list since is the time the hub stored an item, exclusive', () async {
+    // atrium-offload.md §3: `since` is the instant of the store, not kept_utc.
+    var now = DateTime.utc(2026, 11, 2, 9);
+    final archive = FakeApsiraArchiveLink(clock: () => now);
     final bytes = _bytes(4);
+    // _item's kept_utc is 2026-10-31, well before the store time.
     await archive.archivePut(_item(bytes), Stream.value(bytes));
-    expect(
-      (await archive.archiveList(since: DateTime.utc(2026, 11))).valueOrNull,
-      isEmpty,
-    );
-    expect(
-      (await archive.archiveList(since: DateTime.utc(2026, 10, 31)))
-          .valueOrNull,
-      hasLength(1),
-    );
+    final stored = now;
+
+    Future<int> count(DateTime since) async =>
+        (await archive.archiveList(since: since)).valueOrNull!.length;
+
+    // Stored exactly at `since`: excluded.
+    expect(await count(stored), 0);
+    // One microsecond before the store: included.
+    expect(await count(stored.subtract(const Duration(microseconds: 1))), 1);
+    // kept_utc is not the filter: since after kept_utc, before the store.
+    expect(await count(DateTime.utc(2026, 11)), 1);
+    // After the store: excluded.
+    expect(await count(stored.add(const Duration(microseconds: 1))), 0);
+
+    // A later put is listed after the earlier one's store time.
+    now = DateTime.utc(2026, 11, 2, 10);
+    await archive.archivePut(_item(bytes, id: 'doc-2'), Stream.value(bytes));
+    final later = (await archive.archiveList(since: stored)).valueOrNull!;
+    expect(later.map((e) => e.item.itemId), ['doc-2']);
   });
 
   test('unavailable fails every call', () async {

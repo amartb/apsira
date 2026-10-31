@@ -18,7 +18,9 @@ manifest entry). `crypto` is a direct dependency.
   removes only queued copies).
 - **`archive.dart`**: `ApsiraArchiveLink` (ATRIUM's offload, `atrium-offload.md` §3),
   `ChannelApsiraArchiveLink`, `LinkArchiveItem`, `LinkArchiveEntry`, `LinkArchiveState`,
-  `LinkArchiveFetch`; `FakeApsiraArchiveLink` in `testing/fake_archive_link.dart`.
+  `LinkArchiveFetch`; `FakeApsiraArchiveLink` in `testing/fake_archive_link.dart`. Its `archiveList(since:)` follows
+  `atrium-offload.md` §3: the items stored strictly after `since` (the put's store time from
+  an injectable `clock`, exclusive), not `kept_utc` inclusive.
 - **`requests.dart`** and **`AppLinkProvider`** (Kotlin, declared by the app; contract §2,
   §5.3, §5.4): `AppLinkRequests`, `ChannelAppLinkRequests`, `RestoreOffer`,
   `AppLinkNames`, the inbox `AppLinkInbox`; `backup_now` goes to `apsira_jobs`'
