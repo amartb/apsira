@@ -32,7 +32,7 @@ keeps every symbol it had.
 | `package:apsira_tools/deps_check.dart` | `runDepsCheck`, `checkDependencies`, `DependencyAllowlist`, `runtimeClosure` |
 | `package:apsira_tools/l10n_check.dart` | `runL10nCheck`, `checkArbDir`, `placeholdersIn`, `readConfig`, `scanHardCodedText`, `textCallLiterals`, `L10nProblem` |
 | `package:apsira_tools/layering_lint.dart` | `runLayeringLint`, `checkSource`, `checkLayering`, `layerOf`, `layeringRules`, `optionalRules`, `LayeringViolation`, `LayerKind` |
-| `package:apsira_tools/manifest_check.dart` | `runManifestCheck`, `checkManifest`, `usesPermissions`, `removedPermissions`, `parseDeclaredPermissions`, `forbiddenPermissions` |
+| `package:apsira_tools/manifest_check.dart` | `runManifestCheck`, `checkManifest`, `usesPermissions`, `requestedPermissions`, `removedPermissions`, `parseDeclaredPermissions`, `forbiddenPermissions` |
 | `package:apsira_tools/apsira_tools.dart` | all six |
 
 Migration: an app replaces each `package:apsira_tools/src/<check>.dart` import or
@@ -81,6 +81,17 @@ reproduces RELAY.
 | `privacy.approved_heading` | `### 11.1` | the section whose table rows (`` `NAME` ``) approve `android.permission.NAME` |
 
 `test/fixtures/viaticum/apsira_tools.yaml` is VIATICUM's file.
+
+The network-holding knob (v0.6, D-APK-024) is for the apps that hold the network:
+APSIRA (its hub client) and the console. No other app sets it.
+
+| Key (v0.6) | RELAY default | Read by |
+|---|---|---|
+| `privacy.holds_network` | `false` | `manifest_check`: `true` admits `INTERNET` only when the declared list holds it with a reason; declared without one is `declared without a reason`, undeclared stays `forbidden permission` naming the knob. `false` keeps every finding unchanged |
+
+A source-manifest check (APSIRA's) takes `requestedPermissions(manifest)`: the
+`uses-permission` elements without `tools:node="remove"`, so a name both requested
+and removed stays requested (`usesPermissions` counts the removing elements too).
 
 `apsira_app` and `apsira_jobs` have no layer of their own: the lint treats them as
 any third-party package. `domain/` and `core/` may import them only when

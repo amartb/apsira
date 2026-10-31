@@ -162,6 +162,7 @@ final class PrivacyConfig {
     this.manifest,
     this.approvedPermissions,
     this.approvedHeading = '### 11.1',
+    this.holdsNetwork = false,
   });
 
   final String allowlist;
@@ -181,6 +182,11 @@ final class PrivacyConfig {
 
   /// The heading, `#` marks included, of the approved-permissions table.
   final String approvedHeading;
+
+  /// Whether the app holds the network (v0.6, D-APK-024): `manifest_check`
+  /// then admits INTERNET when the declared list holds it with a reason.
+  /// Only APSIRA and the console set it; RELAY's default is `false`.
+  final bool holdsNetwork;
 }
 
 /// tool/apsira_tools.yaml.
@@ -389,6 +395,7 @@ final class ApsiraToolsConfig {
       'manifest',
       'approved_permissions',
       'approved_heading',
+      'holds_network',
     });
     return PrivacyConfig(
       allowlist: s?.string('allowlist') ?? d.allowlist,
@@ -398,6 +405,7 @@ final class ApsiraToolsConfig {
       manifest: s?.string('manifest'),
       approvedPermissions: s?.string('approved_permissions'),
       approvedHeading: s?.string('approved_heading') ?? d.approvedHeading,
+      holdsNetwork: s?.boolean('holds_network') ?? d.holdsNetwork,
     );
   }
 }

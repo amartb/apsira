@@ -33,12 +33,21 @@
 //
 // The scan is lexical: comments are removed, then every `uses-permission`
 // element (and its `-sdk-23` / `-sdk-m` forms) gives its `android:name`.
+//
+// The network-holding knob (v0.6, D-APK-024): with `privacy.holds_network:
+// true` (APSIRA and the console only), INTERNET is not forbidden when the
+// declared list holds it with a reason; declared without one it is
+// `declared without a reason`, undeclared it stays forbidden with a finding
+// naming the knob. The default, `false`, is every finding above unchanged.
 import 'dart:io';
 
 import 'config.dart';
 
-/// Permissions no Relay manifest may hold, whatever the declared list says.
-const forbiddenPermissions = {'android.permission.INTERNET'};
+/// Permissions no Relay manifest may hold, whatever the declared list says
+/// (but for INTERNET under the network-holding knob, see [checkManifest]).
+const forbiddenPermissions = {_internet};
+
+const _internet = 'android.permission.INTERNET';
 
 const _usage =
     'usage: dart run apsira_tools:manifest_check [--config <file>] '
@@ -63,6 +72,17 @@ Set<String> usesPermissions(String manifest) => {
 };
 
 final _removeNode = RegExp(r'''tools:node\s*=\s*(?:"remove"|'remove')''');
+
+/// The permission names [manifest] requests (v0.6): its `uses-permission`
+/// elements without `tools:node="remove"`. A source manifest's own requests:
+/// unlike [usesPermissions], a name both requested and removed stays here.
+Set<String> requestedPermissions(String manifest) => {
+  for (final element in _usesPermission.allMatches(
+    manifest.replaceAll(_comment, ''),
+  ))
+    if (!_removeNode.hasMatch(element[1]!))
+      if (_name.firstMatch(element[1]!) case final m?) (m[1] ?? m[2])!,
+};
 
 /// The permission names [manifest] removes from the merge
 /// (`tools:node="remove"`): what a source manifest takes out of what its
@@ -135,7 +155,12 @@ final class ManifestReport {
     this.declaredOutside = const [],
     this.noReason = const [],
     this.approvedSource = '',
+    this.holdsNetwork = false,
   });
+
+  /// Checked with the network-holding knob (v0.6): a forbidden INTERNET is
+  /// one the declared list does not hold.
+  final bool holdsNetwork;
 
   /// Requested, not forbidden, and neither approved nor the app's own.
   final List<String> outside;
@@ -164,7 +189,11 @@ final class ManifestReport {
   bool get isClean => findings.isEmpty;
 
   Iterable<String> get findings => [
-    for (final p in forbidden) 'forbidden permission: $p (D-041)',
+    for (final p in forbidden)
+      holdsNetwork && p == _internet
+          ? 'forbidden permission: $p (holds_network admits it only when '
+                'declared with its reason, D-APK-024)'
+          : 'forbidden permission: $p (D-041)',
     for (final p in outside) 'outside $approvedSource: $p',
     for (final p in undeclared)
       'undeclared permission: $p (add it to $declaredPath with its '
@@ -181,16 +210,21 @@ final class ManifestReport {
 
 /// Checks [manifest] against the [declared] permission names, read from
 /// [declaredPath], and, when [approved] is given (v0.2), against the
-/// permissions [approvedSource] approves.
+/// permissions [approvedSource] approves. With [holdsNetwork] (v0.6), a
+/// declared INTERNET is not forbidden, and needs a reason.
 ManifestReport checkManifest(
   String manifest,
   Map<String, String> declared, {
   String declaredPath = 'tool/privacy/declared_permissions.txt',
   Set<String>? approved,
   String approvedSource = '',
+  bool holdsNetwork = false,
 }) {
   final requested = usesPermissions(manifest);
   final forbidden = requested.intersection(forbiddenPermissions);
+  if (holdsNetwork && declared.containsKey(_internet)) {
+    forbidden.remove(_internet);
+  }
   final own = ownSignaturePermissions(manifest);
   bool allowed(String p) => approved!.contains(p) || own.contains(p);
   List<String> sorted(Iterable<String> names) => names.toList()..sort();
@@ -201,11 +235,12 @@ ManifestReport checkManifest(
     declaredOutside: approved == null
         ? const []
         : sorted(declared.keys.where((p) => !allowed(p))),
-    noReason: approved == null
-        ? const []
-        : sorted(
-            declared.entries.where((e) => e.value.isEmpty).map((e) => e.key),
-          ),
+    noReason: sorted(
+      declared.entries
+          .where((e) => e.value.isEmpty)
+          .map((e) => e.key)
+          .where((p) => approved != null || (holdsNetwork && p == _internet)),
+    ),
     approvedSource: approvedSource,
     forbidden: forbidden.toList()..sort(),
     undeclared:
@@ -216,6 +251,7 @@ ManifestReport checkManifest(
           ..sort(),
     missing: declared.keys.toSet().difference(requested).toList()..sort(),
     declaredPath: declaredPath,
+    holdsNetwork: holdsNetwork,
   );
 }
 
@@ -279,12 +315,14 @@ Future<int> runManifestCheck(List<String> args, {StringSink? out}) async {
     }
   }
   final String heading;
+  final bool holdsNetwork;
   try {
     final privacy = ApsiraToolsConfig.load(path: configPath).privacy;
     declaredPath ??= privacy.declaredPermissions;
     manifestPath ??= privacy.manifest;
     approvedPath ??= privacy.approvedPermissions;
     heading = privacy.approvedHeading;
+    holdsNetwork = privacy.holdsNetwork;
   } on FormatException catch (e) {
     sink.writeln('manifest: ${e.message}');
     return 2;
@@ -323,6 +361,7 @@ Future<int> runManifestCheck(List<String> args, {StringSink? out}) async {
     declaredPath: declaredPath,
     approved: approved,
     approvedSource: '$approvedPath $heading',
+    holdsNetwork: holdsNetwork,
   );
   for (final finding in report.findings) {
     sink.writeln('manifest: $finding');
@@ -333,7 +372,7 @@ Future<int> runManifestCheck(List<String> args, {StringSink? out}) async {
   }
   sink.writeln(
     'manifest: ${manifest.path} clean (${declared.length} declared, '
-    'no ${forbiddenPermissions.join(', ')})'
+    '${holdsNetwork ? 'INTERNET only as declared (holds_network)' : 'no ${forbiddenPermissions.join(', ')}'})'
     "${approved == null ? '' : "; each in $approvedPath $heading or the app's own"}",
   );
   return 0;
