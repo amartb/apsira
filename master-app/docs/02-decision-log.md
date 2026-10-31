@@ -298,8 +298,10 @@ decisions are cited as `D-APK-nnn` (`apsira/docs/decisions.md`); the roadmap rul
 - **Decision:** what every app needs to talk to APSIRA is shared code, never per-app code:
   - a new package **`apsira_link`**: the client of the on-device link (the fingerprint check, the calls, APSIRA
     missing handled as "unavailable");
-  - an **APSIRA adapter of `BackupTarget`** in `apsira_storage` (D-008);
-  - the **policy check in `apsira_notify`**'s `Notifier` (D-012);
+  - an **APSIRA adapter of `BackupTarget`** in `apsira_link`, over `apsira_storage`'s unchanged port (D-008;
+    D-APK-026 T2 addendum);
+  - the **policy check in `apsira_notify`**'s `Notifier` (D-012; on `apsira_link`'s side, `apsira_notify` gaining no
+    dependency on it);
   - gateway delivery as `apsira_link` calls (D-011);
   - a **mandatory mode** in `apsira_lock` for APSIRA (D-018).
   The packages carry the standard; nothing is duplicated in an app (the operator's rule: add-on on the public

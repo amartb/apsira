@@ -12,7 +12,7 @@ adapts (ruling R-2); it does not depend on this package. The trust check is the 
 
 ```yaml
 dependencies:
-  apsira_link: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_link } }
+  apsira_link: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_link } }
 ```
 
 ## What it holds

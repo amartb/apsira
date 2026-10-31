@@ -68,7 +68,7 @@ Areas: **A** app shell and tooling · **D** data and services · **H** hub (`hub
 | P1-09 | U | Shelf screen (per app: installed, available, RC marked, changelog, one tap); the status screen with the shelf tile and the hub banner (D-019); the mandatory lock wired | P1-05, P1-06, P1-08 | P1 wave 3 |
 | P1-10 | H | Install/upgrade script for the hub's units and files, run by the operator; tested against the fake systemd | P1-01 | P1 wave 2 |
 | **M2 — Backup home + archive** |||||
-| K2-01 | P | `apsira_storage`: the APSIRA adapter of `BackupTarget` (write, read, list through the link) | K1-T | P1 tail |
+| K2-01 | P | `apsira_link`'s APSIRA adapter of `apsira_storage`'s `BackupTarget` (write, read, list through the link) | K1-T | P1 tail |
 | K2-02 | P | `apsira_link`: backup-schedule calls (`backup_now` on the app's provider), `restore_offer` answered by the app's own restore (D-034); the archive calls | K1-T | P1 tail |
 | K2-T | P | Shared tag **T2** | K2-01, K2-02 | P2 wave 1 |
 | P2-01 | H | Store: `rest-server --append-only` under `apsira-store`, the repository's init, the prune timer with D-008's retention | P1-10 | P2 wave 1 |

@@ -15,7 +15,7 @@ Pin by the shared tag, the same ref for every apsira package (D-APK-007, `../REA
 
 ```yaml
 dependencies:
-  apsira_jobs: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_jobs } }
+  apsira_jobs: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_jobs } }
 ```
 
 `package:apsira_jobs/apsira_jobs.dart` is the public surface; `package:apsira_jobs/testing.dart`

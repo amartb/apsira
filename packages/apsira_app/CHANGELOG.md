@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0 — 2026-10-31
+
+No change in behaviour. Migration: move every apsira `ref:` to `apsira-v0.6.0`.
+
+- **`SystemClock`** is re-exported from `package:apsira_core/system_clock.dart` (D-APK-029):
+  the same class with its one static zone, through `apsira_app.dart`, `clock.dart` and
+  `src/system_clock.dart` alike. No migration.
+
 ## 0.5.0 — 2026-10-31
 
 No change in behaviour. Migration: move every apsira `ref:` to

@@ -3,6 +3,11 @@
 One section per release, naming any migration a consumer must make. From 0.2.0 every
 package shares one tag, `apsira-vX.Y.Z` (D-APK-007); 0.1.0 was `apsira_ui-v0.1.0`.
 
+## 0.6.0 — 2026-10-31
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.6.0`.
+
 ## 0.5.0 — 2026-10-31
 
 No change in behaviour. Migration: move every apsira `ref:` to

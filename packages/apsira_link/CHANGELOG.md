@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.6.0 — 2026-10-31
+
+Migration: move every apsira `ref:` to `apsira-v0.6.0`. Additive; `hello` and the trust
+core keep their behaviour. **New dependency `apsira_storage`** (ruling R-2): an app adopting
+`apsira_link` also takes `apsira_storage`'s plugins (D-APK-026's T2 addendum lists each
+manifest entry). `crypto` is a direct dependency.
+
+- **Transport** (T1 findings F-2, F-3): a bounded worker (2 threads) drops a call still
+  queued at the 5 s deadline instead of sending it late, and answers a running one
+  `no_answer`; every call acquires a `ContentProviderClient`, checks APSIRA's certificate,
+  calls through that client and re-checks. Byte streams as `{stream: <handle>}`
+  (`LinkStreams.kt`), with `LinkWritten`, `LinkStreamException` and
+  `LinkErrorCode.storeFull`.
+- **`backups.dart`**: `ApsiraBackupLink` (contract §5.2), `ChannelApsiraBackupLink`, the
+  reply types; `FakeApsiraBackupLink` in `testing/fake_backup_link.dart` (D-008: delete
+  removes only queued copies).
+- **`archive.dart`**: `ApsiraArchiveLink` (ATRIUM's offload, `atrium-offload.md` §3),
+  `ChannelApsiraArchiveLink`, `LinkArchiveItem`, `LinkArchiveEntry`, `LinkArchiveState`,
+  `LinkArchiveFetch`; `FakeApsiraArchiveLink` in `testing/fake_archive_link.dart`.
+- **`requests.dart`** and **`AppLinkProvider`** (Kotlin, declared by the app; contract §2,
+  §5.3, §5.4): `AppLinkRequests`, `ChannelAppLinkRequests`, `RestoreOffer`,
+  `AppLinkNames`, the inbox `AppLinkInbox`; `backup_now` goes to `apsira_jobs`'
+  `RunJobReceiver`. Fake in `testing/fake_app_link_requests.dart`.
+- **`backup_target.dart`**: `ApsiraBackupTarget`, APSIRA's adapter of `apsira_storage`'s
+  unchanged `BackupTarget` (contract §5.1); `FakeApsiraBackupTarget` in
+  `testing/fake_apsira_backup_target.dart`.
+- **`ApkSignerCheck`** and **`ApkVerdict`** (Kotlin): the public signer check of an APK file
+  (D-031's debug refusal, API 28 floor); no change for consumers.
+- The example hands a backup over and takes a restore offer against the fakes, and
+  declares `AppLinkProvider`.
+
 ## 0.5.0 — 2026-10-31
 
 First release (D-APK-026): the app side of APSIRA's app link (contract `app-link.md` 1.0)

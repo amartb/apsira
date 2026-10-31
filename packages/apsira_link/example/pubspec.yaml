@@ -15,11 +15,11 @@ environment:
   flutter: ">=3.47.0"
 
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_core } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_core } }
   apsira_link:
     path: ../
   # BackupFolder and BackupFile, the port ApsiraBackupTarget implements.
-  apsira_storage: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_storage } }
+  apsira_storage: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_storage } }
   # The restored backup's SHA-256, shown; already in apsira_link's closure.
   crypto: ^3.0.7
   flutter:

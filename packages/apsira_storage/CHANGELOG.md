@@ -3,6 +3,13 @@
 One section per release, naming any migration a consumer must make. Every package shares
 one tag, `apsira-vX.Y.Z` (D-APK-007).
 
+## 0.6.0 — 2026-10-31
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.6.0`. APSIRA's adapter of the unchanged `BackupTarget` port is
+`ApsiraBackupTarget` in `apsira_link` (D-APK-026's T2 addendum, ruling R-2): `apsira_link`
+depends on this package, and this package gains no dependency on it (README pointer only).
+
 ## 0.5.0 — 2026-10-31
 
 No change in behaviour. Migration: move every apsira `ref:` to

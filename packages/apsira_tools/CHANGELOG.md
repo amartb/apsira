@@ -1,5 +1,21 @@
 # Changelog — apsira_tools
 
+## 0.6.0 — 2026-10-31
+
+Migration: move every apsira `ref:` to `apsira-v0.6.0`. Additive; without the new key or
+flag every finding and every release run is unchanged (D-APK-028).
+
+- **`privacy.holds_network`** (default `false`): `manifest_check` admits `INTERNET` only
+  when the app declares it with a reason (D-APK-024; APSIRA and the console only); declared
+  without one is `declared without a reason`, undeclared stays forbidden, naming the knob.
+  **`requestedPermissions`** is exported (the `uses-permission` elements without
+  `tools:node="remove"`). `tool/apsira_tools.yaml` lists the key at its default.
+- **`local_release.sh --candidate v<x.y.z>-rc.<n>`** (n ≥ 1; D-035): release mode's steps
+  1–11 under the rc tag, version and file names, the notes from
+  `changelog.dart --unreleased <tag>` into `<id>-<x.y.z>-rc.<n>.apk.notes.md`; any non-zero
+  exit of that call writes no sidecar ("no notes") and the build goes on. Never published:
+  steps 12–13 are skipped. Release mode's steps are unchanged.
+
 ## 0.5.0 — 2026-10-31
 
 No change in behaviour. Migration: move every apsira `ref:` to

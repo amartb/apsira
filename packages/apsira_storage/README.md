@@ -12,7 +12,7 @@ Pin by the shared tag, the same ref for every apsira package (D-APK-007, `../REA
 
 ```yaml
 dependencies:
-  apsira_storage: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_storage } }
+  apsira_storage: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_storage } }
 ```
 
 `package:apsira_storage/apsira_storage.dart` is the public surface;
