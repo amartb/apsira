@@ -8,6 +8,7 @@ behaviour unchanged (D-APK-001), plus the pieces the apps had copied or diverged
 |---|---|
 | `package:apsira_core/apsira_core.dart` | `Failure`, `Result<T, F>` (`Ok`, `Err`): expected failures as values. `Log`, `LogRecord`, `LogValue`, `LogSink`, `LogLevel`, `redacted`, `maxStackFrames`: content-free logging; `LogValue.id` takes UUIDs only, `LogValue.blockId` RELAY's six-character block IDs, and `LogRecord.stackHash` (16 hex of the SHA-256 of the frames, `null` without frames) ends `renderFields()`, so RELAY's log lines with a stack gain a `stackHash=<16 hex>` suffix (D-APK-011). `Clock` and `utcForWallTime`: the only source of time. `IdGen` (`String uuid()`): the only source of identifiers. `MonotonicIdGen(Clock, {Random?})`: UUIDv7s strictly increasing within a process (RFC 9562 §6.2 method 1, RELAY's algorithm, no `uuid` package). `ftsMatch(String) → String?`: RELAY's FTS5 MATCH string, every word a quoted prefix, `null` for no word. `encodeSortedJson` / `writeSortedJson`: LYCEUM's canonical JSON (keys sorted, no whitespace, BLOBs as base64). |
 | `package:apsira_core/testing.dart` | `FakeClock` (time travel, fixed offsets or the Madrid daylight-saving timeline) and `FakeIdGen` (the n-th UUID is `00000000-0000-7000-8000-<n in 12 hex digits>`, from 1), for consumers' tests. |
+| `package:apsira_core/system_clock.dart` | `SystemClock` (`refreshZone`, `useZone`, `forgetZone`): the device's `Clock`, RELAY's (`lib/data/platform/system_clock.dart` @ `09b28810`), moved from `apsira_app` unchanged; pure Dart, so a plain Dart process or a background isolate can use it. Not exported by `apsira_core.dart`, so an app that still declares its own `SystemClock` meets no ambiguous import. |
 
 The `src/` libraries are private: import the barrel. An app's typedef shims name what they
 re-export, for example `export 'package:apsira_core/apsira_core.dart' show Clock;`.
@@ -33,8 +34,8 @@ final ids = MonotonicIdGen(clock); // Random.secure() unless a test seeds one
 final match = ftsMatch(query);     // bind as a variable: … WHERE t MATCH ?
 ```
 
-The platform implementations (a system clock, a file log sink) are not here; they
-belong to the app layer.
+The Flutter-side implementations (the zone channel that feeds `SystemClock.refreshZone`,
+a file log sink) are not here; they belong to the app layer (`apsira_app`).
 
 ## Provenance
 
