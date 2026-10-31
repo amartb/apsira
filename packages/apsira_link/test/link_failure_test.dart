@@ -30,7 +30,7 @@ void main() {
   });
 
   group('LinkErrorCode', () {
-    test('carries the six call errors of contract §8', () {
+    test('carries the six call errors of contract §8 and AO §4 store_full', () {
       expect(LinkErrorCode.values.map((c) => c.wire), [
         'busy',
         'away',
@@ -38,7 +38,17 @@ void main() {
         'not_found',
         'not_allowed',
         'checksum_mismatch',
+        'store_full',
       ]);
+    });
+
+    test('store_full is the hub area full (atrium-offload §4)', () {
+      expect(LinkErrorCode.storeFull.wire, 'store_full');
+      expect(LinkCallFailed(LinkErrorCode.storeFull).code, 'linkStoreFull');
+      expect(
+        linkFailureFromWire('store_full'),
+        LinkCallFailed(LinkErrorCode.storeFull),
+      );
     });
   });
 
@@ -145,6 +155,32 @@ void main() {
       expect(
         LinkUnavailable(LinkUnavailableReason.notAuthorised),
         isNot(LinkCallFailed(LinkErrorCode.busy)),
+      );
+    });
+  });
+
+  group('LinkStreamException', () {
+    test('carries its failure and compares by it', () {
+      final mismatch = LinkCallFailed(LinkErrorCode.checksumMismatch);
+      expect(LinkStreamException(mismatch).failure, mismatch);
+      expect(
+        LinkStreamException(mismatch),
+        LinkStreamException(LinkCallFailed(LinkErrorCode.checksumMismatch)),
+      );
+      expect(
+        LinkStreamException(mismatch),
+        isNot(
+          LinkStreamException(LinkUnavailable(LinkUnavailableReason.noAnswer)),
+        ),
+      );
+      expect(
+        LinkStreamException(mismatch).hashCode,
+        LinkStreamException(mismatch).hashCode,
+      );
+      expect(LinkStreamException(mismatch), isA<Exception>());
+      expect(
+        LinkStreamException(mismatch).toString(),
+        contains('checksum_mismatch'),
       );
     });
   });
