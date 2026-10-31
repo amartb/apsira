@@ -22,7 +22,9 @@ gate_setup = "bash -c 'for p in packages/*/ master-app/ master-app/hub/ master-a
 # `apsira-v<version>` (D-APK-007); `tool/release.sh` cuts it (operator act). The full check (tool/check.sh, verdict
 # line `check: PASS`, the shared-tag rules included) runs only when a validator sets APSIRA_FULL_CHECK=1 at a
 # checkpoint or at the unit's end: until every package carries the release's version its `versions equal` step is red.
-shared_files = ["docs/decisions.md", "packages/README.md", "**/README.md", "tool/check.sh", "**/CHANGELOG.md"]
+shared_files = ["docs/decisions.md", "packages/README.md", "**/README.md", "tool/check.sh", "**/CHANGELOG.md",
+                "master-app/CLAUDE.md", "master-app/docs/02-decision-log.md", "master-app/docs/05-architecture.md",
+                "master-app/docs/08-testing-and-ci.md", "master-app/docs/building.md", "master-app/docs/dependencies.md"]   # master-app: each task edits only its own section
 gates = [
   { name = "format", cmd = "bash -c 'dart format --output=none --set-exit-if-changed packages/apsira_*'", proves = "formatting of the apsira packages (packages/third_party/ is vendored and never formatted)", paths = ["packages/**/*.dart"], requires = ["file:packages/apsira_core/pubspec.yaml"] },
   { name = "core",   cmd = "bash -c 'cd packages/apsira_core && dart analyze --fatal-infos && dart test'", proves = "apsira_core analyzes and its tests pass", paths = ["packages/apsira_core/**"], requires = ["file:packages/apsira_core/pubspec.yaml"], mem_gb = 1 },
