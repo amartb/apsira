@@ -2,7 +2,8 @@
 
 ## 0.5.0 — 2026-10-31
 
-Additive; no default moves: every current consumer keeps today's lock (`LockPolicy.optional`).
+Migration: move every apsira `ref:` to `apsira-v0.5.0`. Additive; no default moves: every
+current consumer keeps today's lock (`LockPolicy.optional`).
 
 - **`LockPolicy`** and **`lockPolicyProvider`** (D-APK-026, D-018): `LockPolicy.mandatory`
   (APSIRA) cannot be turned off, offers 0, 1 and 5 minutes with 1 by default and never opens

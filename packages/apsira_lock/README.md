@@ -12,7 +12,7 @@ package's own Kotlin; there is no window-manager plugin.
 
 ```yaml
 dependencies:
-  apsira_lock: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_lock } }
+  apsira_lock: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_lock } }
 ```
 
 ## Consumer requirements

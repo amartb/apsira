@@ -111,8 +111,8 @@ holds a key that opens them (APSIRA D-028).
 ## 5. Shared code
 
 `packages/` holds the Dart packages every Flutter app depends on (decisions D-APK-001,
-D-APK-007, D-APK-011, for Tier 2 D-APK-012 to D-APK-017 and, for Tier 3, D-APK-018 to
-D-APK-022 in `docs/decisions.md`):
+D-APK-007, D-APK-011, for Tier 2 D-APK-012 to D-APK-017, for Tier 3 D-APK-018 to
+D-APK-022 and, for the central app, D-APK-026 in `docs/decisions.md`):
 
 | Package | Holds |
 |---|---|
@@ -125,14 +125,15 @@ D-APK-022 in `docs/decisions.md`):
 | `apsira_l10n` | The strings the shared widgets show, in English and Spanish, with their own delegate; `AppLanguage` and the language setting (D-APK-012). |
 | `apsira_onboarding` | The first-open intro, the language step, tours, the Help shell and the one-time tips (D-APK-017). |
 | `apsira_storage` | The backup target over the Storage Access Framework and the other storage ports with their Android adapters (D-APK-015). |
-| `apsira_lock` | The app lock: the authenticator, the lock controller, the lock cover, hiding from recent apps and its settings section (D-APK-016). |
+| `apsira_lock` | The app lock: the authenticator, the lock controller, the lock cover, hiding from recent apps and its settings section (D-APK-016); APSIRA's mandatory mode and the re-confirm before a sensitive act (D-APK-026). |
 | `apsira_db` | The database plumbing: the opener with its pre-migration snapshot and safe mode, the database server, the restore swap, the snapshot, migrations and directory fsync, each app's file layout a parameter (D-APK-018). |
 | `apsira_exchange` | LYCEUM's export envelope for every app's export (ruling C2), the released legacy shapes, the table dump and its loader (D-APK-019). |
 | `apsira_zip` | RELAY's streaming ZIP: the writer, CRC-32 and the one-pass reader that refuses anything outside its profile; for RELAY and LYCEUM, whose backups and bundles are zips (D-APK-020). |
 | `apsira_notify` | RELAY's notifications with app-defined channels, actions and a public version, the permission flow, and the per-install alarm registry (D-APK-021, D-APK-022). |
+| `apsira_link` | The app side of the on-device link to APSIRA: the `hello` call, the link's failures, and the trust check on every call (package and signing-certificate fingerprint); APSIRA missing is unavailable, never an error (D-APK-026). |
 
 Every package carries one version and the set one shared tag, `apsira-vX.Y.Z`
-(`apsira-v0.4.0`; D-APK-007): apps pin every package by git reference to that tag, never
+(`apsira-v0.5.0`; D-APK-007): apps pin every package by git reference to that tag, never
 by path in a committed `pubspec.yaml` (the path consumers are the packages' own `example/`
 apps, inside the packages themselves). Packages may depend on each other at the same tag. A package is done
 only when every app uses it (D-APK-009). What is app-specific stays in the app: its own
@@ -214,7 +215,7 @@ The procedure that brought Lyceum Folio in (planning thread of 2026-10-21):
 |---|---|
 | `apsira-brand/` | The brand standard and every asset |
 | `folios/`, `tomes/` | Briefs, one per app |
-| `packages/` | `apsira_core`, `apsira_ui`, `apsira_tools`, `apsira_test`, `apsira_app`, `apsira_jobs`, `apsira_l10n`, `apsira_onboarding`, `apsira_storage`, `apsira_lock` |
+| `packages/` | `apsira_core`, `apsira_ui`, `apsira_tools`, `apsira_test`, `apsira_app`, `apsira_jobs`, `apsira_l10n`, `apsira_onboarding`, `apsira_storage`, `apsira_lock`, `apsira_db`, `apsira_exchange`, `apsira_zip`, `apsira_notify`, `apsira_link` |
 | `docs/decisions.md` | The ecosystem's decision log (`D-APK-nnn`) |
 | `docs/agent-rules.md` | The non-negotiables every army brief for this repository carries |
 | `docs/sessions/` | Session briefs, analyses, reports and handoffs |

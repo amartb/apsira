@@ -7,7 +7,7 @@ description: >-
   the restore swap, the backup snapshot, directory fsync and the migration
   wrapper, over the app's own drift database and file names.
 publish_to: none
-version: 0.4.0
+version: 0.5.0
 
 environment:
   sdk: ^3.13.0
@@ -19,7 +19,7 @@ environment:
 # package ships no generated code (D-APK-001), and the tests' database is
 # hand-written.
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_core } }
   drift: ^2.35.2
   # Only src/server.dart needs Flutter (dart:ui's IsolateNameServer); the
   # swap, snapshot and fsync libraries run under plain Dart too.

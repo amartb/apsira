@@ -4,6 +4,7 @@ Status: **1.0 draft, planned.** Decisions: D-016 (trust), D-017 (the shared clie
 D-034 (restore), D-011, D-030 and D-033 (gateway), D-012 (notification policy), D-031 (who is trusted). Built in
 slices 2–4 (D-006); nothing here exists yet. For every interface value here this file wins over `04` and `05`
 (D-032).
+Clarified 2026-10-31 (§3.3): still version 1.0, with no change on the wire or for a peer.
 
 This is the contract between APSIRA and every Apsira app on the same phone or tablet: what crosses, how each side
 proves who the other is, and how it is versioned. Both sides build to it. The app side is shared code
@@ -64,6 +65,8 @@ As KAIROS §2.3: a dev build talks only to dev builds (`….dev` ↔ `….dev`),
 package-name check, the relaxed check lives in dev-flavour source only, and a release-manifest test proves it absent.
 A release build never answers a dev package and never accepts a debug certificate. APSIRA dev shows "dev link:
 unverified" on its status screen.
+
+In the shared package `apsira_link`, which has no flavours, the relaxed check ships in every build and is selected only when the app's own id ends in `.dev` and its merged manifest carries the `com.apsiralabs.apsira_link.DEV_LINK` meta-data, declared in the app's dev source set only; each app's release-manifest test proves the switch absent (D-APK-026).
 
 ## 4. Common shape
 

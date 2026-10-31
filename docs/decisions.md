@@ -30,7 +30,7 @@ becomes Decided on review), Superseded.
 | D-APK-013 | `apsira_ui` 0.3: `build()` carries the shared component set (menus, `highlightColor`, the snack theme, `accentText` text and outlined buttons, R-10), every app VIATICUM included; LYCEUM's other sub-themes are builders and `buildFull`; settings rows, menu items and `ThemeModeSetting` | Decided |
 | D-APK-014 | `apsira_ui` 0.3's component kit: layout, empty state, sheet and dialog, undo snack, pills and search bar, icon box, drawer chrome, `ThemePreviewScreen`; LYCEUM's kit unless named; every kit widget draws its own surface from the tokens | Decided |
 | D-APK-015 | `apsira_storage`: the backup, storage-space, document-picker, share and photo ports with their adapters and fakes, one storage channel `apsira_storage/storage`; `FolderAccess`, the crop and the media stores stay per app | Decided |
-| D-APK-016 | `apsira_lock`: RELAY's app lock as the shared one (off by default, 5 minutes, 0 = at once, never a lock-out, a backwards clock locks), its `lock` row unchanged, `local_auth` in the package, FLAG_SECURE through the package's own Kotlin; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | Decided |
+| D-APK-016 | `apsira_lock`: RELAY's app lock as the shared one (off by default, 5 minutes, 0 = at once, never a lock-out, a backwards clock locks), its `lock` row unchanged, `local_auth` in the package, FLAG_SECURE through the package's own Kotlin; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | Decided (amended by D-APK-026: APSIRA's mandatory mode stays on when the settings are unreadable and stays covered when the device cannot prompt) |
 | D-APK-017 | `apsira_onboarding`: the intro with the app's mark as a parameter, the language step, the step frame and flow, the tour player, the Help shell, the discovery pieces; seen flags per install through `InstallFlag`; routes stay in each app | Decided |
 | D-APK-018 | `apsira_db`: RELAY's opener, server, restore swap and snapshot as the shared ones, with `2520b90b` in the server, VIATICUM's integrity check and snapshot reader, LYCEUM's step hook and names as a `DatabaseLayout`; the backup snapshot goes through `.tmp` and a rename | Decided |
 | D-APK-019 | `apsira_exchange`: LYCEUM's envelope (C2) for every export, the apps' old shapes read as `LegacyShape`s, the `sqlite_master` dump and LYCEUM's loader with the apps' parts as parameters, one `validate_examples.py` | Decided |
@@ -40,7 +40,7 @@ becomes Decided on review), Superseded.
 | D-APK-023 | Sync and storage direction: home-network-only sync by a transport-agnostic change log carried by the central app, merged per field and additive (no edit discarded: same-field clashes keep both versions behind a badge and a version history); amb811 as the home hub with its own SSD, Proton Drive as the encrypted offsite copy; no NAS for now | Decided as direction (2026-10-25); may change |
 | D-APK-024 | The central app is APSIRA; two network-holding Apsira apps (APSIRA and the console), split by privilege | Decided |
 | D-APK-025 | Apsira's own area on amb811, independent of KEYSTONE | Decided |
-| D-APK-026 | `apsira_link` and the package changes the central app needs | Proposed |
+| D-APK-026 | `apsira_link` and the package changes the central app needs | Decided in part (2026-10-31: `apsira_link`'s hello and trust core, `apsira_lock`'s mandatory mode, at `apsira-v0.5.0`); the storage, notify and gateway parts Proposed |
 | D-APK-027 | The central app trusts only apps signed with their own release key | Decided |
 
 ---
@@ -1113,6 +1113,9 @@ becomes Decided on review), Superseded.
 ## D-APK-026 — `apsira_link` and the package changes for the central app
 
 - **Status:** Proposed (APSIRA D-016, D-017); becomes Decided when the apsira lane builds it at a shared tag.
+- **Status note (2026-10-31):** Decided in part: the T1 parts built at `apsira-v0.5.0` (addendum below); the
+  `apsira_storage` adapter, the `apsira_notify` policy check, the gateway calls and `restore_offer` stay Proposed
+  until T2/T3.
 - **Decision:**
   - A new package **`apsira_link`**: the client of the on-device link to APSIRA (content providers on both sides,
     called through `ContentResolver.call`), with the KAIROS trust pattern on every call (package name and
@@ -1129,6 +1132,38 @@ becomes Decided on review), Superseded.
   (D-APK-009's adoption lanes carry it into each app).
 - **Consequences:** three shared tags, each before the APSIRA slice that first needs it (APSIRA D-017 addendum);
   each app adopts them in its own repository. The contract is `master-app/docs/contracts/app-link.md`.
+- **Addendum (2026-10-31, packages-t1 at `apsira-v0.5.0`): the T1 parts as built.**
+  - **`apsira_lock`** (APSIRA D-018; session rulings R-1, R-4): `LockPolicy` with `optional` (today's lock, the
+    default for every current consumer) and `mandatory` (cannot be turned off; 0, 1 and 5 minutes, 1 by default),
+    chosen through `lockPolicyProvider`. `MandatoryLockSettingsStore` reads and writes the lock as on; a store
+    that throws or answers after 1 s (`mandatoryReadBound`) reads as the policy's defaults. Under the mandatory
+    policy a device that cannot prompt, or an `Authenticator` that throws, keeps `LockCover` up with Unlock as
+    the retry and the app's own `cannotPromptMessage` (`LockState.cannotPrompt`, `LockCover.notice`), logged as
+    `lock.notEngaged`: no new `apsira_l10n` key, no settings button, no Kotlin change, and no counter or back-off
+    (not a lock-out in D-APK-016's sense). `LockController.reconfirm` returns a `ReconfirmOutcome` (`confirmed`,
+    `declined`, `skipped`, `unavailable`): a device that cannot prompt is `skipped` (the act goes ahead) under
+    the optional policy and `ReconfirmOutcome.unavailable` (the act is refused) under the mandatory one.
+  - **`apsira_link`** (contract `app-link.md` 1.0): `ApsiraLink.hello` over `ChannelApsiraLink`, `LinkFailure`
+    (`LinkUnavailable` with its `LinkUnavailableReason`s beside the §8 `LinkErrorCode`s of `LinkCallFailed`),
+    `LinkHello`, `chooseLinkVersion`, `FakeApsiraLink`; no method throws and APSIRA missing is unavailable. The
+    Kotlin trust core: `FingerprintTable`, `CertificateTrust`, `DevNameTrust`, `LinkTrust`, `CallerCheck` (for
+    APSIRA's provider) and `LinkClient`. `F_APSIRA` is unset until APSIRA's `release-signing.md` §2 records it,
+    so a release app trusts no APSIRA yet; a signer with the SDK debug subject is refused even when its digest
+    is in the table (D-APK-027). The gateway calls and `restore_offer` are not built.
+  - **Development builds** (rulings R-2, R-5; contract §3.3 clarified the same day): a package has no flavours,
+    so the relaxed name check ships in every build and `LinkTrust` selects it only when the app's own id ends in
+    `.dev` **and** its merged manifest carries the `com.apsiralabs.apsira_link.DEV_LINK` meta-data
+    (`linkDevSwitch`), which the app declares in its dev source set only. `declaresLinkDevSwitch`
+    (`testing/link_release_manifest.dart`) is the helper each app's release-manifest test uses to prove the
+    switch absent; the example app's `release_manifest_test.dart` proves it on its own manifests (the switch in
+    its debug source set only).
+  - **From atrium** (`1ce8ec8`), each file with its header: `LinkTrust.kt` from
+    `android/app/src/main/kotlin/com/apsiralabs/atrium/files/CallerCheck.kt`, and the test `SigningShadow.kt`
+    from `StylusContractTest.kt`'s `SigningShadow`, moved to its own file unchanged. Changes from ATRIUM's
+    `CallerCheck.kt` in behaviour: a `FingerprintTable` of package → digest in place of one pairing's peer and
+    digest; the SDK debug subject refused and no `.dev` package ever certificate-trusted; nothing trusted below
+    API 28 (no `hasSigningCertificate`); the dev check selected at run time by the own id and `DEV_LINK` in
+    place of ATRIUM's `src/dev` and `src/prod` flavours.
 
 ## D-APK-027 — The central app trusts only apps with their own release key
 
