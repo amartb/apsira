@@ -1,0 +1,33 @@
+name: apsira_link
+description: >-
+  The app side of the APSIRA app link (master-app contract app-link.md): the
+  ApsiraLink port, hello with version negotiation, every unavailable reason and
+  error code as a typed LinkFailure, over one method channel to the package's
+  own Kotlin, which checks APSIRA's certificate before any call.
+publish_to: none
+version: 0.5.0
+
+environment:
+  sdk: ^3.13.0
+  # The lowest Flutter any live consumer pins (docs/agent-rules.md).
+  flutter: ">=3.47.0"
+
+# D-APK-026: apsira_core for Result and Failure, in the git form at the shared
+# tag, with the committed pubspec_overrides.yaml (D-APK-007). No other
+# dependency: the trust check is the package's own Kotlin.
+dependencies:
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_core } }
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.apsiralabs.apsira_link
+        pluginClass: ApsiraLinkPlugin

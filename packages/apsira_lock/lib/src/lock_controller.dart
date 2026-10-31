@@ -12,6 +12,12 @@
 // has not answered within [lockSettingsReadBound]), or the Authenticator is
 // unavailable or throws, the lock does not engage and a content-free log line
 // gives the code. The lock is casual-access protection, not encryption.
+//
+// The package's own (D-APK-026, D-018): under LockPolicy.mandatory the lock
+// never opens unlocked, so the not-engaged paths above become "locked with
+// the policy's defaults" and "locked, cannot prompt" (no counter, no
+// back-off); and `reconfirm` asks for a fresh confirmation before a
+// sensitive act.
 import 'dart:async';
 
 import 'package:apsira_core/apsira_core.dart';
@@ -19,6 +25,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'authenticator.dart';
+import 'lock_policy.dart';
 import 'lock_settings.dart';
 import 'recents_privacy.dart';
 import 'screen_privacy.dart';
@@ -101,6 +108,12 @@ final class LockState {
   /// Whether the cover offers the Unlock button.
   bool get canUnlock => phase == LockPhase.locked;
 
+  /// Whether a mandatory lock is up on a device that cannot prompt (no
+  /// screen lock, or an Authenticator that throws): the Unlock button is the
+  /// retry and the cover shows the policy's `cannotPromptMessage`.
+  bool get cannotPrompt =>
+      phase == LockPhase.locked && lastOutcome == AuthOutcome.unavailable;
+
   /// Whether the cover says the last attempt did not unlock.
   bool get showRetry =>
       phase == LockPhase.locked &&
@@ -137,9 +150,36 @@ final lockControllerProvider = NotifierProvider<LockController, LockState>(
 /// meanwhile, so nothing flashes.
 const lockSettingsReadBound = Duration(seconds: 2);
 
+/// What [LockController.reconfirm] answered.
+enum ReconfirmOutcome {
+  /// The user confirmed: the act goes ahead.
+  confirmed,
+
+  /// Failed, cancelled, or not asked (covered, or another re-confirm
+  /// pending): the act is refused.
+  declined,
+
+  /// Optional policy: the device cannot prompt, so the act goes ahead
+  /// (never a lock-out, D-APK-016).
+  skipped,
+
+  /// Mandatory policy: the device cannot prompt, so the act is refused
+  /// (D-018).
+  unavailable;
+
+  /// Whether the act goes ahead.
+  bool get proceeds => this == confirmed || this == skipped;
+}
+
 final class LockController extends Notifier<LockState> {
   LockSettings _settings = const LockSettings();
   bool _settingsRead = false;
+  bool _reconfirming = false;
+
+  /// A pause arrived while a [reconfirm] prompt was up and the app has not
+  /// come back since.
+  bool _pausedDuringReconfirm = false;
+  late final LockPolicy _policy = ref.read(lockPolicyProvider);
   DateTime? _backgroundedAt;
   Timer? _readBound;
   late final RecentsPrivacy _recents = RecentsPrivacy(
@@ -154,15 +194,11 @@ final class LockController extends Notifier<LockState> {
     try {
       first = ref.read(lockSettingsProvider);
     } catch (e) {
-      _settingsRead = true;
-      _skip(LockSkip.settingsUnreadable, e);
-      return const LockState(LockPhase.unlocked);
+      return _unreadableAtLaunch(e);
     }
     if (first case AsyncError(:final error)) {
       // No store bound, or a read that failed at once.
-      _settingsRead = true;
-      _skip(LockSkip.settingsUnreadable, error);
-      return const LockState(LockPhase.unlocked);
+      return _unreadableAtLaunch(error);
     }
     final subscription = ref.listen(
       lockSettingsProvider,
@@ -179,6 +215,22 @@ final class LockController extends Notifier<LockState> {
         if (ref.mounted) _onSettings(value);
       });
     }
+    return const LockState(LockPhase.starting);
+  }
+
+  /// The settings could not be read at launch: open without the lock, or,
+  /// under the mandatory policy, lock with its defaults.
+  LockState _unreadableAtLaunch(Object? error) {
+    _settingsRead = true;
+    if (!_policy.isMandatory) {
+      _skip(LockSkip.settingsUnreadable, error);
+      return const LockState(LockPhase.unlocked);
+    }
+    _log((log) => log.warning('lock.settingsReadFailed', error: error));
+    _settings = _policy.defaults;
+    scheduleMicrotask(() {
+      if (ref.mounted) _applyFirst(_policy.defaults);
+    });
     return const LockState(LockPhase.starting);
   }
 
@@ -200,10 +252,19 @@ final class LockController extends Notifier<LockState> {
   /// router and its exempt routes tell it which kind of route is shown.
   RecentsPrivacy get recents => _recents;
 
-  void _onSettings(LockSettings settings) {
+  void _onSettings(LockSettings value) {
     _readBound?.cancel();
     final first = !_settingsRead;
     _settingsRead = true;
+    _applySettings(value, first: first);
+  }
+
+  void _applyFirst(LockSettings value) => _applySettings(value, first: true);
+
+  void _applySettings(LockSettings value, {required bool first}) {
+    final settings = _policy.isMandatory
+        ? value.copyWith(enabled: true)
+        : value;
     _settings = settings;
     _recents.apply(settings.hideInRecents);
     if (!settings.enabled) {
@@ -221,10 +282,23 @@ final class LockController extends Notifier<LockState> {
 
   /// No row within [lockSettingsReadBound]: open without the lock. A row
   /// that arrives later only updates the settings, as a change would.
+  /// Under the mandatory policy it locks with the policy's defaults.
   void _onSettingsTimeout() {
     if (_settingsRead) return;
+    _unreadable(TimeoutException('lock settings', lockSettingsReadBound));
+  }
+
+  void _unreadable(Object? error) {
     _settingsRead = true;
-    _skip(LockSkip.settingsUnreadable);
+    if (_policy.isMandatory) {
+      _log((log) => log.warning('lock.settingsReadFailed', error: error));
+      _applySettings(_policy.defaults, first: true);
+      return;
+    }
+    _skip(
+      LockSkip.settingsUnreadable,
+      error is TimeoutException ? null : error,
+    );
     state = const LockState(LockPhase.unlocked);
   }
 
@@ -235,15 +309,18 @@ final class LockController extends Notifier<LockState> {
       _log((log) => log.warning('lock.settingsReadFailed', error: error));
       return;
     }
-    _settingsRead = true;
-    _skip(LockSkip.settingsUnreadable, error);
-    state = const LockState(LockPhase.unlocked);
+    _unreadable(error);
   }
 
   /// The app went to the background (`paused`). While the prompt is up the
   /// app is paused by the system credential screen itself, so that is not a
-  /// background.
+  /// background, nor is it while a [reconfirm] prompt is up, unless the app
+  /// is still away when that prompt resolves: then it is one from then on.
   void backgrounded() {
+    if (_reconfirming) {
+      _pausedDuringReconfirm = true;
+      return;
+    }
     if (!_settings.enabled) return;
     switch (state.phase) {
       case LockPhase.unlocked:
@@ -265,6 +342,7 @@ final class LockController extends Notifier<LockState> {
   /// lock locks when the timeout has passed (0 locks at once), and prompts
   /// again when it was locked.
   void foregrounded() {
+    _pausedDuringReconfirm = false;
     _recents.reapply();
     switch (state.phase) {
       case LockPhase.shielded:
@@ -299,7 +377,8 @@ final class LockController extends Notifier<LockState> {
   /// D-APK-016): covered with the prompt due, as after the background
   /// timeout. Only while the lock is on and the app is shown; already
   /// covered, or with the lock off, nothing changes. Never a lock-out: a
-  /// device that cannot prompt leaves the app open with the log's code.
+  /// device that cannot prompt leaves the app open with the log's code
+  /// (under the mandatory policy it stays covered, [LockState.cannotPrompt]).
   Future<void> lockNow() async {
     if (!_settings.enabled || state.phase != LockPhase.unlocked) return;
     await _engage();
@@ -307,7 +386,8 @@ final class LockController extends Notifier<LockState> {
 
   /// Shows the system prompt with [prompt]'s text ([AuthPrompt.of]).
   /// Passed unlocks; failed or cancelled stays locked with the retry; an
-  /// unavailable or throwing Authenticator unlocks.
+  /// unavailable or throwing Authenticator unlocks (under the mandatory
+  /// policy it stays locked, [LockState.cannotPrompt]).
   Future<void> unlock(AuthPrompt prompt) async {
     if (state.phase != LockPhase.locked) return;
     state = const LockState(LockPhase.authenticating);
@@ -316,8 +396,7 @@ final class LockController extends Notifier<LockState> {
       outcome = await ref.read(authenticatorProvider).authenticate(prompt);
     } catch (e) {
       if (!ref.mounted) return;
-      _skip(LockSkip.authenticatorError, e);
-      state = const LockState(LockPhase.unlocked);
+      _cannotPrompt(LockSkip.authenticatorError, e);
       return;
     }
     if (!ref.mounted || state.phase != LockPhase.authenticating) return;
@@ -328,21 +407,94 @@ final class LockController extends Notifier<LockState> {
       case AuthOutcome.cancelled:
         state = LockState(LockPhase.locked, lastOutcome: outcome);
       case AuthOutcome.unavailable:
-        _skip(LockSkip.unavailable);
-        state = const LockState(LockPhase.unlocked);
+        _cannotPrompt(LockSkip.unavailable);
     }
   }
 
+  /// Asks for a fresh confirmation before a sensitive act (D-018: install,
+  /// restore, pair, revoke), whatever the settings say, with [prompt]'s
+  /// text. Only while the app is shown: covered, or with another re-confirm
+  /// pending, it answers [ReconfirmOutcome.declined] without a prompt.
+  /// Passed confirms; failed or cancelled declines (no counter, no
+  /// back-off). A device that cannot prompt, or an Authenticator that
+  /// throws, answers [ReconfirmOutcome.skipped] (logged
+  /// `lock.reconfirmSkipped`), or under the mandatory policy
+  /// [ReconfirmOutcome.unavailable] (logged `lock.reconfirmUnavailable`),
+  /// each with its `code`. While the prompt is up, a background is not one;
+  /// a pause the app has not come back from when the prompt resolves is one
+  /// from then on (the outcome stands, and the app shields).
+  Future<ReconfirmOutcome> reconfirm(AuthPrompt prompt) async {
+    if (state.phase != LockPhase.unlocked || _reconfirming) {
+      return ReconfirmOutcome.declined;
+    }
+    _reconfirming = true;
+    _pausedDuringReconfirm = false;
+    AuthOutcome outcome;
+    try {
+      outcome = await ref.read(authenticatorProvider).authenticate(prompt);
+    } catch (e) {
+      _reconfirming = false;
+      if (!ref.mounted) return ReconfirmOutcome.declined;
+      final answer = _reconfirmCannot(LockSkip.authenticatorError, e);
+      _backgroundIfStillAway();
+      return answer;
+    }
+    _reconfirming = false;
+    if (!ref.mounted) return ReconfirmOutcome.declined;
+    final answer = state.covered
+        ? ReconfirmOutcome.declined
+        : switch (outcome) {
+            AuthOutcome.passed => ReconfirmOutcome.confirmed,
+            AuthOutcome.failed ||
+            AuthOutcome.cancelled => ReconfirmOutcome.declined,
+            AuthOutcome.unavailable => _reconfirmCannot(LockSkip.unavailable),
+          };
+    _backgroundIfStillAway();
+    return answer;
+  }
+
+  /// The app was paused during the re-confirm prompt and has not come back:
+  /// the background starts now, measured as any other.
+  void _backgroundIfStillAway() {
+    if (!_pausedDuringReconfirm) return;
+    _pausedDuringReconfirm = false;
+    backgrounded();
+  }
+
+  ReconfirmOutcome _reconfirmCannot(LockSkip code, [Object? error]) {
+    final mandatory = _policy.isMandatory;
+    _log(
+      (log) => log.warning(
+        mandatory ? 'lock.reconfirmUnavailable' : 'lock.reconfirmSkipped',
+        error: error,
+        fields: {'code': LogValue.code(code.name)},
+      ),
+    );
+    return mandatory ? ReconfirmOutcome.unavailable : ReconfirmOutcome.skipped;
+  }
+
+  /// The device cannot prompt: open without the lock, or, under the
+  /// mandatory policy, stay locked with the Unlock button as the retry and
+  /// no prompt due.
+  void _cannotPrompt(LockSkip code, [Object? error]) {
+    _skip(code, error);
+    state = _policy.isMandatory
+        ? const LockState(
+            LockPhase.locked,
+            lastOutcome: AuthOutcome.unavailable,
+          )
+        : const LockState(LockPhase.unlocked);
+  }
+
   /// Locks with a prompt due, when the device can prompt; otherwise leaves
-  /// the app open.
+  /// the app open (under the mandatory policy, locked without a prompt due).
   Future<void> _engage() async {
     bool available;
     try {
       available = await ref.read(authenticatorProvider).isAvailable();
     } catch (e) {
       if (!ref.mounted) return;
-      _skip(LockSkip.authenticatorError, e);
-      state = const LockState(LockPhase.unlocked);
+      _cannotPrompt(LockSkip.authenticatorError, e);
       return;
     }
     if (!ref.mounted) return;
@@ -351,8 +503,7 @@ final class LockController extends Notifier<LockState> {
       return;
     }
     if (!available) {
-      _skip(LockSkip.unavailable);
-      state = const LockState(LockPhase.unlocked);
+      _cannotPrompt(LockSkip.unavailable);
       return;
     }
     state = const LockState(LockPhase.locked, promptDue: true);

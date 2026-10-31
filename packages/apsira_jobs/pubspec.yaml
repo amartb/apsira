@@ -3,7 +3,7 @@
 name: apsira_jobs
 description: "Background work for the Apsira apps that run it: the BackgroundJobs port, JobConstraints, the WorkManager adapter and its fake, the zone-change resync receiver, and the AlarmManagerScheduler of apsira_notify's alarm registry."
 publish_to: none
-version: 0.4.0
+version: 0.5.0
 
 environment:
   sdk: ^3.13.0
@@ -17,7 +17,7 @@ environment:
 # here (D-APK-007).
 dependencies:
   android_alarm_manager_plus: ^5.1.2
-  apsira_notify: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_notify } }
+  apsira_notify: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_notify } }
   flutter:
     sdk: flutter
   workmanager: ^0.10.10

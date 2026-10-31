@@ -181,4 +181,99 @@ void main() {
       expect(off.inactiveThumbColor, t.ring);
     });
   }
+
+  group('mandatory policy', () {
+    Future<void> pumpMandatory(WidgetTester tester, {bool bound = true}) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            lockPolicyProvider.overrideWithValue(LockPolicy.mandatory),
+            if (bound) lockSettingsStoreProvider.overrideWithValue(store),
+          ],
+          child: MaterialApp(
+            theme: ApsiraThemeData.dark,
+            localizationsDelegates: const [ApsiraL10n.delegate],
+            supportedLocales: ApsiraL10n.supportedLocales,
+            home: const Scaffold(
+              body: SingleChildScrollView(child: LockSettingsSection()),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('no switch for the lock; the App lock label and Lock after '
+        'shown, 1 minute with no store', (tester) async {
+      await pumpMandatory(tester, bound: false);
+      expect(find.byKey(const ValueKey('lock/settings/enabled')), findsNothing);
+      expect(find.text(_en.lockSettingsTitle), findsOneWidget);
+      expect(find.text(_en.lockSettingsSubline), findsOneWidget);
+      expect(find.text(_en.lockAfter), findsOneWidget);
+      expect(find.text(_en.lockAfterMinutes(1)), findsOneWidget);
+      expect(find.byType(Switch), findsOneWidget, reason: 'hide in recents');
+    });
+
+    testWidgets('a stored "off" still shows Lock after', (tester) async {
+      store.row = {'enabled': false, 'timeoutMinutes': 5};
+      await pumpMandatory(tester);
+      expect(find.text(_en.lockAfterMinutes(5)), findsOneWidget);
+    });
+
+    testWidgets('Lock after offers exactly Immediately, 1 and 5 minutes and '
+        'stores the pick', (tester) async {
+      store.row = {'enabled': true, 'timeoutMinutes': 1};
+      await pumpMandatory(tester);
+      await tester.tap(find.byKey(const ValueKey('lock/settings/timeout')));
+      await tester.pumpAndSettle();
+      final menu = find.byWidgetPredicate((w) => w is PopupMenuItem<int>);
+      expect(
+        [
+          for (final e in menu.evaluate())
+            (e.widget as PopupMenuItem<int>).value,
+        ],
+        [0, 1, 5],
+      );
+      expect(find.text(_en.lockAfterMinutes(15)), findsNothing);
+      expect(find.text(_en.lockAfterMinutes(30)), findsNothing);
+      await tester.tap(find.text(_en.lockAfterMinutes(5)).last);
+      await tester.pumpAndSettle();
+      expect(store.row, {
+        'enabled': true,
+        'timeoutMinutes': 5,
+        'hideInRecents': false,
+      });
+    });
+
+    testWidgets('a stored 15 is offered too', (tester) async {
+      store.row = {'enabled': true, 'timeoutMinutes': 15};
+      await pumpMandatory(tester);
+      expect(find.text(_en.lockAfterMinutes(15)), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('lock/settings/timeout')));
+      await tester.pumpAndSettle();
+      final menu = find.byWidgetPredicate((w) => w is PopupMenuItem<int>);
+      expect(
+        [
+          for (final e in menu.evaluate())
+            (e.widget as PopupMenuItem<int>).value,
+        ],
+        [0, 1, 5, 15],
+      );
+    });
+
+    testWidgets('hide in recents is stored with the lock on', (tester) async {
+      store.row = {'enabled': false, 'timeoutMinutes': 5, 'pin': 1};
+      await pumpMandatory(tester);
+      await tester.tap(
+        find.byKey(const ValueKey('lock/settings/hideInRecents')),
+      );
+      await tester.pumpAndSettle();
+      expect(store.row, {
+        'enabled': true,
+        'timeoutMinutes': 5,
+        'hideInRecents': true,
+        'pin': 1,
+      });
+    });
+  });
 }
