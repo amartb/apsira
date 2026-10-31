@@ -15,5 +15,11 @@ as one Flutter plugin (`pluginClass: ApsiraLinkPlugin`). Dependency `apsira_core
 - **`linkDevSwitch`**: the `DEV_LINK` meta-data an app declares in its dev source set only.
 - **`FakeApsiraLink`** (`testing.dart`). `F_APSIRA` is unset: a release app trusts no APSIRA
   yet.
+- **`declaresLinkDevSwitch`** (`testing/link_release_manifest.dart`): each app's
+  release-manifest test proves the switch absent with it.
+- Kotlin (`com.apsiralabs.apsira_link`): **`FingerprintTable`**, **`CertificateTrust`** (refuses
+  `.dev`, below API 28 and the SDK debug subject), **`DevNameTrust`**, **`LinkTrust`** (the dev
+  selection: own id `.dev` and `DEV_LINK`), **`CallerCheck`** (ATRIUM's, re-homed, for APSIRA's
+  provider), **`LinkClient`** and **`ApsiraLinkPlugin`**; Robolectric tests through `example/android`.
 
 Migration: none; an app adopts it in its own adoption lane (D-APK-009).

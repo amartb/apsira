@@ -78,9 +78,34 @@ nothing. The app declares the switch in its **dev source set only**:
 </application>
 ```
 
-Each app's release-manifest test proves the switch absent from its release manifests;
-`linkDevSwitch` is the name it checks for. A dev link reaches the app as
+Each app's release-manifest test proves the switch absent from its release manifests with
+`declaresLinkDevSwitch` (`package:apsira_link/testing/link_release_manifest.dart`): true
+only for an uncommented `<meta-data>` naming `linkDevSwitch` with `android:value="true"`.
+
+```dart
+expect(declaresLinkDevSwitch(File('android/app/src/main/AndroidManifest.xml').readAsStringSync()), isFalse);
+```
+
+`example/test/release_manifest_test.dart` is the model: the switch in `src/debug`, absent from
+`main`, `profile` and the plugin's manifest. A dev link reaches the app as
 `LinkHello.devUnverified`; show "dev link: unverified" where the link's state is shown.
+
+## The Kotlin side
+
+Package `com.apsiralabs.apsira_link`. `LinkTrust.kt` is ATRIUM's `CallerCheck.kt` re-homed
+(its header names the source and the changes).
+
+| Symbol | What it is |
+|---|---|
+| `LinkConfig` | `F_APSIRA` (`""`), `APSIRA`, `APSIRA_DEV`, `AUTHORITY_SUFFIX` (`.link`), `CONTRACT`, `DEV_SWITCH` |
+| `FingerprintTable` | package → 64 hex digits, colons allowed; `digest(pkg)` is null when unrecorded or malformed; `packages` |
+| `Trust` | `trusts(pm, pkg)`, `devUnverified` |
+| `CertificateTrust(table, sdkInt)` | `hasSigningCertificate` with the recorded digest; refuses any `.dev` package, below API 28, and a signer with the SDK debug subject (`CN=Android Debug`) even when its digest is recorded (D-031); a failure is "not trusted" |
+| `DevNameTrust(packages)` | a dev build's trust: the listed `.dev` packages by name; `devUnverified` |
+| `LinkTrust` | `devSwitchOn(context)` (the own `ApplicationInfo`'s `DEV_SWITCH`), `isDevBuild(own, switch)` (own id `.dev` **and** the switch), `peer`, `forPeer` (an app trusting APSIRA), `forCallers` (APSIRA trusting its table), `apsiraTable` |
+| `CallerCheck.allows(pm, caller, trust)` | the provider's check on every call: a non-null caller its `Trust` trusts |
+| `LinkClient(context, …)` | `call(method, version, extras)`: resolve `peer + .link` (none: `not_installed`), its package exactly the peer and trusted (else `not_trusted`, nothing called), then `ContentResolver.call` with `contract` and `version`; `{error}`, `{fields, devUnverified}`, a throw or null bundle `no_answer` |
+| `ApsiraLinkPlugin` | the `apsira_link/link` channel (`CHANNEL`, `METHOD` = `call`); `LinkClient` on one background thread, the reply on the main thread |
 
 ## Checks
 
@@ -88,4 +113,21 @@ From this directory: `flutter analyze` and `flutter test` (the `link` gate): the
 codes and their wire names, hello and the version choice, and the adapter against a
 mocked channel (every reply shape, a platform error, a missing plugin, a 6 s silence).
 From `example/`: `flutter analyze` and `flutter test`, the consumer proof (APSIRA missing,
-a hello, a call error, a dev link) against `FakeApsiraLink`.
+a hello, a call error, a dev link) against `FakeApsiraLink`, and `release_manifest_test.dart`.
+`test/example_android_test.dart` holds the Kotlin names (channel, method, `F_APSIRA`,
+`DEV_SWITCH`) and the plugin manifest (`<queries>` for both APSIRA builds, no switch) to the
+Dart ones.
+
+The Kotlin half, from this directory, under a build lease (the lease runs its argument as one
+shell line; the debug build writes `example/android/gradlew`, which the tests need):
+
+```sh
+army lease run --kind build -- 'cd example && flutter build apk --debug'
+army lease run --kind build -- 'cd example/android && ./gradlew --offline :apsira_link:testDebugUnitTest'
+rm -rf example/build
+```
+
+`LinkTrustTest` and `LinkClientTest` run on Robolectric (`sdk=34`, cached) with ATRIUM's
+`SigningShadow` and two public test certificates (`release-cert.der` `CN=Apsira Test`,
+`debug-cert.der` the SDK debug subject; no keystore is committed). They are not a merge gate
+(ruling A-4); a Kotlin change is unproven on a device until a release session.
