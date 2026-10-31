@@ -170,6 +170,10 @@ The five calls of `atrium-offload.md` §3 (`package:apsira_link/archive.dart`), 
 
 `ApkSignerCheck.kt` checks an APK file's signer by the link's own rule (D-031) before it is installed or offered: [doc/apk_files.md](doc/apk_files.md).
 
+## Requests from APSIRA
+
+[`doc/provider.md`](doc/provider.md): `AppLinkProvider`, which each app declares (`backup_now` to `apsira_jobs`, `restore_offer` to an inbox), and `requests.dart`.
+
 ## The Kotlin side
 
 Package `com.apsiralabs.apsira_link`. `LinkTrust.kt` is ATRIUM's `CallerCheck.kt` re-homed
@@ -186,6 +190,7 @@ Package `com.apsiralabs.apsira_link`. `LinkTrust.kt` is ATRIUM's `CallerCheck.kt
 | `CallerCheck.allows(pm, caller, trust)` | the provider's check on every call: a non-null caller its `Trust` trusts |
 | `LinkClient(context, …, streams)` | `call(method, version, extras)` (T1's F-3): **acquire** an unstable `ContentProviderClient` for `peer + .link` (none: `not_installed`), **then** check its package is exactly the peer and trusted (else `not_trusted`, nothing called), **then** call through that client with `contract` and `version` and close it, **then** check again (a change discards the reply as `not_trusted`). `{error}`, `{fields, devUnverified}`; a throw or null bundle `no_answer`. A descriptor in a discarded reply is closed |
 | `LinkStreams` | the open `ParcelFileDescriptor` ends by handle: `reply(bundle)` (an `fd` → `{stream: <handle>}`, Bundles → maps), `write`, `read` (`MAX_READ` 64 KiB), `close`, `cancel`, `release` (a discarded converted reply), `discard` (a raw one), `closeAll` |
+| `AppLinkProvider`, `AppLinkInbox` | the app's provider for APSIRA's calls and its restore-offer inbox ([`doc/provider.md`](doc/provider.md)) |
 | `ApsiraLinkPlugin` | the `apsira_link/link` channel (`CHANNEL`; `METHOD` = `call`, `WRITE`, `READ`, `CLOSE`, `CANCEL`); `CONTROL_THREADS`, `CONTROL_DEADLINE_MS`; the reply on the main thread |
 
 ## Checks

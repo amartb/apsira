@@ -27,6 +27,11 @@ typealias LinkCall = (String, String, Map<String, Any?>) -> Map<String, Any?>
 // CONTROL_DEADLINE_MS (T1's F-2, K2-02a); stream I/O on its own threads with
 // no deadline (§8). Every reply goes back on the main thread, once. Nothing
 // is logged.
+//
+// The requests channel (K2-02d, contract §5.4) is the other direction:
+// AppLinkInbox tells every attached engine `offer` (no arguments: the offer
+// stays in the inbox) and Dart's ChannelAppLinkRequests answers with
+// `takePendingOffer`, which reads and clears the inbox off the main thread.
 class ApsiraLinkPlugin internal constructor(
     private val deadlineMs: Long,
     private val newCall: (Context, LinkStreams) -> LinkCall,
@@ -49,6 +54,15 @@ class ApsiraLinkPlugin internal constructor(
 
         /** Dart's linkControlDeadline: a control call is answered by then, or no_answer. */
         const val CONTROL_DEADLINE_MS = 5_000L
+
+        /** ChannelAppLinkRequests.channelName: requests from APSIRA (K2-02d). */
+        const val REQUESTS_CHANNEL = "apsira_link/requests"
+
+        /** `{}` → the offer's map, or null; the inbox is cleared. */
+        const val TAKE = "takePendingOffer"
+
+        /** Kotlin → Dart: an offer is waiting. */
+        const val OFFER = "offer"
     }
 
     constructor() : this(CONTROL_DEADLINE_MS, { context, streams -> LinkClient(context, streams = streams)::call })
@@ -56,6 +70,8 @@ class ApsiraLinkPlugin internal constructor(
     private val main = Handler(Looper.getMainLooper())
     private var channel: MethodChannel? = null
     private var worker: LinkWorker? = null
+    private var requests: MethodChannel? = null
+    private var offered: (() -> Unit)? = null
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) =
         attach(binding.applicationContext, binding.binaryMessenger)
@@ -66,10 +82,24 @@ class ApsiraLinkPlugin internal constructor(
         val streams = LinkStreams()
         worker = LinkWorker(newCall(context, streams), streams, deadlineMs)
         channel = MethodChannel(messenger, CHANNEL).also { it.setMethodCallHandler(this) }
+        val requests = MethodChannel(messenger, REQUESTS_CHANNEL)
+        requests.setMethodCallHandler { call, result ->
+            if (call.method != TAKE) return@setMethodCallHandler result.notImplemented()
+            val worker = worker ?: return@setMethodCallHandler result.success(null)
+            worker.background { AppLinkInbox.take(context).also { main.post { result.success(it) } } }
+        }
+        this.requests = requests
+        val offered: () -> Unit = { main.post { this.requests?.invokeMethod(OFFER, null) } }
+        AppLinkInbox.addListener(offered)
+        this.offered = offered
     }
 
     /** Stops the threads and closes every stream handle. */
     internal fun detach() {
+        offered?.let { AppLinkInbox.removeListener(it) }
+        offered = null
+        requests?.setMethodCallHandler(null)
+        requests = null
         channel?.setMethodCallHandler(null)
         channel = null
         worker?.shutdown()
@@ -179,6 +209,15 @@ internal class LinkWorker(
             }
         } catch (e: RejectedExecutionException) {
             reply(noAnswer)
+        }
+    }
+
+    /** Runs [task] on a stream thread (the inbox's file I/O); dropped once detached. */
+    fun background(task: () -> Unit) {
+        try {
+            io.execute(task)
+        } catch (e: RejectedExecutionException) {
+            // Detached: Dart takes the offer on the next attach.
         }
     }
 
