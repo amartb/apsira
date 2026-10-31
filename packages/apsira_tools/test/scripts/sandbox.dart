@@ -2,7 +2,9 @@
 // (lyceum test/tool/build_scripts_test.dart @ 9f4ff27): an app root with
 // stub `flutter`, `dart`, `gh`, `gradlew` and `apksigner`, each logging its
 // call to calls.log, and a clean environment, so no session marker leaks in
-// from the gate or lane that runs the tests. Tests run from the package root.
+// from the gate or lane that runs the tests. The stub `changelog.dart
+// --unreleased` exits STUB_NOTES_EXIT when it is set. Tests run from the
+// package root.
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -43,6 +45,9 @@ log "dart \$*"
 case "\$*" in
   *tool/release/version.dart*) echo "Resolving dependencies..."; echo $stubVersionCode ;;
   *changelog.dart\\ --tag*) echo "# notes from the issues" ;;
+  *changelog.dart\\ --unreleased*)
+    [ -z "\${STUB_NOTES_EXIT:-}" ] || exit "\$STUB_NOTES_EXIT"
+    echo "Resolving dependencies..."; printf '# %s %s\\n\\n- unreleased\\n' "\${APSIRA_APP:-App}" "\${4#v}" ;;
   *changelog.dart*) echo "Resolving dependencies..."; printf '# %s %s\\n\\n- notes\\n' "\${APSIRA_APP:-App}" "\${3#v}" ;;
 esac
 ''');

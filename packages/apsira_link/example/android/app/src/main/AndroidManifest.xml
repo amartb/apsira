@@ -1,6 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- apsira_link declares its own <queries> for APSIRA (both builds) in the
-         plugin manifest; the app adds nothing. No DEV_LINK here: the switch
+         plugin manifest. The app adds only AppLinkProvider below, as every
+         adopting app does (doc/provider.md). No DEV_LINK here: the switch
          lives in the dev source set only (src/debug in this example). -->
     <application
         android:label="apsira_link_example"
@@ -28,6 +29,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- APSIRA's calls on the app (contract app-link.md §2, §5.4): trust is
+             the check on every call, so no permission attribute. No BACKUP_JOB
+             meta-data: the example backs up on its own schedule (§5.3). -->
+        <provider
+            android:name="com.apsiralabs.apsira_link.AppLinkProvider"
+            android:authorities="${applicationId}.apsira"
+            android:exported="true"
+            android:grantUriPermissions="false" />
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

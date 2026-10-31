@@ -1,6 +1,7 @@
 # The ATRIUM offload contract
 
-Status: **1.0 draft, planned.** Decisions: D-010 (the documents archive) and its addendum, D-028 (sealed on the
+Status: **1.0 draft, planned** (clarified 2026-10-31, §3: `archive_put`'s `stored` and `archive_list`'s `since`; still
+1.0). Decisions: D-010 (the documents archive) and its addendum, D-028 (sealed on the
 device), D-036 (an ask of ATRIUM's thread). APSIRA's side is built in slice 2
 (D-006). ATRIUM's side is **ATRIUM's thread's to rule**: this file names what APSIRA offers and records ATRIUM's
 part as proposals (§6). It is one of the "central-app hooks" ATRIUM D-040 left to be named.
@@ -38,11 +39,14 @@ on phone ──put──▶ stored ──(next hub snapshot)──▶ secured �
 |---|---|---|
 | `archive_put` | `item_id` (ATRIUM's id), `display_name`, `mime_type`, `size`, `sha256`, `kept_utc` | `fd` (write end); after the stream, `state` = `stored` |
 | `archive_state` | `item_id` | `state`: `stored` · `secured` · `absent` |
-| `archive_list` | `since` (UTC, optional) | `items`: `item_id`, metadata, `state` |
+| `archive_list` | `since` (optional: an ISO 8601 UTC instant ending in `Z`) | `items`: `item_id`, metadata, `state`; with `since`, only the items stored after it (exclusive) |
 | `archive_fetch` | `item_id` | `fd` (read end), `sha256`, `size` |
 | `archive_release` | `item_id` | — (ATRIUM purged the document; the hub removes it from the live area, snapshots keep it per retention) |
 
 `sha256` and `size` here are of the plain document, as ATRIUM states and receives them; APSIRA seals and opens.
+`archive_put`'s `stored` is read back: once the write end is closed, ATRIUM calls `archive_state` for the item, and
+`stored` is the put's result; ATRIUM removes nothing before `secured` (§2), so a slow `stored` loses nothing.
+`since` is the instant the hub stored an item, not its `kept_utc` (clarified 2026-10-31, additive within 1.0).
 `display_name` and `mime_type` are content: APSIRA never logs them, and they reach the hub only inside the seal.
 
 ## 4. Errors

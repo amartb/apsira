@@ -44,8 +44,8 @@ enum LinkUnavailableReason {
   }
 }
 
-/// A call APSIRA answered with an error (contract §8): APSIRA is there, the
-/// call did not succeed.
+/// A call APSIRA answered with an error (contract §8, and atrium-offload.md
+/// §4's `store_full`): APSIRA is there, the call did not succeed.
 enum LinkErrorCode {
   /// APSIRA is migrating or restoring; retry later.
   busy('busy', 'linkBusy'),
@@ -63,7 +63,10 @@ enum LinkErrorCode {
   notAllowed('not_allowed', 'linkNotAllowed'),
 
   /// A payload's SHA-256 did not match.
-  checksumMismatch('checksum_mismatch', 'linkChecksumMismatch');
+  checksumMismatch('checksum_mismatch', 'linkChecksumMismatch'),
+
+  /// The hub's archive area is full (atrium-offload.md §4).
+  storeFull('store_full', 'linkStoreFull');
 
   const LinkErrorCode(this.wire, this.code);
 
@@ -131,8 +134,8 @@ final class LinkCallFailed extends LinkFailure {
 }
 
 /// The failure for an `error` value APSIRA returned (contract §8):
-/// `not_authorised` and `unsupported_version` are [LinkUnavailable], the six
-/// call errors are [LinkCallFailed], and an unknown code is
+/// `not_authorised` and `unsupported_version` are [LinkUnavailable], the
+/// [LinkErrorCode]s are [LinkCallFailed], and an unknown code is
 /// [LinkUnavailableReason.unknownError] ("treated as unavailable").
 LinkFailure linkFailureFromWire(String code) {
   if (code == LinkUnavailableReason.notAuthorised.wire) {
@@ -145,4 +148,25 @@ LinkFailure linkFailureFromWire(String code) {
     if (error.wire == code) return LinkCallFailed(error);
   }
   return LinkUnavailable(LinkUnavailableReason.unknownError);
+}
+
+/// How a byte stream of the link ends when it fails (contract §4, §8): the
+/// error event of `LinkChannel.readAll`, after the last chunk and before the
+/// stream is done. A stream whose size or SHA-256 is not the stated one ends
+/// with `LinkCallFailed(LinkErrorCode.checksumMismatch)`.
+@immutable
+final class LinkStreamException implements Exception {
+  const LinkStreamException(this.failure);
+
+  final LinkFailure failure;
+
+  @override
+  bool operator ==(Object other) =>
+      other is LinkStreamException && other.failure == failure;
+
+  @override
+  int get hashCode => Object.hash(LinkStreamException, failure);
+
+  @override
+  String toString() => 'LinkStreamException(${failure.wire})';
 }

@@ -3,9 +3,10 @@ description: >-
   The app side of the APSIRA app link (master-app contract app-link.md): the
   ApsiraLink port, hello with version negotiation, every unavailable reason and
   error code as a typed LinkFailure, over one method channel to the package's
-  own Kotlin, which checks APSIRA's certificate before any call.
+  own Kotlin, which checks APSIRA's certificate before any call; byte streams
+  with their SHA-256 and size checked.
 publish_to: none
-version: 0.5.0
+version: 0.6.0
 
 environment:
   sdk: ^3.13.0
@@ -13,10 +14,16 @@ environment:
   flutter: ">=3.47.0"
 
 # D-APK-026: apsira_core for Result and Failure, in the git form at the shared
-# tag, with the committed pubspec_overrides.yaml (D-APK-007). No other
-# dependency: the trust check is the package's own Kotlin.
+# tag, with the committed pubspec_overrides.yaml (D-APK-007). crypto (already in
+# the closure through apsira_core) for the streams' SHA-256. The trust check
+# is the package's own Kotlin.
+# apsira_storage for the BackupTarget port ApsiraBackupTarget adapts (ruling
+# R-2, D-APK-026's T2 addendum): the adapter lives here, and apsira_storage
+# gains no dependency on apsira_link.
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_core } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_core } }
+  apsira_storage: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_storage } }
+  crypto: ^3.0.7
   flutter:
     sdk: flutter
 

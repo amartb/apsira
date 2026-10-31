@@ -127,26 +127,31 @@ class CertificateTrust(
         return signers.any { isDebugSubject(it) }
     }
 
-    private fun isDebugSubject(signature: Signature): Boolean {
-        val subject = try {
-            val cert = CertificateFactory.getInstance("X.509")
-                .generateCertificate(ByteArrayInputStream(signature.toByteArray())) as X509Certificate
-            cert.subjectX500Principal.name
-        } catch (e: Exception) {
-            return true
-        }
-        return subject.split(RDN_SEPARATOR).any { it.trim().equals(DEBUG_CN, ignoreCase = true) }
-    }
-
     private companion object {
         const val DEV = ".dev"
-
-        /** The SDK debug certificate's common name (CN=Android Debug,O=Android,C=US). */
-        const val DEBUG_CN = "CN=Android Debug"
-
-        /** RFC 2253 separates RDNs by unescaped commas. */
-        val RDN_SEPARATOR = Regex("(?<!\\\\)[,+]")
     }
+}
+
+/** The SDK debug certificate's common name (CN=Android Debug,O=Android,C=US). */
+private const val DEBUG_CN = "CN=Android Debug"
+
+/** RFC 2253 separates RDNs by unescaped commas. */
+private val RDN_SEPARATOR = Regex("(?<!\\\\)[,+]")
+
+/**
+ * Whether [signature]'s subject has the SDK debug common name, or does not
+ * parse: an unparseable signer is never trusted. [CertificateTrust] and
+ * [ApkSignerCheck] both refuse on it.
+ */
+internal fun isDebugSubject(signature: Signature): Boolean {
+    val subject = try {
+        val cert = CertificateFactory.getInstance("X.509")
+            .generateCertificate(ByteArrayInputStream(signature.toByteArray())) as X509Certificate
+        cert.subjectX500Principal.name
+    } catch (e: Exception) {
+        return true
+    }
+    return subject.split(RDN_SEPARATOR).any { it.trim().equals(DEBUG_CN, ignoreCase = true) }
 }
 
 /**

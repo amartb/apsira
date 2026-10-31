@@ -32,7 +32,7 @@ keeps every symbol it had.
 | `package:apsira_tools/deps_check.dart` | `runDepsCheck`, `checkDependencies`, `DependencyAllowlist`, `runtimeClosure` |
 | `package:apsira_tools/l10n_check.dart` | `runL10nCheck`, `checkArbDir`, `placeholdersIn`, `readConfig`, `scanHardCodedText`, `textCallLiterals`, `L10nProblem` |
 | `package:apsira_tools/layering_lint.dart` | `runLayeringLint`, `checkSource`, `checkLayering`, `layerOf`, `layeringRules`, `optionalRules`, `LayeringViolation`, `LayerKind` |
-| `package:apsira_tools/manifest_check.dart` | `runManifestCheck`, `checkManifest`, `usesPermissions`, `removedPermissions`, `parseDeclaredPermissions`, `forbiddenPermissions` |
+| `package:apsira_tools/manifest_check.dart` | `runManifestCheck`, `checkManifest`, `usesPermissions`, `requestedPermissions`, `removedPermissions`, `parseDeclaredPermissions`, `forbiddenPermissions` |
 | `package:apsira_tools/apsira_tools.dart` | all six |
 
 Migration: an app replaces each `package:apsira_tools/src/<check>.dart` import or
@@ -82,6 +82,17 @@ reproduces RELAY.
 
 `test/fixtures/viaticum/apsira_tools.yaml` is VIATICUM's file.
 
+The network-holding knob (v0.6, D-APK-024) is for the apps that hold the network:
+APSIRA (its hub client) and the console. No other app sets it.
+
+| Key (v0.6) | RELAY default | Read by |
+|---|---|---|
+| `privacy.holds_network` | `false` | `manifest_check`: `true` admits `INTERNET` only when the declared list holds it with a reason; declared without one is `declared without a reason`, undeclared stays `forbidden permission` naming the knob. `false` keeps every finding unchanged |
+
+A source-manifest check (APSIRA's) takes `requestedPermissions(manifest)`: the
+`uses-permission` elements without `tools:node="remove"`, so a name both requested
+and removed stays requested (`usesPermissions` counts the removing elements too).
+
 `apsira_app` and `apsira_jobs` have no layer of their own: the lint treats them as
 any third-party package. `domain/` and `core/` may import them only when
 `layering.domain_packages` lists them, `features/` only when
@@ -127,6 +138,7 @@ down to the `gh release create` line, as LYCEUM's own script did.
 | `session_guard.sh` | sourced; `refuse_in_session <script>` refuses on `CLAUDECODE`, any `CLAUDE_CODE_*`, `AI_AGENT`, `CODESPACES`, `CLOUD_SHELL`, `ARMY_TREE`, `ARMY_TASK` or `HOME=/home/user`, citing D-APK-011 and `APSIRA_GUARD_RECORD` | 3 in a session |
 | `build_apk.sh [--dry-run] [debug\|profile]` | the dev APK, `./gradlew :app:process<Prod>ReleaseManifest`, `APSIRA_MANIFEST_CHECK`, each of `APSIRA_APK_CHECKS`, then `APK:` and `SHA-256:`. It builds no release and reads no key, so it runs in a session too | 1 no SDK or a step failed (`build_apk: FAIL (<step>)`), 2 usage or settings |
 | `local_release.sh [--dry-run] v<x.y.z> [--build-number <n>] [--issues <file>]` | refuses in a session first, then the checkout, versionCode, notes, release check, prod build, manifest check, certificate (`APSIRA_SIGNING=release-key`) or the SDK debug key (`debug-key`), and `build/release/<tag>/<id>-<x.y.z>.apk` | 1 an input or step, 2 usage or settings, 3 session |
+| `local_release.sh [--dry-run] --candidate v<x.y.z>-rc.<n> [--build-number <n>]` | a candidate (`n` ≥ 1, APSIRA D-035): the same steps in the same order under the `-rc.<n>` tag and version name, the notes from `dart run tool/release/changelog.dart --unreleased <tag>` as `build/release/<tag>/<id>-<x.y.z>-rc.<n>.apk.notes.md` beside the APK and its `.sha256` (when the call fails, no section or no such flag, no sidecar and the build goes on); no issue notes and never published: it prints where the files are | as a release; `--issues` is 2 |
 | `check.sh`, `codegen.sh` | every step of `APSIRA_CHECK_STEPS` / `APSIRA_CODEGEN_STEPS` (one `<name>: <command>` per line, the script's arguments as `"$@"`), each to the end, `ok <step>` / `FAIL <step>`, then the verdict `check:` / `codegen:` `PASS` or `FAIL (<steps>)` | 1 a step failed, 2 a bad list (`FAIL (settings)`) |
 
 `--dry-run` prints the commands (`flutter build`, the checks, `apksigner`, `gh`) and

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 — 2026-10-31
+
+Migration: move every apsira `ref:` to `apsira-v0.6.0`. Additive; nothing else moves.
+
+- **`SystemClock`** (RELAY's, unchanged, its header kept) in the new library
+  `package:apsira_core/system_clock.dart`, moved from `apsira_app` (D-APK-029). It is not
+  exported by `apsira_core.dart`, so an app with its own `SystemClock` meets no ambiguous
+  import; pure Dart, its tests run on the VM.
+
 ## 0.5.0 — 2026-10-31
 
 No change in behaviour. Migration: move every apsira `ref:` to

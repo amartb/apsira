@@ -14,7 +14,8 @@ import java.util.TimeZone
 // From relay android/app/src/main/kotlin/com/apsiralabs/relay/ZoneModule.kt
 // @ 09b28810 (byte-identical in viaticum @ 78d38e0 but for its package and
 // channel): the zone module's second half, ZoneChangeReceiver and
-// enqueueResync, with the package renamed. The first half, the "<app>/zone"
+// enqueueResync, with the package renamed (K2-02d adds enqueueOnce beside
+// it, sharing its request). The first half, the "<app>/zone"
 // method channel, is apsira_app's.
 //
 // Nothing in the apps' plugins listens for a zone change, so
@@ -44,12 +45,27 @@ object ZoneResync {
             .putString(BackgroundWorker.DART_TASK_KEY, RESYNC_JOB)
             .putString("${PAYLOAD_PREFIX}zoneId", zoneId)
             .build()
-        val request = OneTimeWorkRequest.Builder(BackgroundWorker::class.java)
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(RESYNC_JOB, ExistingWorkPolicy.APPEND_OR_REPLACE, dartJob(input))
+    }
+
+    // The same mechanism for any Dart job (K2-02d: RunJobReceiver): the
+    // plugin's BackgroundWorker runs [job], each [payload] entry reaching
+    // Dart under PAYLOAD_PREFIX, unique by the job's name with
+    // APPEND_OR_REPLACE, as above. enqueueResync keeps its own lines, which
+    // the resync contract test reads, and shares the request.
+    fun enqueueOnce(context: Context, job: String, payload: Map<String, String>) {
+        val input = Data.Builder()
+            .putString(BackgroundWorker.DART_TASK_KEY, job)
+        for ((key, value) in payload) input.putString("$PAYLOAD_PREFIX$key", value)
+        WorkManager.getInstance(context)
+            .enqueueUniqueWork(job, ExistingWorkPolicy.APPEND_OR_REPLACE, dartJob(input.build()))
+    }
+
+    private fun dartJob(input: Data): OneTimeWorkRequest =
+        OneTimeWorkRequest.Builder(BackgroundWorker::class.java)
             .setInputData(input)
             .build()
-        WorkManager.getInstance(context)
-            .enqueueUniqueWork(RESYNC_JOB, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
-    }
 }
 
 // Declared in the package's AndroidManifest.xml, not exported: only the system

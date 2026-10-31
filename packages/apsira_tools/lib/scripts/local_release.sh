@@ -7,8 +7,13 @@
 # them and runs this file through `dart run apsira_tools:script_path
 # local_release` (README, "Scripts").
 #
+# Candidate mode from apsira tool/release/local_release.sh @ c33eb20 (APSIRA
+# D-035, its ruling R-4; D-APK-028).
+#
 # Usage: local_release.sh [--dry-run] v<major>.<minor>.<patch>
 #            [--build-number <n>] [--issues <closed-issues.json>]
+#        local_release.sh [--dry-run] --candidate v<major>.<minor>.<patch>-rc.<n>
+#            [--build-number <n>]
 #
 # Builds the app's signed prod release on the operator's own computer. Before
 # anything else it refuses to run in a Claude Code, agent or cloud session
@@ -23,6 +28,14 @@
 # build instead, and reads, builds and creates nothing. It never prints, echoes
 # or logs a password: Gradle reads the four signing values from the
 # environment.
+#
+# --candidate (n >= 1) runs steps 1-11 alike under the -rc.<n> tag, version
+# name and file names, with step 8's notes from CHANGELOG.md's Unreleased
+# section (dart run tool/release/changelog.dart --unreleased <tag>) as a
+# <id>-<x.y.z>-rc.<n>.apk.notes.md sidecar beside the APK; when that call
+# fails (no Unreleased section, or an app without the flag) there is no
+# sidecar and the build goes on. It skips steps 12 and 13: a candidate is
+# never published; the script says where the files are.
 #
 # Exit codes: 0 built and checked (or printed); 1 an input or a step failed;
 # 2 usage or settings error; 3 refused in a session (nothing read, run or
@@ -44,10 +57,14 @@ refuse_in_session local_release
 usage() {
   cat <<'EOF'
 usage: local_release.sh [--dry-run] v<major>.<minor>.<patch> [--build-number <n>] [--issues <file>]
+       local_release.sh [--dry-run] --candidate v<major>.<minor>.<patch>-rc.<n> [--build-number <n>]
 
 Run it on your own computer, from a clean checkout of the release tag on
 main. It refuses to run in a Claude Code, agent or cloud session. --dry-run
 prints the build's commands and reads, builds and creates nothing.
+--candidate builds the same release under an -rc.<n> tag (n >= 1), with the
+CHANGELOG.md Unreleased notes as a .notes.md sidecar when there are any, and
+never publishes it.
 
 Settings, set by the app's wrapper:
   APSIRA_APP                the app's name in titles and notes (required)
@@ -144,6 +161,7 @@ tag=""
 build_number=""
 issues=""
 dry=false
+candidate=false
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -h | --help)
@@ -152,6 +170,13 @@ while [ "$#" -gt 0 ]; do
       exit 0
       ;;
     --dry-run) dry=true ;;
+    --candidate)
+      [ "$#" -ge 2 ] && ! $candidate || { usage >&2; exit 2; }
+      candidate=true
+      [ -z "$tag" ] || { usage >&2; exit 2; }
+      tag="$2"
+      shift
+      ;;
     --build-number)
       [ "$#" -ge 2 ] || { usage >&2; exit 2; }
       build_number="$2"
@@ -208,6 +233,7 @@ case "$notes_from" in
   changelog) [ -z "$issues" ] || die "--issues needs APSIRA_NOTES=issues." 2 ;;
   *) die "APSIRA_NOTES must be issues or changelog, got '$notes_from'." 2 ;;
 esac
+! $candidate || [ -z "$issues" ] || die "--issues is for a release; a candidate has no issue notes." 2
 key_names=()
 fingerprint="${APSIRA_KEY_FINGERPRINT:-}"
 fingerprint_check=()
@@ -228,14 +254,23 @@ if [ "$signing" = release-key ]; then
   fi
 fi
 
-# 4. The tag.
-if ! [[ "$tag" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+# 4. The tag (a candidate's ends in -rc.<n>, n >= 1).
+semver='v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'
+if $candidate; then
+  if ! [[ "$tag" =~ ^${semver}-rc\.[1-9][0-9]*$ ]]; then
+    usage >&2
+    die "a candidate's tag must be v<major>.<minor>.<patch>-rc.<n> with n >= 1, got '${tag}'" 2
+  fi
+  kind="the candidate "
+elif ! [[ "$tag" =~ ^${semver}$ ]]; then
   usage >&2
   die "the tag must be v<major>.<minor>.<patch>, got '${tag}'" 2
+else
+  kind=""
 fi
 version="${tag#v}"
 
-$dry && echo "local_release: dry run of $tag for $app; nothing is read, built or created"
+$dry && echo "local_release: dry run of $kind$tag for $app; nothing is read, built or created"
 
 # 5. Inputs: the SDK and the signing values, named but never shown.
 if ! $dry; then
@@ -289,12 +324,33 @@ fi
 $dry || echo "local_release: $tag is version $version, versionCode $version_code"
 
 dist="build/release/$tag"
+name="$app_id-$version.apk"
 $dry || { rm -rf "$dist" && mkdir -p "$dist"; }
 
 # 8. CHANGELOG notes, before anything is built (no section, no release).
 #    `dart run` may print its own lines first, so the notes are kept from
-#    their `# <app>` title on.
-if [ "$notes_from" = changelog ]; then
+#    their `# <app>` title on. A candidate's come from the Unreleased section
+#    into the .notes.md sidecar, and a failed call means no sidecar, not no
+#    build (APSIRA D-035: the shelf then shows "No notes").
+if $candidate; then
+  notes="$dist/$name.notes.md"
+  if $dry; then
+    echo "dart run tool/release/changelog.dart --unreleased $tag"
+  else
+    set +e
+    dart run tool/release/changelog.dart --unreleased "$tag" | sed -n "/^# $app /,\$p" > "$notes"
+    notes_status="${PIPESTATUS[0]}"
+    set -e
+    if [ "$notes_status" != 0 ]; then
+      rm -f "$notes"
+      echo "local_release: no notes: tool/release/changelog.dart --unreleased gave none (exit $notes_status: no Unreleased section, or no such flag)"
+    elif ! [ -s "$notes" ]; then
+      die "tool/release/changelog.dart --unreleased printed no notes titled '# $app' for $tag."
+    else
+      echo "local_release: notes in $notes"
+    fi
+  fi
+elif [ "$notes_from" = changelog ]; then
   notes="$dist/notes-$version.md"
   if $dry; then
     echo "dart run tool/release/changelog.dart $tag"
@@ -363,7 +419,6 @@ elif ! $dry; then
 fi
 
 # 11. The release files.
-name="$app_id-$version.apk"
 if ! $dry; then
   cp "$apk" "$dist/$name"
   if command -v sha256sum > /dev/null; then
@@ -371,6 +426,20 @@ if ! $dry; then
   else
     (cd "$dist" && shasum -a 256 "$name" > "$name.sha256")
   fi
+fi
+
+# A candidate stops here: never published (APSIRA D-035).
+if $candidate; then
+  if $dry; then
+    echo "local_release: the files: $dist/$name, $dist/$name.sha256 and, with Unreleased notes, $dist/$name.notes.md; not published (D-035)"
+    exit 0
+  fi
+  echo "Candidate $tag built and checked in $root/$dist:"
+  echo "  $name"
+  echo "  $name.sha256"
+  [ ! -f "$notes" ] || echo "  ${notes##*/}"
+  echo "It is not published (D-035): copy the files to where the shelf offers them."
+  exit 0
 fi
 
 # 12. Notes from the closed issues (gh api, or the file given with --issues).

@@ -15,12 +15,12 @@ environment:
   flutter: ">=3.47.0"
 
 dependencies:
-  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_app } }
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_core } }
-  apsira_l10n: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_l10n } }
+  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_app } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_core } }
+  apsira_l10n: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_l10n } }
   apsira_lock:
     path: ../
-  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_ui } }
+  apsira_ui: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_ui } }
   flutter:
     sdk: flutter
   flutter_riverpod: ^3.1.0

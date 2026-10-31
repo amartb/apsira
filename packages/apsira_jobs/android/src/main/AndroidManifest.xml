@@ -16,5 +16,12 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
+        <!-- apsira_link's AppLinkProvider hands APSIRA's backup_now to this
+             receiver by an explicit in-app broadcast (contract app-link.md
+             section 5.3); it queues the named Dart job once. Not exported,
+             no intent filter: only the app's own code reaches it. -->
+        <receiver
+            android:name="com.apsiralabs.apsira_jobs.RunJobReceiver"
+            android:exported="false" />
     </application>
 </manifest>

@@ -12,7 +12,7 @@ A `dev_dependency`, pinned by the shared tag (D-APK-007, `../README.md`):
 
 ```yaml
 dev_dependencies:
-  apsira_test: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_test } }
+  apsira_test: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_test } }
 ```
 
 `import 'package:apsira_test/apsira_test.dart';` is the whole surface. It depends on

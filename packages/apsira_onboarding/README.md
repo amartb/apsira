@@ -11,7 +11,7 @@ Pin by the shared tag, the same ref for every apsira package (D-APK-007, `../REA
 
 ```yaml
 dependencies:
-  apsira_onboarding: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_onboarding } }
+  apsira_onboarding: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_onboarding } }
 ```
 
 `package:apsira_onboarding/apsira_onboarding.dart` is the public surface. It depends on

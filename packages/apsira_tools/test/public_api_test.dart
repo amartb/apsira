@@ -53,6 +53,7 @@ void main() {
     expect(layering.disabledRules, isEmpty);
     expect(layering.extraLayers, isEmpty);
     expect(privacy.declaredPermissions, isNotEmpty);
+    expect(privacy.holdsNetwork, isFalse);
     expect(ApsiraToolsConfig.load, isA<Function>());
     expect(barrel.ApsiraToolsConfig.relay, same(config));
   });
@@ -115,6 +116,8 @@ void main() {
         '</manifest>';
     expect(usesPermissions(manifest), {'a.B', 'a.C'});
     expect(removedPermissions(manifest), {'a.C'});
+    expect(requestedPermissions(manifest), {'a.B'});
+    expect(barrel.requestedPermissions, same(requestedPermissions));
     expect(forbiddenPermissions, contains('android.permission.INTERNET'));
     expect(parseDeclaredPermissions('a.B: reason\n'), {'a.B': 'reason'});
     expect(barrel.runDepsCheck, same(runDepsCheck));

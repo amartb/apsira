@@ -5,7 +5,7 @@ description: >-
   RELAY's streaming ZIP for RELAY's backups and LYCEUM's export bundles: a
   writer with back-pressure and ZIP64, CRC-32, and a one-pass reader that
   refuses anything outside the profile, with the apps' parts as hooks.
-version: 0.5.0
+version: 0.6.0
 publish_to: none
 
 environment:
@@ -14,7 +14,7 @@ environment:
 # apsira_* in the git form at the shared tag, with the committed
 # pubspec_overrides.yaml (D-APK-007).
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_core } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_core } }
   crypto: ^3.0.7
 
 dev_dependencies:

@@ -9,13 +9,14 @@ storage directory in (`getApplicationSupportDirectory`), so the package does not
 
 ```yaml
 dependencies:
-  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_app } }
+  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_app } }
 ```
 
 ## Entry libraries
 
 - `package:apsira_app/apsira_app.dart`: everything below, for the app. It reaches Flutter.
-- `package:apsira_app/clock.dart`: `SystemClock` alone, over `apsira_core`, for a plain
+- `package:apsira_app/clock.dart`: `SystemClock` alone, re-exported from `apsira_core`
+  (`package:apsira_core/system_clock.dart`, the same class and its one static zone), for a plain
   Dart process or isolate that cannot load `dart:ui`, such as RELAY's kill-during-typing
   child (`test/support/kill_writer/`). Import it there instead of `src/`; the app keeps the
   barrel, which exports the same class.
@@ -34,7 +35,7 @@ adoption lane deletes; paths are under the app's root.
 | `StartPhase { pending, firstOpen, locked, safeMode, ready }`, `StartRoutes`, `startRedirect(phase, location, {routes})` | R `lib/app/router.dart` `_redirect`; L `lib/app/router.dart` `startRedirect` | `_redirect` in `lib/app/router.dart`; the `StartPhase` enum in `lib/features/shell/state/start_gate.dart` (`home` → `ready`) | nothing: `firstOpenRedirect` keeps its `?replay=1` rule | `StartPhase` and `startRedirect` in `lib/app/router.dart` (`onboarding` → `firstOpen`, `open` → `ready`) |
 | `RestartableRoot`, `RestartController.restart({open, whileStopped})` | L `lib/app/restartable_root.dart` | — | — | `lib/app/restartable_root.dart` |
 | `StartupFailureApp({title, message, theme, localizationsDelegates, supportedLocales, icon})` | L `lib/app/bootstrap.dart` | — | — | `StartupFailureApp` in `lib/app/bootstrap.dart` |
-| `SystemClock` (`refreshZone`, `useZone`, `forgetZone`) | R `lib/data/platform/system_clock.dart` | `lib/data/platform/system_clock.dart` | `lib/data/platform/system_clock.dart` | `lib/data/platform/system_clock.dart` |
+| `SystemClock` (`refreshZone`, `useZone`, `forgetZone`), re-exported from `apsira_core` | R `lib/data/platform/system_clock.dart` | `lib/data/platform/system_clock.dart` | `lib/data/platform/system_clock.dart` | `lib/data/platform/system_clock.dart` |
 | `ZoneChannel` on `apsira_app/zone`, `zoneId()` | R `lib/data/platform/zone_channel.dart` | `lib/data/platform/zone_channel.dart` | `lib/data/platform/zone_channel.dart` | `readZoneId` in `lib/data/platform/zone_channel.dart` |
 | `ZoneModule.kt`, `ApsiraAppPlugin.kt` (Android) | L `ZoneModule.kt` (the channel half of R's) | `ZoneModule.kt` and its `register` line in `MainActivity.kt`; its receiver half is `apsira_jobs`' `ZoneResync.kt` (D-APK-011) | the same | `ZoneModule.kt` and its line in `MainActivity.kt` |
 | `PendingPort` (`pending()`, `pendingResult()`, `portPending`) | R `lib/data/platform/pending_ports.dart`; V's `Result` stubs | the base class in `lib/data/platform/pending_ports.dart` (its stubs stay) | the same | the same |

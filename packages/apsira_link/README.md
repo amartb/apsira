@@ -3,14 +3,16 @@
 The app side of the on-device link to APSIRA, the central app (D-APK-026; the interface is
 APSIRA's `master-app/docs/contracts/app-link.md`, version 1.0). One Flutter plugin: a Dart
 port with typed failures over one method channel, and the package's own Kotlin, which
-resolves APSIRA and checks its certificate before any call.
+resolves APSIRA and checks its certificate before any call and carries the byte streams.
 
-Dependencies: `apsira_core` (the git form at the shared tag, with the committed
-`pubspec_overrides.yaml`, D-APK-007). Nothing else: the trust check is the package's Kotlin.
+Dependencies: `apsira_core` and `apsira_storage` (the git form at the shared tag, with the
+committed `pubspec_overrides.yaml` of both, D-APK-007), `crypto` (already in its closure) for
+the streams' SHA-256. `apsira_storage` is for the `BackupTarget` port `ApsiraBackupTarget`
+adapts (ruling R-2); it does not depend on this package. The trust check is the package's Kotlin.
 
 ```yaml
 dependencies:
-  apsira_link: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_link } }
+  apsira_link: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_link } }
 ```
 
 ## What it holds
@@ -24,7 +26,8 @@ dependencies:
 | `linkContract`, `linkVersions`, `linkControlDeadline` | `apsira.app_link`, `['1.0']`, 5 s (contract §4, §8, §9) |
 | `LinkFailure` (sealed `Failure`) | `LinkUnavailable` (`reason`; `theirs`, `ours` for a version mismatch) or `LinkCallFailed` (`error`); `wire` is the contract's name |
 | `LinkUnavailableReason` | `not_installed`, `not_trusted`, `not_authorised`, `unsupported_version`, `no_answer`, `unknown_error`; codes `linkNotInstalled` … |
-| `LinkErrorCode` | The six call errors of §8: `busy`, `away`, `storage_full`, `not_found`, `not_allowed`, `checksum_mismatch`; codes `linkBusy` … |
+| `LinkErrorCode` | The six call errors of §8: `busy`, `away`, `storage_full`, `not_found`, `not_allowed`, `checksum_mismatch`, and `store_full` (atrium-offload §4); codes `linkBusy` … |
+| `LinkStreamException` | How a byte stream ends when it fails: carries its `LinkFailure`; a short, long or altered stream is `LinkCallFailed(checksumMismatch)` |
 | `linkFailureFromWire` | An `error` value → its failure; an unknown code is `unknown_error` (unavailable) |
 | `linkDevSwitch` | `com.apsiralabs.apsira_link.DEV_LINK`, the development switch (below) |
 | `FakeApsiraLink` (`testing.dart`) | Answers `hello` with a fixed result, by default `not_installed`; counts `helloCalls` |
@@ -51,18 +54,105 @@ never trusts a debug certificate (D-031).
 records its release certificate (contract §3.1, ruling A-7). Until then a release app
 trusts no APSIRA and every call is `not_trusted`.
 
+## Backups (contract §5.2)
+
+`package:apsira_link/backups.dart`, its own library (an app imports only the calls it makes):
+`ApsiraBackupLink`, the port of APSIRA's backup queue, and `ChannelApsiraBackupLink`, its
+adapter over the channel. No method throws; the one exception is `restoreOpen` without
+exactly one of `name` and `snapshot`, an `ArgumentError` (a programming error).
+
+| Method | Wire call, extras → value |
+|---|---|
+| `backupSpace()` | `backup_space` → `int` (`free_bytes`) |
+| `backupBegin(name, {size})` | `backup_begin` {`name`, `size` when known} → `LinkBackupTicket` (`ticket`, write-end `handle`) |
+| `backupWrite(ticket, bytes)` | the write stream to its end → `LinkWritten` (`sha256`, `size` of what was written) |
+| `backupCommit(ticket, sha256:, size:)` | `backup_commit` {`ticket`, `sha256`, `size`} → `LinkBackupState.queued` |
+| `backupRename(from, to)` | `backup_rename` {`from`, `to`} → `LinkRenameOutcome`: `renamed` (no field), `exists` or `missing` (a true field of that name) |
+| `backupList()` | `backup_list` → `List<LinkBackupEntry>` (`name`, `sizeBytes`, `madeUtc`, `state` queued · shipped, `snapshot` when shipped) |
+| `backupDelete(name)` | `backup_delete` {`name`} → nothing |
+| `restoreOpen({name, snapshot})` | `restore_open` {`name` or `snapshot`} → `LinkRestoreStream` (`bytes`, checked against its `sha256` and `size`) |
+
+**A backup shipped home is never deleted by an app** (D-008): `backup_delete` removes only a
+queued copy and succeeds on a shipped one, which the hub's retention governs. Every `{error}`
+is its `LinkFailure` (`linkFailureFromWire`); a reply that is not the contract's is
+`unknown_error`, and one holding a stream handle cancels it. `made_utc` is an ISO 8601 UTC
+instant ending in `Z`; an entry with a malformed field is dropped, the rest kept. Names and
+bytes are never in a `toString`.
+
+`FakeApsiraBackupLink` (`package:apsira_link/testing/fake_backup_link.dart`) is an in-memory
+queue with §5.2's rules: the stated SHA-256 and size checked on commit (`checksum_mismatch`,
+the write discarded), `ship(name)` marks a backup shipped with a snapshot id, delete removes
+only queued copies, a shipped restore is `away` while `away`, queued bytes past `queueCap`
+are `storage_full`; `unavailable` fails every call, `failures` sets one call's failure, and
+`calls` records each call.
+
+## The APSIRA backup target (contract §5.1)
+
+`ApsiraBackupTarget(link:, backups:, appPackage:, clock:)` (`package:apsira_link/backup_target.dart`)
+is `apsira_storage`'s unchanged `BackupTarget` over these calls: the app gives it to its backup
+code instead of, or beside, `SafBackupTarget`. Its `folder` is `apsira:<appPackage>` ("APSIRA");
+`pickFolder` returns it after a good `hello` (null otherwise), `hasAccess` is that folder and a
+good `hello`, `freeBytes` is `backup_space` (null on failure).
+
+`write` refuses a taken name, queued or shipped, with `exists` before listening, then
+begins, writes and commits with the plain SHA-256 (an error from the app's own bytes is rethrown, as the port says); `rename` and
+`list` are the queue's; `read` is `restore_open` by name; `delete` removes a queued copy and
+**succeeds without deleting a shipped backup** (D-008). `storage_full` is `storageFull`,
+`not_found` on rename and read `missing`, every other failure `folderUnavailable`: an app
+without APSIRA falls back as from a folder that is gone. `FakeApsiraBackupTarget`
+(`testing/fake_apsira_backup_target.dart`) is the adapter over a good `FakeApsiraLink` and a
+`FakeApsiraBackupLink`, both exposed.
+
 ## The channel
 
-Dart never selects a trust mode (ruling R-2). One method, `call`:
+Dart never selects a trust mode (ruling R-2). `LinkChannel` (`lib/src/link_channel.dart`,
+internal: the call libraries import it, the barrel does not export it) holds the one channel,
+`apsira_link/link`. The control method, `call`:
 
 | Direction | Shape |
 |---|---|
-| Dart → Kotlin | `{method: String, version: String, extras: Map<String, Object?>}`, exactly these keys; `hello` sends `linkVersions.last` and empty extras |
+| Dart → Kotlin | `{method: String, version: String, extras: Map<String, Object?>}`, exactly these keys; the version is `linkVersions.last`; `hello` sends empty extras |
 | Kotlin → Dart, unavailable | `{unavailable: <reason wire>}` |
 | Kotlin → Dart, call error | `{error: <§8 code>}` |
-| Kotlin → Dart, answer | `{fields: Map, devUnverified: bool}` |
+| Kotlin → Dart, answer | `{fields: Map, devUnverified: bool}`; an `fd` in the fields is `{stream: <handle>}`, an array or list of Bundles (`entries`, `items`) a list of maps |
 | No reply in 5 s, `PlatformException`, `MissingPluginException` | `no_answer` |
 | `null` or any other shape | `unknown_error` |
+
+The stream methods, on a handle an answer gave (contract §4: the receiver reads or writes to
+the end; §8: no deadline, the stream ends with the sender's stated size):
+
+| Method | Arguments → reply |
+|---|---|
+| `write` | `{handle, bytes}` → `{}` |
+| `read` | `{handle, max}` → `{bytes}` (at most `max`, at most 64 KiB) or `{end: true}` |
+| `close` | `{handle}` → `{}`: the stream ended as it should |
+| `cancel` | `{handle}` → `{}`: abandoned; the peer sees it short and discards it |
+| any, unknown handle or malformed arguments | `{unavailable: unknown_error}`; an I/O failure is `no_answer` and closes the handle |
+
+`LinkChannel.writeAll(handle, bytes)` writes a `Stream<List<int>>` in 64 KiB chunks
+(`chunkSize`), closes the stream and returns `Ok((sha256:, size:))` of what it wrote, the
+SHA-256 computed while writing, for the call that commits it to state. Any failure cancels the
+stream and is the `Err`; a failing source is `unknown_error`.
+`LinkChannel.readAll(handle, sha256:, size:)` reads to the end and closes; when what arrived
+is not `size` bytes with that SHA-256 it ends with
+`LinkStreamException(LinkCallFailed(checksumMismatch))` after the last chunk and before done
+(at once, cancelled, when it runs past `size`). A failed read ends with its failure; a
+listener that stops early cancels the stream. No method throws, and Dart never retries.
+
+## Deadlines and the worker
+
+Kotlin runs control calls off the main thread on a pool of `CONTROL_THREADS` (2), so a hung
+call holds one thread and never delays the next past the deadline. Each call carries its
+arrival time; at `CONTROL_DEADLINE_MS` (5 000, Dart's `linkControlDeadline`):
+
+- a call still **queued** is dropped before it reaches APSIRA and answered `no_answer`: a call
+  Dart has given up on is never sent afterwards;
+- a call still **running** is answered `no_answer` by the watchdog; its late reply is
+  discarded and every stream handle in it closed.
+
+Each call is answered exactly once, on the main thread. Stream I/O runs on its own threads
+(never the control pool) with no deadline. On engine detach the pools stop and every open
+handle is closed. Dart's own 5 s timeout stays as the fallback.
 
 ## Development builds
 
@@ -90,6 +180,18 @@ expect(declaresLinkDevSwitch(File('android/app/src/main/AndroidManifest.xml').re
 `main`, `profile` and the plugin's manifest. A dev link reaches the app as
 `LinkHello.devUnverified`; show "dev link: unverified" where the link's state is shown.
 
+## The archive (ATRIUM's offload)
+
+The five calls of `atrium-offload.md` §3 (`package:apsira_link/archive.dart`), only for `com.apsiralabs.atrium`, at home only: [doc/archive.md](doc/archive.md).
+
+## APK files
+
+`ApkSignerCheck.kt` checks an APK file's signer by the link's own rule (D-031) before it is installed or offered: [doc/apk_files.md](doc/apk_files.md).
+
+## Requests from APSIRA
+
+[`doc/provider.md`](doc/provider.md): `AppLinkProvider`, which each app declares (`backup_now` to `apsira_jobs`, `restore_offer` to an inbox), and `requests.dart`.
+
 ## The Kotlin side
 
 Package `com.apsiralabs.apsira_link`. `LinkTrust.kt` is ATRIUM's `CallerCheck.kt` re-homed
@@ -104,18 +206,27 @@ Package `com.apsiralabs.apsira_link`. `LinkTrust.kt` is ATRIUM's `CallerCheck.kt
 | `DevNameTrust(packages)` | a dev build's trust: the listed `.dev` packages by name; `devUnverified` |
 | `LinkTrust` | `devSwitchOn(context)` (the own `ApplicationInfo`'s `DEV_SWITCH`), `isDevBuild(own, switch)` (own id `.dev` **and** the switch), `peer`, `forPeer` (an app trusting APSIRA), `forCallers` (APSIRA trusting its table), `apsiraTable` |
 | `CallerCheck.allows(pm, caller, trust)` | the provider's check on every call: a non-null caller its `Trust` trusts |
-| `LinkClient(context, …)` | `call(method, version, extras)`: resolve `peer + .link` (none: `not_installed`), its package exactly the peer and trusted (else `not_trusted`, nothing called), then `ContentResolver.call` with `contract` and `version`; `{error}`, `{fields, devUnverified}`, a throw or null bundle `no_answer` |
-| `ApsiraLinkPlugin` | the `apsira_link/link` channel (`CHANNEL`, `METHOD` = `call`); `LinkClient` on one background thread, the reply on the main thread |
+| `LinkClient(context, …, streams)` | `call(method, version, extras)` (T1's F-3): **acquire** an unstable `ContentProviderClient` for `peer + .link` (none: `not_installed`), **then** check its package is exactly the peer and trusted (else `not_trusted`, nothing called), **then** call through that client with `contract` and `version` and close it, **then** check again (a change discards the reply as `not_trusted`). `{error}`, `{fields, devUnverified}`; a throw or null bundle `no_answer`. A descriptor in a discarded reply is closed |
+| `LinkStreams` | the open `ParcelFileDescriptor` ends by handle: `reply(bundle)` (an `fd` → `{stream: <handle>}`, Bundles → maps), `write`, `read` (`MAX_READ` 64 KiB), `close`, `cancel`, `release` (a discarded converted reply), `discard` (a raw one), `closeAll` |
+| `AppLinkProvider`, `AppLinkInbox` | the app's provider for APSIRA's calls and its restore-offer inbox ([`doc/provider.md`](doc/provider.md)) |
+| `ApsiraLinkPlugin` | the `apsira_link/link` channel (`CHANNEL`; `METHOD` = `call`, `WRITE`, `READ`, `CLOSE`, `CANCEL`); `CONTROL_THREADS`, `CONTROL_DEADLINE_MS`; the reply on the main thread |
 
 ## Checks
 
 From this directory: `flutter analyze` and `flutter test` (the `link` gate): the failure
 codes and their wire names, hello and the version choice, and the adapter against a
-mocked channel (every reply shape, a platform error, a missing plugin, a 6 s silence).
+mocked channel (every reply shape, a platform error, a missing plugin, a 6 s silence), and
+`LinkChannel`'s streams (chunking, the digest, a short, long or altered read, cancels), and
+the archive calls (each method's extras, the put cancelled on a size or SHA-256 mismatch, AO
+§4's errors, no content in a `toString`, the fake's rules).
+
 From `example/`: `flutter analyze` and `flutter test`, the consumer proof (APSIRA missing,
-a hello, a call error, a dev link) against `FakeApsiraLink`, and `release_manifest_test.dart`.
-`test/example_android_test.dart` holds the Kotlin names (channel, method, `F_APSIRA`,
-`DEV_SWITCH`) and the plugin manifest (`<queries>` for both APSIRA builds, no switch) to the
+a hello, a call error, a dev link) against `FakeApsiraLink`; `backup_restore_test.dart` (a
+backup lands queued with its SHA-256, an offer through the example's own confirmation restores
+the same bytes, APSIRA absent says unavailable); `provider_manifest_test.dart` (the example's
+`AppLinkProvider` as `doc/provider.md` declares it, no `BACKUP_JOB`) and `release_manifest_test.dart`.
+`test/example_android_test.dart` holds the Kotlin names (channel, methods, the deadline and
+pool, `F_APSIRA`, `DEV_SWITCH`) and the plugin manifest (`<queries>` for both APSIRA builds, no switch) to the
 Dart ones.
 
 The Kotlin half, from this directory, under a build lease (the lease runs its argument as one
@@ -127,7 +238,10 @@ army lease run --kind build -- 'cd example/android && ./gradlew --offline :apsir
 rm -rf example/build
 ```
 
-`LinkTrustTest` and `LinkClientTest` run on Robolectric (`sdk=34`, cached) with ATRIUM's
+`LinkTrustTest`, `LinkClientTest` (with `AcquireShadow`, which changes APSIRA between the
+acquire and the check), `LinkStreamsTest` (real pipes) and `ApsiraLinkPluginTest` (the pool and
+the deadline, with a short deadline injected) run on Robolectric (`sdk=34`, cached) with ATRIUM's
 `SigningShadow` and two public test certificates (`release-cert.der` `CN=Apsira Test`,
 `debug-cert.der` the SDK debug subject; no keystore is committed). They are not a merge gate
-(ruling A-4); a Kotlin change is unproven on a device until a release session.
+(ruling A-4); a Kotlin change is unproven on a device until a release session (a provider
+replaced after the acquire killing the bound client is Android's behaviour, not shown here).

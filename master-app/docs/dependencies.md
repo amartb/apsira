@@ -26,7 +26,7 @@ even though the packages sit in the same repository. Licence proprietary (Apsira
 | apsira_lock | the lock, with the mandatory mode D-018 needs (a package change, D-017) | none |
 | apsira_notify | APSIRA's own channels, the digest notification, the permission flow; the policy check's host side (D-012) | none |
 | apsira_jobs | `BackgroundJobs` for the central backup schedule and the home check | none |
-| apsira_storage | the ports APSIRA uses itself; the APSIRA `BackupTarget` adapter lives here for the apps (D-008) | none |
+| apsira_storage | the ports APSIRA uses itself; the apps take APSIRA's adapter of its `BackupTarget` from `apsira_link` (D-008, D-APK-026) | none |
 | apsira_link | **new** (D-017): the on-device link's shared types and the client the apps use | none (Android IPC) |
 | apsira_tools | dev: layering lint, l10n check, coverage gate, deps and manifest checks | host tooling |
 | apsira_test | dev: golden matrix, large-text check, a11y pass, property testing | none |

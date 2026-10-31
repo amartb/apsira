@@ -29,7 +29,7 @@ becomes Decided on review), Superseded.
 | D-APK-012 | Shared strings: `apsira_l10n`'s key table and its wording, one rule for app phrases, `AppLanguage` and `AppLanguageSetting`; Flutter's `MaterialLocalizations` rejected | Decided |
 | D-APK-013 | `apsira_ui` 0.3: `build()` carries the shared component set (menus, `highlightColor`, the snack theme, `accentText` text and outlined buttons, R-10), every app VIATICUM included; LYCEUM's other sub-themes are builders and `buildFull`; settings rows, menu items and `ThemeModeSetting` | Decided |
 | D-APK-014 | `apsira_ui` 0.3's component kit: layout, empty state, sheet and dialog, undo snack, pills and search bar, icon box, drawer chrome, `ThemePreviewScreen`; LYCEUM's kit unless named; every kit widget draws its own surface from the tokens | Decided |
-| D-APK-015 | `apsira_storage`: the backup, storage-space, document-picker, share and photo ports with their adapters and fakes, one storage channel `apsira_storage/storage`; `FolderAccess`, the crop and the media stores stay per app | Decided |
+| D-APK-015 | `apsira_storage`: the backup, storage-space, document-picker, share and photo ports with their adapters and fakes, one storage channel `apsira_storage/storage`; `FolderAccess`, the crop and the media stores stay per app | Decided (amended by D-APK-026, 2026-10-31: APSIRA's `BackupTarget` adapter lives in `apsira_link`) |
 | D-APK-016 | `apsira_lock`: RELAY's app lock as the shared one (off by default, 5 minutes, 0 = at once, never a lock-out, a backwards clock locks), its `lock` row unchanged, `local_auth` in the package, FLAG_SECURE through the package's own Kotlin; consumers need `FlutterFragmentActivity` and `USE_BIOMETRIC` | Decided (amended by D-APK-026: APSIRA's mandatory mode stays on when the settings are unreadable and stays covered when the device cannot prompt) |
 | D-APK-017 | `apsira_onboarding`: the intro with the app's mark as a parameter, the language step, the step frame and flow, the tour player, the Help shell, the discovery pieces; seen flags per install through `InstallFlag`; routes stay in each app | Decided |
 | D-APK-018 | `apsira_db`: RELAY's opener, server, restore swap and snapshot as the shared ones, with `2520b90b` in the server, VIATICUM's integrity check and snapshot reader, LYCEUM's step hook and names as a `DatabaseLayout`; the backup snapshot goes through `.tmp` and a rename | Decided |
@@ -40,8 +40,10 @@ becomes Decided on review), Superseded.
 | D-APK-023 | Sync and storage direction: home-network-only sync by a transport-agnostic change log carried by the central app, merged per field and additive (no edit discarded: same-field clashes keep both versions behind a badge and a version history); amb811 as the home hub with its own SSD, Proton Drive as the encrypted offsite copy; no NAS for now | Decided as direction (2026-10-25); may change |
 | D-APK-024 | The central app is APSIRA; two network-holding Apsira apps (APSIRA and the console), split by privilege | Decided |
 | D-APK-025 | Apsira's own area on amb811, independent of KEYSTONE | Decided |
-| D-APK-026 | `apsira_link` and the package changes the central app needs | Decided in part (2026-10-31: `apsira_link`'s hello and trust core, `apsira_lock`'s mandatory mode, at `apsira-v0.5.0`); the storage, notify and gateway parts Proposed |
+| D-APK-026 | `apsira_link` and the package changes the central app needs | Decided in part (2026-10-31: `apsira_link`'s hello and trust core, `apsira_lock`'s mandatory mode, at `apsira-v0.5.0`; the backup, archive and app-side calls, the hardened transport, the APK check and APSIRA's `BackupTarget` adapter in `apsira_link`, at `apsira-v0.6.0`); the notify and gateway parts Proposed |
 | D-APK-027 | The central app trusts only apps signed with their own release key | Decided |
+| D-APK-028 | `apsira_tools`: the network-holding manifest knob `privacy.holds_network` and the never-published candidate mode of `local_release.sh` | Decided |
+| D-APK-029 | `SystemClock` moves to `apsira_core` as a library of its own, re-exported by `apsira_app` | Decided |
 
 ---
 
@@ -602,6 +604,8 @@ becomes Decided on review), Superseded.
 ## D-APK-015 — `apsira_storage`: the storage ports, their adapters, one storage channel
 
 - **Status:** Decided (2026-10-24: operator ruling R-1, Q2-a, ledger `2026-10-24-packages-v0-3`).
+  *Amended by D-APK-026 (2026-10-31): APSIRA's adapter of `BackupTarget` lives in `apsira_link`, not beside the
+  port (Q2-a's rule holds for every other adapter).*
 - **Context:** the storage adapters exist two or three times: RELAY's `BackupTarget` and `SafBackupTarget` (LYCEUM's
   copy differs only in comments), three `StorageModule.kt` on three channels (`relay/storage`, `viaticum/storage`,
   `lyceum/storage`), three `Sharer`s, two `DocumentPicker`s of different shapes (RELAY, VIATICUM), two
@@ -1116,6 +1120,10 @@ becomes Decided on review), Superseded.
 - **Status note (2026-10-31):** Decided in part: the T1 parts built at `apsira-v0.5.0` (addendum below); the
   `apsira_storage` adapter, the `apsira_notify` policy check, the gateway calls and `restore_offer` stay Proposed
   until T2/T3.
+- **Status note (2026-10-31, T2):** Decided further: the T2 parts built at `apsira-v0.6.0` (addendum "T2 parts as
+  built" below): the backup and archive calls, the app-side provider with `backup_now` and `restore_offer`, the
+  hardened transport, the APK check, and APSIRA's `BackupTarget` adapter, which the operator's ruling of
+  2026-10-31 places in `apsira_link`. The `apsira_notify` policy check and the gateway calls stay Proposed until T3.
 - **Decision:**
   - A new package **`apsira_link`**: the client of the on-device link to APSIRA (content providers on both sides,
     called through `ContentResolver.call`), with the KAIROS trust pattern on every call (package name and
@@ -1124,8 +1132,12 @@ becomes Decided on review), Superseded.
     app-side `restore_offer` handler (APSIRA D-034).
   - **`apsira_storage`:** an APSIRA adapter of the unchanged `BackupTarget` port, so an app ships its backups home
     with no new backup code; APSIRA seals them with the vault key before they leave the device (APSIRA D-028).
+    *Amended 2026-10-31 (T2 addendum): the adapter, `ApsiraBackupTarget`, lives in `apsira_link` over this
+    unchanged port; `apsira_storage` gains no dependency on `apsira_link`.*
   - **`apsira_notify`:** the `Notifier` asks APSIRA's notification policy before posting (quiet hours and focus,
     priority, digests); without APSIRA it behaves as today.
+    *Amended 2026-10-31 (T2 addendum): the check sits on `apsira_link`'s side of a seam in `apsira_notify`, which
+    gains no dependency on `apsira_link`; T3 shapes the seam.*
   - **`apsira_lock`:** a mandatory mode (the lock cannot be turned off) for APSIRA.
   - Gateway delivery as `apsira_link` calls, by kind and the app's own parameter (APSIRA D-033).
 - **Rationale:** the client side of the central app is shared code by construction; nothing is copied into an app
@@ -1167,6 +1179,59 @@ becomes Decided on review), Superseded.
     digest; the SDK debug subject refused and no `.dev` package ever certificate-trusted; nothing trusted below
     API 28 (no `hasSigningCertificate`); the dev check selected at run time by the own id and `DEV_LINK` in
     place of ATRIUM's `src/dev` and `src/prod` flavours.
+- **Addendum (2026-10-31, packages-t2 at `apsira-v0.6.0`): the T2 parts as built.**
+  - **The transport** (T1 final validation F-2, F-3): a bounded worker in `ApsiraLinkPlugin.kt` (2 threads, a 5 s
+    deadline) drops a call still queued at the deadline, never sending it late, and answers a running one
+    `no_answer`; `LinkClient` acquires a `ContentProviderClient`, checks APSIRA's certificate, calls through that
+    client, closes it and checks again. Byte streams cross as `{stream: <handle>}` (`LinkStreams.kt`); every handle
+    is closed when the engine detaches.
+  - **The backup calls** (`package:apsira_link/backups.dart`, contract §5.2): `ApsiraBackupLink` and
+    `ChannelApsiraBackupLink`; `FakeApsiraBackupLink` keeps §5.2's rules (D-008: delete removes only queued copies).
+    The two wire forms §5.2 left open are recorded there (additive, 1.0): `made_utc` is an ISO 8601 UTC string
+    ending in `Z`, and `backup_rename`'s outcome is a true boolean field `exists` or `missing` (neither: renamed).
+  - **The archive calls** (`package:apsira_link/archive.dart`, `atrium-offload.md` §3): `ApsiraArchiveLink`; a put
+    whose bytes miss the stated size or SHA-256 cancels its write end (`checksum_mismatch`); a put's `stored` is read
+    back with one `archive_state`, and `archive_list`'s `since` is defined in AO §3 (both additive, 1.0).
+  - **The app-side provider** (`package:apsira_link/requests.dart`, `AppLinkProvider.kt`; contract §2, §5.3, §5.4):
+    the app declares the provider itself (no library manifest exports one); the caller check comes first and a
+    refusal logs nothing. `backup_now` goes by an explicit in-app broadcast to `apsira_jobs`' `RunJobReceiver` (not
+    exported, no intent filter), opted in by the app's `BACKUP_JOB` meta-data; `restore_offer` is kept in
+    `AppLinkInbox` (the newest offer wins) until the app's Dart reads it.
+  - **The adapter's home** (operator ruling R-2, 2026-10-31): `ApsiraBackupTarget` lives in `apsira_link`
+    (`package:apsira_link/backup_target.dart`) over `apsira_storage`'s unchanged `BackupTarget`, mapped as contract
+    §5.1. `apsira_link` depends on `apsira_storage`; `apsira_storage` gains no dependency on `apsira_link`;
+    `apsira_link` is the one opt-in package for talking to APSIRA, so no app gains its plugin or its `<queries>` by
+    a bump. `storage_full` is the port's `storageFull`, `not_found` on `rename` and `read` is `missing`, every other
+    failure `folderUnavailable` (the app falls back as from a folder that is gone); `delete` of a shipped backup
+    succeeds and deletes nothing (D-008). **The same direction binds T3:** `apsira_notify` gains no dependency on
+    `apsira_link`; the policy check sits on `apsira_link`'s side of a seam in `apsira_notify` (T3 shapes the seam).
+    This amends the Decision's `apsira_storage` and `apsira_notify` bullets and, for this one adapter, D-APK-015's
+    Q2-a (each adapter beside its port).
+  - **A restore offered by snapshot** (contract §5.4) goes through the port by name: the app calls
+    `read(folder, offer.name)`, which is `restore_open` with `name`. A name names one backup (`write` refuses a name
+    `backup_list` holds, queued or shipped) and an offer's `name` and `snapshot` are one entry of `backup_list`, so
+    APSIRA answers with the offered snapshot; the snapshot is shown, not sent (plan P-4). An app that holds an
+    `ApsiraBackupLink` may call `restoreOpen(snapshot: offer.snapshot)` instead; the port is not changed.
+  - **The APK check** (`ApkSignerCheck.kt`, public): `check(pm, apkPath, table)` over
+    `getPackageArchiveInfo(GET_SIGNING_CERTIFICATES)` is `Trusted(packageName, versionCode)` or `Refused` with
+    `api`, `unreadable`, `signers`, `unrecorded`, `debug` or `digest`, in that order (D-031's debug refusal, API 28
+    floor), for APSIRA's shelf.
+  - **The manifest changes per consumer.** Read 2026-10-31 from the packages' own manifests and the pinned plugins'
+    `android/src/main/AndroidManifest.xml` (`share_plus` 13.3.1, `image_picker_android` 0.8.13+25, `saf_stream`
+    4.0.3, `saf_util` 3.1.1, as `apsira_link/example` resolves them; the two `saf_*` declare nothing, nor does
+    `apsira_storage`'s own); the consumers' pins from their `pubspec.yaml` (APSIRA's on `session/p1-pairing-shelf`).
+    The plugins' own AAR dependencies are not read: each adoption lane's `manifest_check` reads its merged manifest.
+
+    | Consumer | By the bump to 0.6.0 alone | On adopting `apsira_link` (its own adoption lane) |
+    |---|---|---|
+    | RELAY | `apsira_jobs`' `RunJobReceiver` (`exported="false"`, no intent filter) | `ApsiraLinkPlugin`, `<queries>` for `com.apsiralabs.apsira` and `com.apsiralabs.apsira.dev`, the app's own `AppLinkProvider` declaration; `apsira_storage`'s entries already present |
+    | VIATICUM | the same receiver; nothing of the link (outside it, D-APK-027) | — |
+    | LYCEUM | nothing (no `apsira_jobs`) | as RELAY |
+    | APSIRA | nothing (no `apsira_jobs`; with it, the same receiver, inert: no `BACKUP_JOB` meta-data) | — (it is the peer) |
+    | an app adopting the link without `apsira_storage` today | nothing | as RELAY, plus `apsira_storage`'s closure: `share_plus`' `ShareFileProvider` (`exported="false"`, `grantUriPermissions="true"`) and `SharePlusPendingIntent` receiver (`exported="false"`, an intent filter for `EXTRA_CHOSEN_COMPONENT`), `image_picker_android`'s `ImagePickerFileProvider` (`exported="false"`, `grantUriPermissions="true"`) and its disabled `ModuleDependencies` service (`exported="false"`); no permission |
+
+  - **Device checks owed** (a release session): an APSIRA replaced after the acquire (F-3), the broadcast to
+    `RunJobReceiver` and its WorkManager enqueue, `ApkSignerCheck` on a real release-signed and a debug-signed APK.
 
 ## D-APK-027 — The central app trusts only apps with their own release key
 
@@ -1177,3 +1242,46 @@ becomes Decided on review), Superseded.
   shelf until its own thread gives it a release key.
 - **Consequences:** charter §6's identity bullet gains the sentence in §4a above. VIATICUM's thread is asked for a
   release key (APSIRA D-036).
+
+## D-APK-028 — `apsira_tools`: the network-holding knob and the candidate mode
+
+- **Status:** Decided (2026-10-31: plan revision 2 of ledger `packages-t2`, ruling R-3; APSIRA P0 rulings R-2,
+  R-4); built at `apsira-v0.6.0`.
+- **Context:** `apsira_tools` forbids `INTERNET` in every manifest, but APSIRA and the console hold the network by
+  charter (D-APK-024), so APSIRA's P0 guard wraps the public `checkManifest` (R-2). The shared `local_release.sh`
+  takes only `vX.Y.Z`, so APSIRA's release script copies its steps for release candidates (D-035, R-4). Both are
+  thin add-ons waiting for the package seams.
+- **Decision:**
+  - **`privacy.holds_network`** (bool, default `false`). With `true`, `manifest_check` admits `INTERNET` only when
+    `declared_permissions` holds it with a reason; declared without one is `declared without a reason`; undeclared
+    stays a forbidden permission whose message names the knob. An admitted `INTERNET` still meets
+    `approved_permissions` like any other permission. Only APSIRA and the console set it. `requestedPermissions`
+    (the `uses-permission` elements without `tools:node="remove"`) is exported for APSIRA's source-manifest mode.
+  - **`local_release.sh --candidate v<x.y.z>-rc.<n>`** (n ≥ 1): release mode's steps 1–11 under the rc tag, version
+    and file names (`<id>-<x.y.z>-rc.<n>.apk`, its `.sha256`), the notes from `dart run tool/release/changelog.dart
+    --unreleased <tag>` kept from the `# <app> ` title on into `<id>-<x.y.z>-rc.<n>.apk.notes.md`; steps 12–13 (issue
+    notes, publishing) are skipped: a candidate is never published. `--build-number` is accepted, `--issues`
+    refused (exit 2). Release mode does what it did (`name=` moves from step 11 to after step 7, where the
+    sidecar needs it).
+  - **The exit rule:** any non-zero exit of `--unreleased` writes no `.notes.md` sidecar and the build goes on (the
+    shelf says "no notes", D-035): RELAY, VIATICUM and LYCEUM have no `--unreleased` yet (plan R-10). An exit 0
+    without the `# <app> ` title still stops the build. This differs from the source, APSIRA's add-on
+    (`tool/release/local_release.sh` @ `c33eb20`, named in the header), which stopped on every exit other than 1.
+- **Rationale:** the operator's rule for shared code: a standard package with the app's add-on on its public seams,
+  never a duplicate. Both knobs are opt-in, so no current consumer sees a change.
+- **Consequences:** APSIRA drops its manifest wrapper and its copied release steps in its own lane after the tag.
+  Without the key every finding is unchanged; without the flag every release run is unchanged.
+
+## D-APK-029 — `SystemClock` in `apsira_core`
+
+- **Status:** Decided (2026-10-31: plan revision 2 of ledger `packages-t2`, ruling R-3); built at `apsira-v0.6.0`.
+  A move with no change in behaviour, recorded because a package's public surface moves.
+- **Context:** `SystemClock` (RELAY `lib/data/platform/system_clock.dart` @ `09b28810`) lived in `apsira_app`, a
+  Flutter plugin, and APSIRA's hub has no Flutter (APSIRA P0-03's proposal).
+- **Decision:** the class moves byte for byte, its header kept, to `apsira_core`'s `src/system_clock.dart`, behind a
+  library of its own, `package:apsira_core/system_clock.dart`, not exported by `apsira_core.dart`, so an app that
+  declares its own `SystemClock` meets no ambiguous import. `apsira_app`'s `src/system_clock.dart` re-exports it:
+  `apsira_app.dart`, `clock.dart` and a direct `src/` import give the same class and its one static zone.
+- **Alternatives rejected:** exporting it from the `apsira_core` barrel (an ambiguous import in every app with its
+  own); a copy for the hub (two clocks to keep equal).
+- **Consequences:** no consumer migrates. The hub keeps `HubClock` unless APSIRA's lane chooses otherwise.

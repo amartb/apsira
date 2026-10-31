@@ -15,7 +15,7 @@ Pin by the shared tag, the same ref for every apsira package (D-APK-007, `../REA
 
 ```yaml
 dependencies:
-  apsira_jobs: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_jobs } }
+  apsira_jobs: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_jobs } }
 ```
 
 `package:apsira_jobs/apsira_jobs.dart` is the public surface; `package:apsira_jobs/testing.dart`
@@ -70,6 +70,18 @@ pins. Both are already in each app's closure. `ApsiraJobsPlugin` answers one cha
 `apsira_jobs/alarms` (`persistentAlarmIds`, below); the Flutter tool builds a plugin's
 Android half only when the pubspec names a plugin class. A Dart test pins the job name, the
 input key and the manifest.
+
+## The run-job receiver
+
+`RunJobReceiver` (`RunJobReceiver.kt`) queues one named Dart job when the app's own code
+asks: `apsira_link`'s `AppLinkProvider` sends it an explicit in-app broadcast (extra `job`,
+the app's `com.apsiralabs.apsira_link.BACKUP_JOB` meta-data) when APSIRA calls `backup_now`
+(contract `app-link.md` §5.3). It goes through `ZoneResync.enqueueOnce(context, job,
+payload)`, the resync's mechanism for any job: unique by the job's name, `APPEND_OR_REPLACE`;
+`enqueueResync` is unchanged. The package manifest declares it unexported with no intent
+filter, so nothing outside the app reaches it; an app without `apsira_link` never sends it.
+The packages share no code: `test/run_job_names_test.dart` and `apsira_link`'s
+`provider_names_test.dart` pin the class name and the extra to the same values.
 
 ## The alarm-manager scheduler
 
@@ -128,7 +140,7 @@ VIATICUM's scheduler cases against the plugin's channel, the fire entry, and KP-
 plugin's reboot list). The Kotlin compiles only inside
 an app's build, so `example/` is that app: it depends on this package by path and schedules
 one job through `WorkManagerBackgroundJobs` at start, and its debug build compiles
-`ApsiraJobsPlugin.kt` and `ZoneResync.kt` against `workmanager_android`'s `androidx.work`.
+`ApsiraJobsPlugin.kt`, `ZoneResync.kt` and `RunJobReceiver.kt` against `workmanager_android`'s `androidx.work`.
 `tool/check.sh` runs the example's analyze and smoke test; the build is run by
 hand, under a build lease, from `example/`:
 

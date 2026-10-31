@@ -4,16 +4,22 @@ Status: **1.0 draft.** Decisions: D-016 (trust), D-017 (the shared client), D-00
 D-034 (restore), D-011, D-030 and D-033 (gateway), D-012 (notification policy), D-031 (who is trusted). Built in
 slices 2–4 (D-006). At `apsira-v0.5.0` the app side's core exists in `apsira_link` (D-APK-026): `hello` with its
 version choice (§9), the failures (every §8 code, as `unavailable` or a call error) and the trust core (§3: the
-caller's check, the provider's caller check, the §3.3 dev selection; `F_APSIRA` still unset). Still planned:
-APSIRA itself with its provider, every other method (§5–§7), the adapters in `apsira_storage` and `apsira_notify`,
-and each app's provider. For every interface value here this file wins over `04` and `05` (D-032).
+caller's check, the provider's caller check, the §3.3 dev selection; `F_APSIRA` still unset). At `apsira-v0.6.0`
+`apsira_link` also carries the backup calls (§5.2), the app-side provider for `backup_now` and `restore_offer`
+(§5.3, §5.4; each app declares it) and `ApsiraBackupTarget`, APSIRA's adapter of `apsira_storage`'s `BackupTarget`,
+in `apsira_link` (§5.1; D-APK-026's T2 addendum), with the archive calls of `atrium-offload.md` §3. Still planned:
+APSIRA itself with its provider, the policy and gateway calls (§6, §7; the policy check on `apsira_link`'s side of a
+seam in `apsira_notify`), and each app's adoption. For every interface value here this file wins over `04` and `05` (D-032).
+
 Clarified 2026-10-31 (§3.3): still version 1.0, with no change on the wire or for a peer.
+Clarified 2026-10-31 (T2: §5.1 the adapter's home and reading an offer, §5.2 two wire forms): still version 1.0,
+additive, with no change for a peer that already reads them so.
 
 This is the contract between APSIRA and every Apsira app on the same phone or tablet: what crosses, how each side
 proves who the other is, and how it is versioned. Both sides build to it. The app side is shared code
-(`apsira_link`, the APSIRA adapter of `apsira_storage`'s `BackupTarget`, the policy check in `apsira_notify`;
-D-017), so an app adopts it through a package tag, not its own code. Every name marked *new* is still planned: it
-is not in the packages at `apsira-v0.5.0`.
+(`apsira_link`, the APSIRA adapter of `apsira_storage`'s `BackupTarget` (in `apsira_link`), the policy check in
+`apsira_notify`; D-017), so an app adopts it through a package tag, not its own code. Every name marked *new* is
+still planned: it is not in the packages at `apsira-v0.6.0`.
 
 ## 1. Overview
 
@@ -42,7 +48,7 @@ Both providers are exported, declare no `permission`, `readPermission` or `write
 ### 3.1 The fingerprints
 
 - `F_APSIRA`: the SHA-256 of APSIRA's release certificate, recorded in APSIRA's `release-signing.md` §2 and held by
-  `apsira_link` as build-time configuration (unset at `apsira-v0.5.0`). It reaches each app through the package tag
+  `apsira_link` as build-time configuration (unset at `apsira-v0.6.0`). It reaches each app through the package tag
   that carries it.
 - The **app table**: APSIRA holds `package → SHA-256` for every Apsira app signed with **its own release key**,
   copied from each app's `release-signing.md` (RELAY, LYCEUM, ATRIUM, ASTROLABE; STYLUS when released). An app
@@ -87,8 +93,9 @@ checks. No call blocks the main thread; every call has a deadline (§7).
 
 ### 5.1 The adapter
 
-The app keeps its backup code unchanged; it is given the APSIRA adapter of `BackupTarget` (*new*, in
-`apsira_storage`) instead of, or beside, its SAF target. The adapter maps the port:
+The app keeps its backup code unchanged; it is given the APSIRA adapter of `BackupTarget` (in `apsira_link`, over
+`apsira_storage`'s unchanged port; an app takes it by adopting `apsira_link`) instead of, or beside, its SAF
+target. The adapter maps the port:
 
 | `BackupTarget` | Through the link |
 |---|---|
@@ -98,11 +105,12 @@ The app keeps its backup code unchanged; it is given the APSIRA adapter of `Back
 | `write(folder, name, bytes)` | `backup_begin` → write `fd` → `backup_commit` |
 | `rename(folder, from, to)` | `backup_rename` within APSIRA's queue (the `.tmp`-then-rename discipline of D-APK-018) |
 | `list(folder)` | `backup_list`: the app's backups APSIRA knows, queued and shipped |
-| `read(folder, name)` | `restore_open` → read `fd` |
+| `read(folder, name)` | `restore_open` by `name` → read `fd`; an offered snapshot is read by its name (§5.4) |
 | `delete(folder, name)` | `backup_delete`: removes a **queued** copy; a backup already shipped home is not deleted — hub retention governs it (D-008) — and the call succeeds |
 
 So an app's own keep-limit prunes only what is still on the device; the append-only store is never reached by an
-app.
+app. Failures reach the app as the port's: `storage_full` as a full folder, `not_found` on `rename` and `read` as a
+missing file, every other failure as a folder that is gone, so an app falls back as it does today.
 
 ### 5.2 Methods on APSIRA
 
@@ -123,6 +131,11 @@ plain form. `restore_open` opens the seal and streams the plain backup, with its
 counts toward a per-app queue cap; when full, the oldest **shipped-or-superseded** copy goes first, never the only
 copy of a day.
 
+Two wire forms, as `apsira_link` reads them (clarified 2026-10-31, additive within 1.0; APSIRA's provider writes the
+same): `made_utc` is an ISO 8601 UTC string ending in `Z` (`2026-10-31T09:30:00.000Z`), here and in `restore_offer`
+(§5.4); `backup_rename`'s outcome is a boolean field set to true, `exists` (the target name is taken) or `missing`
+(no backup named `from`), and a reply with neither is a rename done.
+
 ### 5.3 The central schedule
 
 For an app on the central schedule (D-008), APSIRA calls the **app's** provider:
@@ -141,8 +154,12 @@ APSIRA **offers**; the app **performs**:
 |---|---|---|
 | `restore_offer` | `name`, `snapshot`, `made_utc`, `size`, `reason` (`user` · `new_device`) | `accepted` (bool): the app will show its own confirmation |
 
-The app shows **its own** restore confirmation; on yes it reads the backup with `restore_open` (`snapshot`) through
-its `BackupTarget` and restores through **its own** restore path, exactly as from its own folder. On no it answers
+The app shows **its own** restore confirmation; on yes it reads the backup through its `BackupTarget` and restores
+through **its own** restore path, exactly as from its own folder. Through `ApsiraBackupTarget` the read is
+`read(folder, name)` with the offer's `name`, which is `restore_open` by `name`: a name names one backup (the adapter
+refuses a name `backup_list` already holds) and an offer's `name` and `snapshot` are one `backup_list` entry, so
+APSIRA opens the offered snapshot. The `snapshot` is shown, not sent; an app holding `apsira_link`'s
+`ApsiraBackupLink` may call `restore_open` with `snapshot` instead (clarified 2026-10-31, within 1.0). On no it answers
 nothing further. The restored data brings back the app's settings, its backup target included. "New phone in one
 go" (D-009) is: pair, receive the sealed keys (`sync-envelope.md` §6), install from the shelf, then one
 `restore_offer` (`reason` = `new_device`) per app with its latest snapshot.

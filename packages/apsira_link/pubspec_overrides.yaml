@@ -1,2 +1,3 @@
 dependency_overrides:
   apsira_core: { path: ../apsira_core }
+  apsira_storage: { path: ../apsira_storage }

@@ -1,27 +1,36 @@
 package com.apsiralabs.apsira_link
 
 import android.content.Context
-import android.net.Uri
+import android.content.pm.PackageManager
 import android.os.Bundle
 
 // The app's side of a call to APSIRA (contract app-link.md §2-§4, §8),
-// written from the contract. Before anything is called (§3.2):
-// 1. resolve the peer's authority (APSIRA, or APSIRA dev in a dev build);
-//    none is "not_installed";
-// 2. its package must be exactly the peer, else "not_trusted";
-// 3. LinkTrust.forPeer must trust it, else "not_trusted".
-// Then ContentResolver.call with `contract`, `version` and the extras.
-// Blocking: the plugin runs it off the main thread, and Dart holds the
-// deadline. Every failure is a reply, never a throw; nothing is logged.
+// written from the contract. Before anything is called (§3.2), and closing
+// T1's F-3 (K2-02a):
+// 1. acquire an unstable ContentProviderClient for the peer's authority
+//    (APSIRA, or APSIRA dev in a dev build) first; none is "not_installed";
+// 2. resolve the authority: its package must be exactly the peer, else
+//    "not_trusted";
+// 3. LinkTrust.forPeer must trust it, else "not_trusted";
+// 4. call through the client acquired in 1, with `contract`, `version` and
+//    the extras, then close it. An APSIRA replaced after the acquire kills
+//    the bound process, so the call fails ("no_answer") instead of reaching
+//    another installation;
+// 5. check 2 and 3 again: a change discards the reply as "not_trusted".
+// A descriptor in a discarded reply is closed; one in an answer is a stream
+// handle (LinkStreams). Blocking: the plugin runs it off the main thread
+// under the deadline. Every failure is a reply, never a throw; nothing is
+// logged.
 class LinkClient(
     private val context: Context,
     private val ownPackage: String = context.packageName,
     private val devSwitch: Boolean = LinkTrust.devSwitchOn(context),
     private val table: FingerprintTable = LinkTrust.apsiraTable,
+    private val streams: LinkStreams = LinkStreams(),
 ) {
     companion object {
         // The reply keys and the client's own reasons (ruling A-5); the Dart
-        // side is ChannelApsiraLink.
+        // side is LinkChannel.
         const val UNAVAILABLE = "unavailable"
         const val ERROR = "error"
         const val FIELDS = "fields"
@@ -37,32 +46,55 @@ class LinkClient(
         val pm = context.packageManager
         val peer = LinkTrust.peer(ownPackage, devSwitch)
         val authority = peer + LinkConfig.AUTHORITY_SUFFIX
+        val trust = LinkTrust.forPeer(ownPackage, devSwitch, table)
+        val provider = try {
+            context.contentResolver.acquireUnstableContentProviderClient(authority)
+        } catch (e: RuntimeException) {
+            null
+        } ?: return unavailable(NOT_INSTALLED)
+
+        val reply = try {
+            when (check(pm, authority, peer, trust)) {
+                Check.ABSENT -> return unavailable(NOT_INSTALLED)
+                Check.UNTRUSTED -> return unavailable(NOT_TRUSTED)
+                Check.TRUSTED -> {}
+            }
+            val args = toBundle(extras).apply {
+                putString("contract", LinkConfig.CONTRACT)
+                putString("version", version)
+            }
+            provider.call(method, null, args)
+        } catch (e: Exception) {
+            null
+        } finally {
+            provider.close()
+        } ?: return unavailable(NO_ANSWER)
+
+        if (check(pm, authority, peer, trust) != Check.TRUSTED) {
+            LinkStreams.discard(reply)
+            return unavailable(NOT_TRUSTED)
+        }
+        if (reply.containsKey(ERROR)) {
+            @Suppress("DEPRECATION")
+            val code = reply.get(ERROR)
+            LinkStreams.discard(reply)
+            return if (code is String) mapOf(ERROR to code) else unavailable(UNKNOWN_ERROR)
+        }
+        return mapOf(FIELDS to streams.reply(reply), DEV_UNVERIFIED to trust.devUnverified)
+    }
+
+    private enum class Check { ABSENT, UNTRUSTED, TRUSTED }
+
+    // §3.2: the authority's package is exactly the peer, and trusted now.
+    private fun check(pm: PackageManager, authority: String, peer: String, trust: Trust): Check {
         val info = try {
             @Suppress("DEPRECATION")
             pm.resolveContentProvider(authority, 0)
         } catch (e: RuntimeException) {
             null
-        } ?: return unavailable(NOT_INSTALLED)
-        if (info.packageName != peer) return unavailable(NOT_TRUSTED)
-        val trust = LinkTrust.forPeer(ownPackage, devSwitch, table)
-        if (!trust.trusts(pm, peer)) return unavailable(NOT_TRUSTED)
-
-        val reply = try {
-            val args = toBundle(extras).apply {
-                putString("contract", LinkConfig.CONTRACT)
-                putString("version", version)
-            }
-            context.contentResolver.call(Uri.parse("content://$authority"), method, null, args)
-        } catch (e: Exception) {
-            null
-        } ?: return unavailable(NO_ANSWER)
-
-        if (reply.containsKey(ERROR)) {
-            @Suppress("DEPRECATION")
-            val code = reply.get(ERROR)
-            return if (code is String) mapOf(ERROR to code) else unavailable(UNKNOWN_ERROR)
-        }
-        return mapOf(FIELDS to toMap(reply), DEV_UNVERIFIED to trust.devUnverified)
+        } ?: return Check.ABSENT
+        if (info.packageName != peer) return Check.UNTRUSTED
+        return if (trust.trusts(pm, peer)) Check.TRUSTED else Check.UNTRUSTED
     }
 
     private fun unavailable(reason: String): Map<String, Any?> = mapOf(UNAVAILABLE to reason)
@@ -84,25 +116,5 @@ class LinkClient(
                 else -> throw IllegalArgumentException("unsupported extra")
             }
         }
-    }
-
-    // APSIRA's Bundle into what the method channel carries. A value the
-    // codec cannot carry (a ParcelFileDescriptor arrives only with the T2
-    // calls) is left out rather than failing the reply.
-    private fun toMap(bundle: Bundle): Map<String, Any?> {
-        val out = mutableMapOf<String, Any?>()
-        for (key in bundle.keySet()) {
-            @Suppress("DEPRECATION")
-            val value = bundle.get(key)
-            when (value) {
-                null, is String, is Boolean, is Int, is Long, is Double,
-                is ByteArray, is IntArray, is LongArray, is DoubleArray -> out[key] = value
-                is Float -> out[key] = value.toDouble()
-                is Array<*> -> out[key] = value.toList().filterIsInstance<String>()
-                is List<*> -> out[key] = value.filterIsInstance<String>()
-                is Bundle -> out[key] = toMap(value)
-            }
-        }
-        return out
     }
 }

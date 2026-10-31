@@ -14,7 +14,7 @@ git form, and `timezone` (the alarm scheduler's `TZDateTime`). There is no `app_
 
 ```yaml
 dependencies:
-  apsira_notify: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_notify } }
+  apsira_notify: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_notify } }
 ```
 
 An app drops its own dependency on `flutter_local_notifications`. One that still imports
@@ -22,7 +22,7 @@ the plugin directly (an alarm adapter) names the vendored copy in the same form,
 refuses two sources of one package:
 
 ```yaml
-  flutter_local_notifications: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/third_party/flutter_local_notifications } }
+  flutter_local_notifications: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/third_party/flutter_local_notifications } }
 ```
 
 ## Consumer requirements

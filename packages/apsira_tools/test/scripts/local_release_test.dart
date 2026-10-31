@@ -522,4 +522,222 @@ void main() {
       );
     });
   });
+
+  // --candidate (APSIRA D-035, apsira-side ruling R-4): release mode's steps
+  // 1–11 under an -rc.<n> tag, the notes from CHANGELOG.md's Unreleased
+  // section as a .notes.md sidecar, and never published.
+  group('a candidate', () {
+    for (final app in apps) {
+      final id = app.settings['APSIRA_APP_ID']!;
+      final name = '$id-$_candidateVersion.apk';
+      final dist = 'build/release/$_candidate';
+
+      test('${app.name}: --dry-run prints the steps and the sidecar', () {
+        final box = Sandbox();
+        final result = box.run('local_release', [
+          '--dry-run',
+          '--candidate',
+          _candidate,
+        ], _env(box, app));
+        expect(result.exitCode, 0, reason: out(result));
+        expect(
+          '${result.stdout}',
+          startsWith('local_release: dry run of the candidate $_candidate'),
+        );
+        expect(_commands(result), _candidateLines(app));
+        expect('${result.stdout}', contains('$dist/$name.notes.md'));
+        expect('${result.stdout}', contains('not published'));
+        _neverPublished(result);
+        _neverShown(result);
+        expect(box.calls, isEmpty);
+        expect(Directory('${box.root}/build').existsSync(), isFalse);
+      });
+
+      test(
+        '${app.name}: a candidate runs those steps and leaves the files',
+        () {
+          final box = _candidateBox();
+          final result = box.run('local_release', [
+            '--candidate',
+            _candidate,
+          ], _env(box, app));
+          expect(result.exitCode, 0, reason: out(result));
+          final code = app == relay ? '1' : stubVersionCode;
+          expect(box.calls, [
+            for (final line in _candidateLines(app))
+              line
+                  .replaceAll('<versionCode>', code)
+                  .replaceAll('<ANDROID_HOME>', box.sdk)
+                  .replaceAll('<newest>', newestBuildTools),
+          ]);
+          for (final key in app.keyEnv) {
+            expect(box.flutterEnv, contains(key), reason: 'Gradle reads $key');
+          }
+          final files = '${box.root}/$dist';
+          expect(File('$files/$name').existsSync(), isTrue);
+          expect(
+            File('$files/$name.sha256').readAsStringSync(),
+            matches(RegExp('^[0-9a-f]{64}  ${RegExp.escape(name)}\n\$')),
+          );
+          expect(
+            File('$files/$name.notes.md').readAsStringSync(),
+            startsWith('# ${app.settings['APSIRA_APP']} $_candidateVersion\n'),
+          );
+          expect('${result.stdout}', contains('$files:'));
+          expect('${result.stdout}', contains('not published'));
+          expect(
+            [
+              for (final file in Directory(files).listSync())
+                if (!file.path.endsWith('/check.log'))
+                  file.path.split('/').last,
+            ]..sort(),
+            [name, '$name.notes.md', '$name.sha256'],
+          );
+          _neverPublished(result);
+          _neverShown(result);
+        },
+      );
+    }
+
+    final refused = <String, List<String>>{
+      '-rc.0': ['--candidate', 'v1.2.3-rc.0'],
+      'a missing -rc': ['--candidate', 'v1.2.3'],
+      'a leading zero in -rc': ['--candidate', 'v1.2.3-rc.01'],
+      '--candidate without its tag': ['--candidate'],
+      '--candidate and a release tag': ['--candidate', _candidate, releaseTag],
+      'a release tag with -rc': ['v1.2.3-rc.1'],
+      '--issues with a candidate': [
+        '--issues',
+        'f.json',
+        '--candidate',
+        _candidate,
+      ],
+    };
+    for (final MapEntry(key: what, value: args) in refused.entries) {
+      test('$what is refused (exit 2)', () {
+        final box = Sandbox();
+        for (final dry in [true, false]) {
+          final result = box.run('local_release', [
+            if (dry) '--dry-run',
+            ...args,
+          ], _env(box, relay));
+          expect(result.exitCode, 2, reason: '$dry: ${out(result)}');
+          _neverShown(result);
+        }
+        expect(box.calls, isEmpty);
+      });
+    }
+
+    test('HEAD is not the candidate tag (exit 1, nothing built)', () {
+      final box = _candidateBox();
+      box
+        ..write('later.txt', 'x')
+        ..git(['add', 'later.txt'])
+        ..git(['commit', '-q', '-m', 'later']);
+      final result = box.run('local_release', [
+        '--candidate',
+        _candidate,
+      ], _env(box, lyceum));
+      expect(result.exitCode, 1, reason: out(result));
+      expect('${result.stderr}', contains('HEAD is not $_candidate'));
+      expect(box.calls, isEmpty);
+      _neverShown(result);
+    });
+
+    for (final (what, extra) in [
+      (
+        'no Unreleased section (exit 1)',
+        {'STUB_FAIL': 'dart run tool/release/changelog.dart --unreleased'},
+      ),
+      ('a changelog.dart without --unreleased', {'STUB_NOTES_EXIT': '64'}),
+    ]) {
+      test('$what: no sidecar, the build goes on', () {
+        final box = _candidateBox();
+        final result = box.run('local_release', [
+          '--candidate',
+          _candidate,
+        ], _env(box, lyceum, extra));
+        expect(result.exitCode, 0, reason: out(result));
+        expect('${result.stdout}', contains('no notes'));
+        final files = '${box.root}/build/release/$_candidate';
+        expect(
+          File('$files/lyceum-$_candidateVersion.apk').existsSync(),
+          isTrue,
+        );
+        expect(
+          File('$files/lyceum-$_candidateVersion.apk.notes.md').existsSync(),
+          isFalse,
+        );
+        expect('${result.stdout}', isNot(contains('.notes.md')));
+        _neverShown(result);
+      });
+    }
+
+    test('a missing signing value is named, never shown', () {
+      final box = _candidateBox();
+      final env = _env(box, lyceum)..remove('LYCEUM_KEY_ALIAS');
+      final result = box.run('local_release', ['--candidate', _candidate], env);
+      expect(result.exitCode, 1, reason: out(result));
+      expect('${result.stderr}', contains('LYCEUM_KEY_ALIAS'));
+      expect(box.calls, isEmpty);
+      _neverShown(result);
+    });
+
+    test('--help names candidate mode', () {
+      final box = Sandbox();
+      final result = box.run('local_release', ['--help'], box.env());
+      expect(result.exitCode, 0, reason: out(result));
+      expect(
+        '${result.stdout}',
+        contains('--candidate v<major>.<minor>.<patch>-rc.<n>'),
+      );
+    });
+  });
+}
+
+const _candidate = 'v1.2.3-rc.1';
+const _candidateVersion = '1.2.3-rc.1';
+
+/// A sandbox tagged [_candidate], with VIATICUM's check stub.
+Sandbox _candidateBox() {
+  final box = Sandbox()
+    ..write(
+      'tool/check.sh',
+      'echo "bash tool/check.sh" >> "\$LOG"\necho "check: PASS"\n',
+    );
+  return box..tagged(_candidate);
+}
+
+/// [app]'s release lines as a candidate, derived from release mode's: the
+/// same steps in the same order with the candidate's names, step 8's notes
+/// from the Unreleased section (after step 7's versionCode), and nothing of
+/// step 12 (the notes from the closed issues).
+List<String> _candidateLines(App app) {
+  final lines = [
+    for (final line in app.release)
+      if (!line.startsWith('gh api') && !line.contains('changelog.dart'))
+        line
+            .replaceAll(releaseTag, _candidate)
+            .replaceAll('2.0.2', _candidateVersion),
+  ];
+  final notesAt = lines.indexWhere(
+    (line) => !line.contains('tool/release/version.dart'),
+  );
+  return lines..insert(
+    notesAt,
+    'dart run tool/release/changelog.dart --unreleased $_candidate',
+  );
+}
+
+/// No publish command, not even printed.
+void _neverPublished(ProcessResult result) {
+  for (final publish in ['gh release', 'gh api', 'git push', 'gh repo']) {
+    expect(out(result), isNot(contains(publish)));
+  }
+}
+
+/// No signing value in the output.
+void _neverShown(ProcessResult result) {
+  expect(out(result), isNot(contains(_storePassword)));
+  expect(out(result), isNot(contains(_keyPassword)));
 }

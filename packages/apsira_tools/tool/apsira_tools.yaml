@@ -81,3 +81,7 @@ privacy:
   # (manifest_check --architecture):
   # approved_permissions: docs/07-architecture.md
   approved_heading: '### 11.1'
+  # v0.6. Whether the app holds the network (D-APK-024: APSIRA and the
+  # console only). true lets manifest_check admit INTERNET, and only when
+  # declared_permissions lists it with a reason; false (RELAY) forbids it.
+  holds_network: false

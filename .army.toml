@@ -19,12 +19,26 @@ gate_setup = "bash -c 'for p in packages/*/ master-app/ master-app/hub/ master-a
 
 # Merge gates are static per package and run only when that package changed (paths). Each `requires` keeps a gate
 # `unavailable` until the package exists. Every package carries one version and the whole set one tag,
-# `apsira-v<version>` (D-APK-007); `tool/release.sh` cuts it (operator act). The full check (tool/check.sh, verdict
-# line `check: PASS`, the shared-tag rules included) runs only when a validator sets APSIRA_FULL_CHECK=1 at a
+# `apsira-v<version>` (D-APK-007); `tool/release.sh` cuts it (operator act). The packages' full check (tool/check.sh,
+# verdict line `check: PASS`, the shared-tag rules included) runs only when a validator sets APSIRA_FULL_CHECK=1 at a
 # checkpoint or at the unit's end: until every package carries the release's version its `versions equal` step is red.
+# APSIRA's own full check is `ma-check`, switched by APSIRA_APP_FULL_CHECK=1 (master-app/docs/assurance-rules.md §1).
 shared_files = ["docs/decisions.md", "packages/README.md", "**/README.md", "tool/check.sh", "**/CHANGELOG.md",
                 "master-app/CLAUDE.md", "master-app/docs/02-decision-log.md", "master-app/docs/05-architecture.md",
-                "master-app/docs/08-testing-and-ci.md", "master-app/docs/building.md", "master-app/docs/dependencies.md"]   # master-app: each task edits only its own section
+                "master-app/docs/08-testing-and-ci.md", "master-app/docs/building.md", "master-app/docs/dependencies.md",
+                # P1's (P1 01-plan.md §Waves): the pins, the string catalogues and their generated code, the router,
+                # the settings screen, the Android entry points, the network bar, the privacy lists, the hub's routes
+                "master-app/pubspec.yaml", "master-app/pubspec.lock", "master-app/hub/pubspec.yaml",
+                "master-app/hub/pubspec.lock", "master-app/lib/app/l10n/app_en.arb", "master-app/lib/app/l10n/app_es.arb",
+                "master-app/lib/app/l10n/generated/*.dart", "master-app/lib/app/router.dart",
+                "master-app/lib/features/settings/ui/settings_screen.dart", "master-app/android/app/build.gradle.kts",
+                "master-app/android/app/src/main/AndroidManifest.xml",
+                "master-app/android/app/src/main/kotlin/com/apsiralabs/apsira/MainActivity.kt",
+                "master-app/test/critical/data/network_bar_test.dart", "master-app/tool/privacy/dependency_allowlist.yaml",
+                "master-app/tool/privacy/merge_only_permissions.txt", "master-app/shared/lib/master_shared.dart",
+                "master-app/hub/lib/api/serve_modules.dart", "master-app/docs/04-data-model.md",
+                "master-app/docs/06-ux-and-screens.md", "master-app/docs/09-security-model.md",
+                "master-app/docs/10-hub-runbook.md"]   # master-app: each task edits only its own section
 gates = [
   { name = "format", cmd = "bash -c 'dart format --output=none --set-exit-if-changed packages/apsira_*'", proves = "formatting of the apsira packages (packages/third_party/ is vendored and never formatted)", paths = ["packages/**/*.dart"], requires = ["file:packages/apsira_core/pubspec.yaml"] },
   { name = "core",   cmd = "bash -c 'cd packages/apsira_core && dart analyze --fatal-infos && dart test'", proves = "apsira_core analyzes and its tests pass", paths = ["packages/apsira_core/**"], requires = ["file:packages/apsira_core/pubspec.yaml"], mem_gb = 1 },
@@ -44,19 +58,35 @@ gates = [
   { name = "link", cmd = "bash -c 'cd packages/apsira_link && flutter analyze && flutter test'", proves = "apsira_link analyzes; the trust core (caller check, fingerprint table, unavailable reasons) and its calls pass", paths = ["packages/apsira_link/**"], requires = ["file:packages/apsira_link/pubspec.yaml"], mem_gb = 3 },
   { name = "check-rules", cmd = "bash tool/test/shared_tag_check_test.sh", proves = "tool/check.sh's shared-tag release rules: six broken trees fail, one passes, an untagged git dependency resolves offline through its override", paths = ["tool/**"], requires = ["file:tool/test/shared_tag_check_test.sh"], mem_gb = 1 },
   { name = "release-sh", cmd = "bash tool/test/release_sh_test.sh", proves = "tool/release.sh refuses in a session and on every unmet precondition; --dry-run prints the check, tag and push", paths = ["tool/**"], requires = ["file:tool/test/release_sh_test.sh"], mem_gb = 1 },
-  # APSIRA (master-app/, APSIRA D-026, P0-06). One config for the repository: army reads only the root .army.toml.
-  # Static merge gates by path; each stays unavailable until P0 creates its pubspec. P0-06 wires the rest of
-  # master-app's tool/ steps (codegen, l10n, layering, deps, manifest) and its area gates here.
+  # APSIRA (master-app/, APSIRA D-026). One config for the repository: army reads only the root .army.toml.
+  # Merge gates (08 §4): static, by path, each `requires` its script or config so it stays unavailable until built.
   { name = "ma-format", cmd = "bash -c 'cd master-app && dart format --output=none --set-exit-if-changed $(ls -d lib test hub shared tool 2>/dev/null)'", proves = "formatting of APSIRA's app, hub and shared code", paths = ["master-app/**/*.dart"], requires = ["file:master-app/pubspec.yaml"] },
   { name = "ma-analyze", cmd = "bash -c 'cd master-app && flutter analyze'", proves = "APSIRA's app analyzes clean", paths = ["master-app/**"], requires = ["file:master-app/pubspec.yaml"], mem_gb = 3 },
-  { name = "ma-hub-analyze", cmd = "bash -c 'cd master-app/hub && dart analyze --fatal-infos'", proves = "APSIRA's hub program analyzes clean", paths = ["master-app/hub/**", "master-app/shared/**"], requires = ["file:master-app/hub/pubspec.yaml"], mem_gb = 1 },
+  { name = "ma-hub-analyze", cmd = "bash -c 'cd master-app/hub && dart analyze --fatal-infos && cd ../shared && dart analyze --fatal-infos'", proves = "APSIRA's hub program and the shared package analyze clean", paths = ["master-app/hub/**", "master-app/shared/**"], requires = ["file:master-app/hub/pubspec.yaml", "file:master-app/shared/pubspec.yaml"], mem_gb = 1 },
+  { name = "ma-codegen", cmd = "bash -c 'cd master-app && bash tool/codegen.sh --check'", proves = "the committed generated code (l10n; Drift from P1-04) is current", paths = ["master-app/**"], requires = ["file:master-app/tool/codegen.sh"], mem_gb = 3 },
+  { name = "ma-l10n", cmd = "bash -c 'cd master-app && dart run apsira_tools:l10n_check --l10n-config lib/app/l10n/l10n.yaml'", proves = "every ARB key in English and Spanish with matching placeholders; no literal passed to Text( in lib/", paths = ["master-app/**"], requires = ["file:master-app/lib/app/l10n/l10n.yaml"], mem_gb = 1 },
+  { name = "ma-layering", cmd = "bash -c 'cd master-app && dart run apsira_tools:layering_lint --config tool/apsira_tools.yaml'", proves = "05 §2's layers: no feature imports data/, another feature or a plugin; colour literals only in lib/app/theme/", paths = ["master-app/**"], requires = ["file:master-app/tool/apsira_tools.yaml"], mem_gb = 1 },
+  { name = "ma-deps", cmd = "bash -c 'cd master-app && dart run tool/privacy/guards.dart deps'", proves = "every dependency is on the privacy allowlist and has its row in docs/dependencies.md (D-005)", paths = ["master-app/**"], requires = ["file:master-app/tool/privacy/guards.dart"], mem_gb = 1 },
+  { name = "ma-manifest", cmd = "bash -c 'cd master-app && dart run tool/privacy/guards.dart manifest'", proves = "the source manifest declares exactly D-024's permissions (INTERNET only as the declared list holds it, R-2)", paths = ["master-app/android/**", "master-app/tool/privacy/**"], requires = ["file:master-app/tool/privacy/guards.dart"], mem_gb = 1 },
+  # Area gates (08 §2): validator-only. Never at a merge (paths) and unavailable until a validator sets
+  # APSIRA_VALIDATION=1; the scope is APSIRA_TEST_SCOPE, inherited from the validator's environment. Never reused
+  # (cache = false): the tree fingerprint does not hold the scope.
+  { name = "t-domain", cmd = "bash -c 'cd master-app && bash tool/test_area.sh domain'", proves = "the domain area (test/domain, test/critical/domain) in APSIRA_TEST_SCOPE", paths = [".army-never-at-merge"], requires = ["file:master-app/tool/test_area.sh", "env:APSIRA_VALIDATION"], cache = false, mem_gb = 3 },
+  { name = "t-data", cmd = "bash -c 'cd master-app && bash tool/test_area.sh data'", proves = "the data area (test/data, test/app/services, test/critical/data) in APSIRA_TEST_SCOPE", paths = [".army-never-at-merge"], requires = ["file:master-app/tool/test_area.sh", "env:APSIRA_VALIDATION"], cache = false, mem_gb = 3 },
+  { name = "t-features", cmd = "bash -c 'cd master-app && bash tool/test_area.sh features'", proves = "the features area (test/features, test/critical/features) with the large-text layout check in APSIRA_TEST_SCOPE", paths = [".army-never-at-merge"], requires = ["file:master-app/tool/test_area.sh", "env:APSIRA_VALIDATION"], cache = false, mem_gb = 3 },
+  { name = "t-goldens", cmd = "bash -c 'cd master-app && bash tool/test_area.sh goldens'", proves = "the golden matrix (test/goldens) in APSIRA_TEST_SCOPE", paths = [".army-never-at-merge"], requires = ["file:master-app/tool/test_area.sh", "env:APSIRA_VALIDATION"], cache = false, mem_gb = 3 },
+  { name = "t-android", cmd = "bash -c 'cd master-app && bash tool/android_unit_tests.sh'", proves = "the Kotlin unit tests (Robolectric, :app:testDevDebugUnitTest) for APSIRA_TEST_SCOPE's classes", paths = [".army-never-at-merge"], requires = ["file:master-app/tool/android_unit_tests.sh", "env:APSIRA_VALIDATION"], cache = false, mem_gb = 4 },
+  { name = "t-hub", cmd = "bash -c 'cd master-app && bash tool/hub_tests.sh'", proves = "the hub's tests in the sandbox (08 §5) for APSIRA_TEST_SCOPE's hub/test paths; no sandbox root left behind", paths = [".army-never-at-merge"], requires = ["file:master-app/tool/hub_tests.sh", "env:APSIRA_VALIDATION"], cache = false, mem_gb = 1 },
+  # APSIRA's full check (08 §4): once, at the v1 exit, switched by APSIRA_APP_FULL_CHECK=1 (never the packages'
+  # APSIRA_FULL_CHECK, which runs the root `check`). Its verdict is the last line, as the root `check` gate reads it.
+  { name = "ma-check", cmd = "bash -c 'set -o pipefail; mkdir -p .army; (cd master-app && bash tool/check.sh) 2>&1 | tee .army/ma-check.log; grep -qx \"check: PASS\" .army/ma-check.log'", proves = "APSIRA's eighteen steps: every merge gate, keystore, secrets, every area, rest and coverage", paths = [".army-never-at-merge"], requires = ["file:master-app/tool/check.sh", "env:APSIRA_APP_FULL_CHECK"], mem_gb = 3 },
   { name = "check",  cmd = "bash -c 'set -o pipefail; mkdir -p .army; bash tool/check.sh 2>&1 | tee .army/check.log; grep -qx \"check: PASS\" .army/check.log'", proves = "every package and example: analyze + tests; the shared-tag rules (one version, CHANGELOG sections, the git form at apsira-v<version>, overrides = transitive closure); sha256 of fonts and brand", paths = [".army-never-at-merge"], requires = ["file:tool/check.sh", "env:APSIRA_FULL_CHECK"], mem_gb = 3 },
 ]
 
 [assurance]
 critical = []
 subsystems = ["packages/apsira_core/**", "packages/apsira_ui/**", "packages/apsira_tools/**", "packages/apsira_test/**", "packages/apsira_app/**", "packages/apsira_jobs/**", "packages/apsira_l10n/**", "packages/apsira_onboarding/**", "packages/apsira_storage/**", "packages/apsira_lock/**", "packages/apsira_db/**", "packages/apsira_exchange/**", "packages/apsira_zip/**", "packages/apsira_notify/**", "packages/apsira_link/**", "master-app/lib/**", "master-app/android/**", "master-app/hub/**", "master-app/shared/**"]
-security = []
+security = ["packages/apsira_link/**", "packages/apsira_lock/**", "master-app/android/**/link/**", "master-app/android/**/hubclient/**", "master-app/android/**/keystore/**", "master-app/lib/**/pairing/**", "master-app/hub/lib/pairing/**"]   # assurance-rules §3: a security-first review pack
 security_review = false
 final_validation = "full"
 max_validations = 2
@@ -70,7 +100,7 @@ vision = "README.md"
 ecosystem = ["docs/decisions.md", "packages/README.md"]
 
 [network]
-allow = ["pub.dev", "storage.googleapis.com"]   # pub fetches for the packages' few dependencies (flutter_lucide, yaml, crypto, workmanager, test)
+allow = ["pub.dev", "storage.googleapis.com", "repo.maven.apache.org", "dl.google.com", "maven.google.com"]   # package registries only: pub for the packages and APSIRA; Maven Central and Google's Maven for APSIRA's Kotlin (OkHttp, CameraX, ZXing, Tink; P1 kickoff ruling 2). A task adding a dependency runs with `online`
 online = false
 
 [resources]

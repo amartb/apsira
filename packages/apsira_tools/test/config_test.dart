@@ -65,6 +65,7 @@ void main() {
       config.privacy.declaredPermissions,
       'tool/privacy/declared_permissions.txt',
     );
+    expect(config.privacy.holdsNetwork, isFalse);
   }
 
   group('defaults', () {
@@ -138,6 +139,17 @@ privacy:
       expect(config.privacy.declaredPermissions, 'tool/perms.txt');
     });
 
+    test('privacy.holds_network: true is read (v0.6, D-APK-024)', () {
+      expect(
+        load('privacy:\n  holds_network: true\n').privacy.holdsNetwork,
+        isTrue,
+      );
+      expect(
+        load('privacy:\n  holds_network: false\n').privacy.holdsNetwork,
+        isFalse,
+      );
+    });
+
     test('an empty list is a value, not the default', () {
       final config = load('layering:\n  shared_packages: []\n');
       expect(config.layering.sharedPackages, isEmpty);
@@ -180,6 +192,11 @@ privacy:
       rejects('coverage:\n  min_lines: lots\n', 'coverage.min_lines');
       rejects('coverage:\n  min_lines: 101\n', 'coverage.min_lines');
       rejects('coverage:\n  run: 3\n', 'coverage.run');
+      rejects(
+        'privacy:\n  holds_network: yes please\n',
+        'privacy.holds_network',
+      );
+      rejects('privacy:\n  holds_network: 1\n', 'privacy.holds_network');
       rejects('- a list\n', 'is not a map');
     });
 

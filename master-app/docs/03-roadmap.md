@@ -43,7 +43,7 @@ consume them (`07` §2):
 | Tag | Holds | Before |
 |---|---|---|
 | **T1** | `apsira_lock` mandatory mode; `apsira_link` trust core | M1 |
-| **T2** | `apsira_storage`'s APSIRA adapter of `BackupTarget` (write and read through the link); `apsira_link`'s backup-schedule calls (asked for a backup, report done); the archive calls ATRIUM uses | M2 |
+| **T2** | `apsira_link`'s APSIRA adapter of `apsira_storage`'s `BackupTarget` (write and read through the link); `apsira_link`'s backup-schedule calls (asked for a backup, report done); the archive calls ATRIUM uses | M2 |
 | **T3** | `apsira_link`'s gateway delivery calls; `apsira_notify`'s policy check with its fallback when APSIRA is missing or slow, and the kinds an app declares | M3 |
 
 Each tag's version is whatever the apsira lane releases next; a tag may carry other package work. *Proposed:* T2 and

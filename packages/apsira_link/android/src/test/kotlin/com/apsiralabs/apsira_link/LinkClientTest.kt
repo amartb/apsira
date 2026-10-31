@@ -1,6 +1,8 @@
 package com.apsiralabs.apsira_link
 
 import android.content.ContentProvider
+import android.content.ContentProviderClient
+import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.pm.PackageInfo
 import android.content.pm.ProviderInfo
@@ -8,6 +10,7 @@ import android.content.pm.Signature
 import android.database.Cursor
 import android.net.Uri
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
 import java.security.MessageDigest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -18,6 +21,29 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.Implementation
+import org.robolectric.annotation.Implements
+import org.robolectric.shadows.ShadowContentResolver
+
+/**
+ * Runs [afterAcquire] right after LinkClient acquires its provider client,
+ * so a test can change APSIRA between the acquire and the check (T1 F-3).
+ */
+@Implements(ContentResolver::class)
+class AcquireShadow : ShadowContentResolver() {
+    companion object {
+        var afterAcquire: (() -> Unit)? = null
+        var acquired: ContentProviderClient? = null
+    }
+
+    @Implementation
+    override fun acquireUnstableContentProviderClient(name: String): ContentProviderClient? {
+        val client = super.acquireUnstableContentProviderClient(name)
+        acquired = client
+        afterAcquire?.invoke()
+        return client
+    }
+}
 
 // LinkClient (contract app-link.md §2-§4, §8): APSIRA is resolved and
 // checked before anything is called, and every failure is a reply, never a
@@ -32,9 +58,11 @@ class LinkClientTest {
         val calls = mutableListOf<Pair<String, Bundle?>>()
         var reply: Bundle? = null
         var failure: RuntimeException? = null
+        var during: (() -> Unit)? = null
 
         override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
             calls += method to extras
+            during?.invoke()
             failure?.let { throw it }
             return reply
         }
@@ -209,5 +237,109 @@ class LinkClientTest {
         // The test app's id does not end in .dev and its manifest has no
         // switch: the release APSIRA is the peer, and it is absent.
         assertEquals(unavailable("not_installed"), hello(LinkClient(app)))
+    }
+
+    // T1's F-3 (K2-02a): acquire, then check, then call through what was
+    // acquired, then check again.
+
+    /** Installs APSIRA again, now signed with the certificate the table does not hold. */
+    private fun replaceApsiraSigner() {
+        @Suppress("DEPRECATION")
+        shadowOf(pm).installPackage(PackageInfo().apply {
+            packageName = LinkConfig.APSIRA
+            signatures = arrayOf(debug)
+        })
+        // The reinstall drops the provider's entry; the new APK declares it again.
+        shadowOf(pm).addOrUpdateProvider(ProviderInfo().apply {
+            authority = LinkConfig.APSIRA + LinkConfig.AUTHORITY_SUFFIX
+            packageName = LinkConfig.APSIRA
+            name = FakeApsira::class.java.name
+            exported = true
+        })
+    }
+
+    private fun <T> acquiring(after: () -> Unit, body: () -> T): T {
+        AcquireShadow.afterAcquire = after
+        try {
+            return body()
+        } finally {
+            AcquireShadow.afterAcquire = null
+            AcquireShadow.acquired = null
+        }
+    }
+
+    @Test
+    @Config(shadows = [SigningShadow::class, AcquireShadow::class])
+    fun theCallGoesThroughTheClientAcquiredBeforeTheCheckAndReleasesIt() {
+        val acquiredApsira = apsira()
+        var later: FakeApsira? = null
+
+        val reply = acquiring({ later = apsira() }) {
+            hello(client()).also { assertTrue(shadowOf(AcquireShadow.acquired!!).isReleased) }
+        }
+
+        assertEquals(false, reply["devUnverified"])
+        assertEquals(1, acquiredApsira.calls.size)
+        assertEquals(0, later!!.calls.size)
+    }
+
+    @Test
+    @Config(shadows = [SigningShadow::class, AcquireShadow::class])
+    fun aPackageThatChangesBetweenAcquireAndCheckIsNotTrustedAndNothingIsCalled() {
+        val provider = apsira()
+
+        val reply = acquiring({ replaceApsiraSigner() }) { hello(client()) }
+
+        assertEquals(unavailable("not_trusted"), reply)
+        assertEquals(0, provider.calls.size)
+    }
+
+    @Test
+    fun aReplyAfterATrustChangeIsDiscardedAndItsStreamsClosed() {
+        val pipe = ParcelFileDescriptor.createPipe()
+        val streams = LinkStreams()
+        val provider = apsira().apply {
+            reply = Bundle().apply { putParcelable("fd", pipe[1]) }
+            during = { replaceApsiraSigner() }
+        }
+
+        val reply = LinkClient(app, relay, false, trusting(release), streams).call("backup_begin", "1.0", emptyMap())
+
+        assertEquals(unavailable("not_trusted"), reply)
+        assertEquals(1, provider.calls.size)
+        assertEquals(0, streams.openCount)
+        assertEquals(-1, ParcelFileDescriptor.AutoCloseInputStream(pipe[0]).read())
+    }
+
+    @Test
+    fun aDescriptorInAnErrorReplyIsClosed() {
+        val pipe = ParcelFileDescriptor.createPipe()
+        apsira().reply = Bundle().apply {
+            putString("error", "busy")
+            putParcelable("fd", pipe[1])
+        }
+        assertEquals(mapOf("error" to "busy"), hello(client()))
+        assertEquals(-1, ParcelFileDescriptor.AutoCloseInputStream(pipe[0]).read())
+    }
+
+    @Test
+    fun aDescriptorInAnAnswerReachesDartAsAStreamHandle() {
+        val pipe = ParcelFileDescriptor.createPipe()
+        val streams = LinkStreams()
+        apsira().reply = Bundle().apply {
+            putParcelable("fd", pipe[1])
+            putString("ticket", "t-1")
+        }
+
+        val reply = LinkClient(app, relay, false, trusting(release), streams).call("backup_begin", "1.0", emptyMap())
+
+        @Suppress("UNCHECKED_CAST")
+        val fields = reply["fields"] as Map<String, Any?>
+        @Suppress("UNCHECKED_CAST")
+        val handle = (fields["fd"] as Map<String, Any?>)[LinkStreams.STREAM] as Int
+        assertEquals("t-1", fields["ticket"])
+        assertEquals(1, streams.openCount)
+        assertEquals(emptyMap<String, Any?>(), streams.write(handle, byteArrayOf(9)))
+        streams.closeAll()
     }
 }

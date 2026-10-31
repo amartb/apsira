@@ -12,7 +12,7 @@ Pin by the shared tag, the same ref for every apsira package (D-APK-007, `../REA
 
 ```yaml
 dependencies:
-  apsira_storage: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_storage } }
+  apsira_storage: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_storage } }
 ```
 
 `package:apsira_storage/apsira_storage.dart` is the public surface;
@@ -60,6 +60,8 @@ LYCEUM's crop on `image_cropper` and every media store (D-APK-010 C3).
 - **`SafBackupTarget`** is RELAY's: every plugin error is a port failure (`storageFull` by
   its errno names, otherwise `folderUnavailable`), names are never replaced, a race SAF
   makes unique is undone. Its `freeBytes` asks the `StorageSpace` it is given.
+  APSIRA's adapter of this port is `ApsiraBackupTarget` in `apsira_link` (D-APK-026); this
+  package does not depend on it.
 - **`DocumentPicker`** has RELAY's `pickOne({maxBytes})` and VIATICUM's `pick({mimeTypes})`
   with `readAll(doc, {maxBytes})`, on one read: 64 KiB chunks pulled one at a time, refused
   before a byte when the reported size is over the cap and at the first chunk past it

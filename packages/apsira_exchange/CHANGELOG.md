@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0 — 2026-10-31
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.6.0`.
+
 ## 0.5.0 — 2026-10-31
 
 - test-only: the sqlite3 hook names Fedora's `/usr/lib64/libsqlite3.so.0`; consumers unaffected

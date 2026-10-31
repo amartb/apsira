@@ -3,6 +3,19 @@
 One section per release, naming any migration a consumer must make. Every package shares
 one tag, `apsira-vX.Y.Z` (D-APK-007).
 
+## 0.6.0 — 2026-10-31
+
+Migration: move every apsira `ref:` to `apsira-v0.6.0`. Additive; nothing else moves.
+
+- **`RunJobReceiver`** (D-APK-026's T2 addendum): a receiver declared in the package
+  manifest, `exported="false"` and with no intent filter, so it is merged into every
+  consumer's manifest and reached only by the app's own code. `apsira_link`'s
+  `AppLinkProvider` sends it an explicit in-app broadcast (extra `job`, the app's
+  `BACKUP_JOB` meta-data) when APSIRA calls `backup_now`; without that meta-data it never
+  runs.
+- **`ZoneResync.enqueueOnce(context, job, payload)`**: queues one named Dart job, unique by
+  its name (`APPEND_OR_REPLACE`); `enqueueResync` is unchanged.
+
 ## 0.5.0 — 2026-10-31
 
 No change in behaviour. Migration: move every apsira `ref:` to

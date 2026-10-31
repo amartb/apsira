@@ -1,10 +1,12 @@
 # The consumer proof of apsira_link: an app that depends on it as every Apsira
-# app does, calls hello once at start and shows the answer. Its Android host
-# (K1-02b) is what compiles the package's Kotlin. A path dependency inside the
-# repository, never a consumer's pin; apsira_link's own apsira dependency
-# resolves through pubspec_overrides.yaml, as in the package.
+# app does, calls hello once at start and shows the answer, hands a backup
+# over through ApsiraBackupTarget and takes APSIRA's restore offer. Its
+# Android host (K1-02b) is what compiles the package's Kotlin. A path
+# dependency inside the repository, never a consumer's pin; apsira_link's own
+# apsira dependencies resolve through pubspec_overrides.yaml, as in the
+# package.
 name: apsira_link_example
-description: "Consumes apsira_link and shows APSIRA's hello or why it is unavailable."
+description: "Consumes apsira_link: APSIRA's hello or why it is unavailable, a backup handed over, a restore offer taken."
 publish_to: none
 version: 0.5.0
 
@@ -13,9 +15,13 @@ environment:
   flutter: ">=3.47.0"
 
 dependencies:
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_core } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_core } }
   apsira_link:
     path: ../
+  # BackupFolder and BackupFile, the port ApsiraBackupTarget implements.
+  apsira_storage: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.6.0, path: packages/apsira_storage } }
+  # The restored backup's SHA-256, shown; already in apsira_link's closure.
+  crypto: ^3.0.7
   flutter:
     sdk: flutter
 
