@@ -1,4 +1,4 @@
-# .army.toml — Apsira ecosystem repo (brand, briefs, shared Dart packages). Template: project-agents/shared/templates/army.toml.
+# .army.toml — Apsira ecosystem repo (brand, briefs, shared Dart packages, and APSIRA under master-app/). Template: project-agents/shared/templates/army.toml.
 # The charter (README.md) and docs/decisions.md win over this file.
 kind = "dev"
 protect_main = true
@@ -10,19 +10,21 @@ reports_dir = "docs/sessions"
 incidents_dir = "docs/incidents"
 decisions_dir = "docs/adr"       # unused: the ecosystem log is docs/decisions.md (D-APK-nnn), a living log, not per-decision ADR files
 runbooks_dir = "docs/runbooks"
-attribution = "Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_012QPZgKUvRFMfnLpv63c3ep"
+attribution = "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_014mhg6MaccUokyE38JQDhqT"
 e2e = false
 formatter_excludes_ledger = true
 branch_types = ["phase", "fix", "docs", "chore"]
 commit_types = ["feat", "fix", "docs", "test", "refactor", "chore", "style", "perf"]
-gate_setup = "bash -c 'for p in packages/*/; do [ -f \"$p/pubspec.yaml\" ] && (cd \"$p\" && (flutter pub get --offline || flutter pub get)); done; true'"
+gate_setup = "bash -c 'for p in packages/*/ master-app/ master-app/hub/ master-app/shared/; do [ -f \"$p/pubspec.yaml\" ] && (cd \"$p\" && (flutter pub get --offline || flutter pub get)); done; true'"
 
 # Merge gates are static per package and run only when that package changed (paths). Each `requires` keeps a gate
 # `unavailable` until the package exists. Every package carries one version and the whole set one tag,
 # `apsira-v<version>` (D-APK-007); `tool/release.sh` cuts it (operator act). The full check (tool/check.sh, verdict
 # line `check: PASS`, the shared-tag rules included) runs only when a validator sets APSIRA_FULL_CHECK=1 at a
 # checkpoint or at the unit's end: until every package carries the release's version its `versions equal` step is red.
-shared_files = ["docs/decisions.md", "packages/README.md", "**/README.md", "tool/check.sh", "**/CHANGELOG.md"]
+shared_files = ["docs/decisions.md", "packages/README.md", "**/README.md", "tool/check.sh", "**/CHANGELOG.md",
+                "master-app/CLAUDE.md", "master-app/docs/02-decision-log.md", "master-app/docs/05-architecture.md",
+                "master-app/docs/08-testing-and-ci.md", "master-app/docs/building.md", "master-app/docs/dependencies.md"]   # master-app: each task edits only its own section
 gates = [
   { name = "format", cmd = "bash -c 'dart format --output=none --set-exit-if-changed packages/apsira_*'", proves = "formatting of the apsira packages (packages/third_party/ is vendored and never formatted)", paths = ["packages/**/*.dart"], requires = ["file:packages/apsira_core/pubspec.yaml"] },
   { name = "core",   cmd = "bash -c 'cd packages/apsira_core && dart analyze --fatal-infos && dart test'", proves = "apsira_core analyzes and its tests pass", paths = ["packages/apsira_core/**"], requires = ["file:packages/apsira_core/pubspec.yaml"], mem_gb = 1 },
@@ -39,14 +41,21 @@ gates = [
   { name = "exchange", cmd = "bash -c 'cd packages/apsira_exchange && dart analyze --fatal-infos && dart test && python3 -m unittest discover -s tool -p \"test_*.py\"'", proves = "apsira_exchange analyzes; the envelope, legacy shapes, dump and loader tests, its crash matrix (KP-E) and validate_examples.py's unittest pass", paths = ["packages/apsira_exchange/**"], requires = ["file:packages/apsira_exchange/pubspec.yaml", "bin:python3"], mem_gb = 1 },
   { name = "zip", cmd = "bash -c 'cd packages/apsira_zip && dart analyze --fatal-infos && dart test'", proves = "apsira_zip analyzes; the writer, CRC-32 and reader tests (RELAY's and LYCEUM's), the app refusal tables and its crash matrix (KP-Z) pass", paths = ["packages/apsira_zip/**"], requires = ["file:packages/apsira_zip/pubspec.yaml"], mem_gb = 1 },
   { name = "notify", cmd = "bash -c 'cd packages/apsira_notify && flutter analyze && flutter test'", proves = "apsira_notify analyzes; the notifier, permission flow, alarm registry tests and its crash matrices (KP-N, KP-A) pass", paths = ["packages/apsira_notify/**"], requires = ["file:packages/apsira_notify/pubspec.yaml"], mem_gb = 3 },
+  { name = "link", cmd = "bash -c 'cd packages/apsira_link && flutter analyze && flutter test'", proves = "apsira_link analyzes; the trust core (caller check, fingerprint table, unavailable reasons) and its calls pass", paths = ["packages/apsira_link/**"], requires = ["file:packages/apsira_link/pubspec.yaml"], mem_gb = 3 },
   { name = "check-rules", cmd = "bash tool/test/shared_tag_check_test.sh", proves = "tool/check.sh's shared-tag release rules: six broken trees fail, one passes, an untagged git dependency resolves offline through its override", paths = ["tool/**"], requires = ["file:tool/test/shared_tag_check_test.sh"], mem_gb = 1 },
   { name = "release-sh", cmd = "bash tool/test/release_sh_test.sh", proves = "tool/release.sh refuses in a session and on every unmet precondition; --dry-run prints the check, tag and push", paths = ["tool/**"], requires = ["file:tool/test/release_sh_test.sh"], mem_gb = 1 },
+  # APSIRA (master-app/, APSIRA D-026, P0-06). One config for the repository: army reads only the root .army.toml.
+  # Static merge gates by path; each stays unavailable until P0 creates its pubspec. P0-06 wires the rest of
+  # master-app's tool/ steps (codegen, l10n, layering, deps, manifest) and its area gates here.
+  { name = "ma-format", cmd = "bash -c 'cd master-app && dart format --output=none --set-exit-if-changed $(ls -d lib test hub shared tool 2>/dev/null)'", proves = "formatting of APSIRA's app, hub and shared code", paths = ["master-app/**/*.dart"], requires = ["file:master-app/pubspec.yaml"] },
+  { name = "ma-analyze", cmd = "bash -c 'cd master-app && flutter analyze'", proves = "APSIRA's app analyzes clean", paths = ["master-app/**"], requires = ["file:master-app/pubspec.yaml"], mem_gb = 3 },
+  { name = "ma-hub-analyze", cmd = "bash -c 'cd master-app/hub && dart analyze --fatal-infos'", proves = "APSIRA's hub program analyzes clean", paths = ["master-app/hub/**", "master-app/shared/**"], requires = ["file:master-app/hub/pubspec.yaml"], mem_gb = 1 },
   { name = "check",  cmd = "bash -c 'set -o pipefail; mkdir -p .army; bash tool/check.sh 2>&1 | tee .army/check.log; grep -qx \"check: PASS\" .army/check.log'", proves = "every package and example: analyze + tests; the shared-tag rules (one version, CHANGELOG sections, the git form at apsira-v<version>, overrides = transitive closure); sha256 of fonts and brand", paths = [".army-never-at-merge"], requires = ["file:tool/check.sh", "env:APSIRA_FULL_CHECK"], mem_gb = 3 },
 ]
 
 [assurance]
 critical = []
-subsystems = ["packages/apsira_core/**", "packages/apsira_ui/**", "packages/apsira_tools/**", "packages/apsira_test/**", "packages/apsira_app/**", "packages/apsira_jobs/**", "packages/apsira_l10n/**", "packages/apsira_onboarding/**", "packages/apsira_storage/**", "packages/apsira_lock/**", "packages/apsira_db/**", "packages/apsira_exchange/**", "packages/apsira_zip/**", "packages/apsira_notify/**"]
+subsystems = ["packages/apsira_core/**", "packages/apsira_ui/**", "packages/apsira_tools/**", "packages/apsira_test/**", "packages/apsira_app/**", "packages/apsira_jobs/**", "packages/apsira_l10n/**", "packages/apsira_onboarding/**", "packages/apsira_storage/**", "packages/apsira_lock/**", "packages/apsira_db/**", "packages/apsira_exchange/**", "packages/apsira_zip/**", "packages/apsira_notify/**", "packages/apsira_link/**", "master-app/lib/**", "master-app/android/**", "master-app/hub/**", "master-app/shared/**"]
 security = []
 security_review = false
 final_validation = "full"
@@ -65,7 +74,7 @@ allow = ["pub.dev", "storage.googleapis.com"]   # pub fetches for the packages' 
 online = false
 
 [resources]
-max_lanes = 3
+max_lanes = 3                    # every live unit in this repo together (packages and master-app); host-wide 4 with the sibling apps (APSIRA 07 §1)
 max_files_per_task = 40          # a package is one task: its lib/, test/ and fixtures are many small files
 gate_mem_gb = 2
 stale_after_min = 45
@@ -74,4 +83,4 @@ stale_after_min = 45
 default = ["opus", "sonnet"]
 
 [rules]
-extra = ["docs/agent-rules.md"]
+extra = ["docs/agent-rules.md", "master-app/docs/agent-rules.md"]   # the second binds master-app/ tasks only (it says so)

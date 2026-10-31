@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0 — 2026-10-31
+
+- test-only: the sqlite3 hook names Fedora's `/usr/lib64/libsqlite3.so.0`; consumers unaffected
+  (hooks read `user_defines` from the root package only). No change in behaviour.
+  Migration: move every apsira `ref:` to `apsira-v0.5.0`.
+
 ## 0.4.0 — 2026-10-24
 
 First release (D-APK-019): LYCEUM's envelope for every app's export (ruling C2).

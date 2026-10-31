@@ -74,17 +74,20 @@ final AuthPrompt enPrompt = AuthPrompt.of(
   reason: 'Unlock Relay to see your notes and tasks.',
 );
 
-/// The overrides of a lock test: the [store], the [authenticator], the
-/// [clock], a log into [sink] and the [screenPrivacy] (a
-/// [FakeScreenPrivacy] unless given).
+/// The overrides of a lock test: the [store] (null: none bound), the
+/// [authenticator], the [clock], a log into [sink], the [screenPrivacy] (a
+/// [FakeScreenPrivacy] unless given) and the [policy] (the package's
+/// default, [LockPolicy.optional], unless given).
 List<Override> lockOverrides({
-  required LockSettingsStore store,
+  required LockSettingsStore? store,
   required Authenticator authenticator,
   required FakeClock clock,
   required MemorySink sink,
   ScreenPrivacy? screenPrivacy,
+  LockPolicy? policy,
 }) => [
-  lockSettingsStoreProvider.overrideWithValue(store),
+  if (policy != null) lockPolicyProvider.overrideWithValue(policy),
+  if (store != null) lockSettingsStoreProvider.overrideWithValue(store),
   authenticatorProvider.overrideWithValue(authenticator),
   screenPrivacyProvider.overrideWithValue(screenPrivacy ?? FakeScreenPrivacy()),
   lockClockProvider.overrideWithValue(clock),

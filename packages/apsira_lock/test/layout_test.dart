@@ -77,4 +77,73 @@ void main() {
       host: host,
     );
   });
+
+  testWidgets('the mandatory Settings rows: EN/ES × 100–200 %', (tester) async {
+    await expectLayoutSound(
+      tester,
+      () => ProviderScope(
+        overrides: [
+          lockPolicyProvider.overrideWithValue(LockPolicy.mandatory),
+          lockSettingsStoreProvider.overrideWithValue(
+            settingsOf(const LockSettings(enabled: true, timeoutMinutes: 1)),
+          ),
+        ],
+        child: const Scaffold(
+          body: SingleChildScrollView(child: LockSettingsSection()),
+        ),
+      ),
+      host: host,
+    );
+  });
+
+  testWidgets('the cover with a long notice and Unlock: EN/ES × 100–200 %', (
+    tester,
+  ) async {
+    await expectLayoutSound(
+      tester,
+      () => Builder(
+        builder: (context) => LockCover(
+          appTitle: 'APSIRA',
+          onUnlock: () {},
+          notice: _longNotice(context),
+        ),
+      ),
+      host: host,
+    );
+  });
+
+  testWidgets('the mandatory shield that cannot prompt: EN/ES × 100–200 %', (
+    tester,
+  ) async {
+    await expectLayoutSound(
+      tester,
+      () => ProviderScope(
+        overrides: lockOverrides(
+          store: settingsOf(const LockSettings(enabled: true)),
+          authenticator: FakeAuthenticator(available: false),
+          clock: FakeClock(t0),
+          sink: MemorySink(),
+          policy: LockPolicy.mandatory.copyWith(
+            cannotPromptMessage: _longNotice,
+          ),
+        ),
+        child: LockShield(
+          appTitle: 'APSIRA',
+          promptReason: (_) => 'Unlock APSIRA to see your vault.',
+          child: const Scaffold(body: Text('content')),
+        ),
+      ),
+      host: host,
+    );
+  });
 }
+
+/// The app's line for a device with no screen lock, long, in the language
+/// at [context].
+String _longNotice(BuildContext context) =>
+    Localizations.localeOf(context).languageCode == 'es'
+    ? 'Este teléfono no tiene bloqueo de pantalla. Configura un PIN, un '
+          'patrón o una contraseña en los ajustes de seguridad del teléfono '
+          'y vuelve a intentarlo para abrir APSIRA.'
+    : 'This phone has no screen lock. Set a PIN, pattern or password in the '
+          'phone\'s security settings, then try again to open APSIRA.';

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0 — 2026-10-31
+
+No change in behaviour. Migration: move every apsira `ref:` to
+`apsira-v0.5.0`.
+
 ## 0.4.0 — 2026-10-24
 
 First release (D-APK-020): RELAY's streaming ZIP for RELAY and LYCEUM.

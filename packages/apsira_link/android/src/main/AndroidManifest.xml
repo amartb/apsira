@@ -1,0 +1,11 @@
+<!-- APSIRA's two builds (contract app-link.md §2): package visibility for
+     resolving com.apsiralabs.apsira.link (release) and
+     com.apsiralabs.apsira.dev.link (dev). No permission: trust is the
+     per-call certificate check (§3). No dev switch: an app declares it
+     in its dev source set only (rulings R-2, R-5). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <queries>
+        <package android:name="com.apsiralabs.apsira" />
+        <package android:name="com.apsiralabs.apsira.dev" />
+    </queries>
+</manifest>

@@ -3,6 +3,8 @@
 // its exemption ([LockShield.isExempt], [LockShield.exemptChanges],
 // [LockShield.promptHeld]) where RELAY's `LockGate.routed` read its router;
 // RELAY's LockCrossing, CrossingRouter and LockExemptRoute stay in RELAY.
+// The cover's notice for a mandatory lock that cannot prompt is the
+// package's own (D-APK-026).
 import 'dart:async';
 
 import 'package:apsira_l10n/apsira_l10n.dart';
@@ -14,6 +16,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'authenticator.dart';
 import 'lock_controller.dart';
 import 'lock_cover.dart';
+import 'lock_policy.dart';
 
 /// The app's shield: [child] (the router's content) behind the [LockCover]
 /// while the lock is covered.
@@ -30,6 +33,11 @@ import 'lock_cover.dart';
 /// and timeout run as ever; once it answers false while the lock is covered,
 /// the cover is back and the prompt is due. Without it, every screen is
 /// guarded.
+///
+/// Under [LockPolicy.mandatory], while the device cannot prompt
+/// ([LockState.cannotPrompt]) the cover shows the policy's
+/// `cannotPromptMessage` and the Unlock button as the retry, and no other
+/// button.
 class LockShield extends ConsumerStatefulWidget {
   const LockShield({
     super.key,
@@ -181,7 +189,11 @@ class _LockShieldState extends ConsumerState<LockShield>
   @override
   Widget build(BuildContext context) {
     final lock = ref.watch(lockControllerProvider);
+    final policy = ref.watch(lockPolicyProvider);
     final covered = _covered(lock);
+    final notice = policy.isMandatory && lock.cannotPrompt
+        ? policy.cannotPromptMessage?.call(context)
+        : null;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -204,6 +216,7 @@ class _LockShieldState extends ConsumerState<LockShield>
             onUnlock: lock.canUnlock ? _unlock : null,
             showRetry: lock.showRetry,
             icon: widget.coverIcon,
+            notice: notice,
           ),
       ],
     );

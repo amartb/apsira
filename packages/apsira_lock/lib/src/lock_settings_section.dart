@@ -4,7 +4,8 @@
 // `SettingsChoiceRow`; each change is one write through lockSettingsProvider
 // (the app's store) in place of RELAY's `updateLockSettings`. RELAY's KAIROS
 // note under the rows (relay lib/app/router.dart's
-// `_LockRowsWithCalendarNote`) is [LockSettingsSection.note].
+// `_LockRowsWithCalendarNote`) is [LockSettingsSection.note]. The mandatory
+// policy's rows are the package's own (D-APK-026).
 import 'dart:async';
 
 import 'package:apsira_l10n/apsira_l10n.dart';
@@ -12,6 +13,7 @@ import 'package:apsira_ui/apsira_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'lock_policy.dart';
 import 'lock_settings.dart';
 
 /// The lock rows of Settings → Privacy & security: **App lock** with its
@@ -26,6 +28,10 @@ import 'lock_settings.dart';
 /// Settings screen's card (a `SettingsGroup`'s children, or its own). The
 /// switches take an `accentFill` track when on and a `ring` outline when
 /// off.
+///
+/// Under [LockPolicy.mandatory] the App lock row has no switch (the lock is
+/// always on) and **Lock after** is always shown with the policy's
+/// `timeoutOptions`.
 class LockSettingsSection extends ConsumerWidget {
   const LockSettingsSection({super.key, this.note});
 
@@ -36,8 +42,10 @@ class LockSettingsSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l = ApsiraL10n.of(context);
+    final policy = ref.watch(lockPolicyProvider);
     final settings = ref.watch(lockSettingsProvider);
-    final lock = settings.value ?? LockSettings.defaults;
+    final lock = settings.value ?? policy.defaults;
+    final mandatory = policy.isMandatory;
     final ready = settings.hasValue;
 
     void change(LockSettings Function(LockSettings) edit) =>
@@ -55,16 +63,18 @@ class LockSettingsSection extends ConsumerWidget {
             icon: Icons.lock_outline,
             label: l.lockSettingsTitle,
             subline: l.lockSettingsSubline,
-            trailing: _LockSwitch(
-              key: const ValueKey('lock/settings/enabled'),
-              value: lock.enabled,
-              onChanged: ready
-                  ? (on) => change((s) => s.copyWith(enabled: on))
-                  : null,
-            ),
+            trailing: mandatory
+                ? null
+                : _LockSwitch(
+                    key: const ValueKey('lock/settings/enabled'),
+                    value: lock.enabled,
+                    onChanged: ready
+                        ? (on) => change((s) => s.copyWith(enabled: on))
+                        : null,
+                  ),
           ),
         ),
-        if (lock.enabled) ...[
+        if (mandatory || lock.enabled) ...[
           const SettingsDivider(),
           SettingsChoiceRow<int>(
             key: const ValueKey('lock/settings/timeout'),
@@ -72,7 +82,7 @@ class LockSettingsSection extends ConsumerWidget {
             label: l.lockAfter,
             options: [
               for (final minutes in {
-                ...lockTimeoutOptions,
+                ...policy.timeoutOptions,
                 lock.timeoutMinutes,
               }.toList()..sort())
                 SettingsOption(minutes, timeoutLabel(minutes)),

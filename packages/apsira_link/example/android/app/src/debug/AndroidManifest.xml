@@ -1,0 +1,18 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The INTERNET permission is required for development. Specifically,
+         the Flutter tool needs it to communicate with the running application
+         to allow setting breakpoints, to provide hot reload, etc.
+    -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+    <application>
+        <!-- apsira_link's development switch (contract app-link.md §3.3,
+             rulings R-2 and R-5): declared where an app's dev source set
+             declares it, never in main or a release manifest; the relaxed
+             check needs it and an own id ending in .dev. The example's id
+             does not end in .dev, so the switch alone selects nothing
+             (test/release_manifest_test.dart). -->
+        <meta-data
+            android:name="com.apsiralabs.apsira_link.DEV_LINK"
+            android:value="true" />
+    </application>
+</manifest>

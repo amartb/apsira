@@ -12,7 +12,7 @@ package's own Kotlin; there is no window-manager plugin.
 
 ```yaml
 dependencies:
-  apsira_lock: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_lock } }
+  apsira_lock: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_lock } }
 ```
 
 ## Consumer requirements
@@ -91,7 +91,59 @@ stored settings any other way (a restore) calls `ref.invalidate(lockSettingsProv
 - **Never a lock-out:** a store that throws or does not answer within 2 s, or an
   `Authenticator` that is unavailable or throws, leaves the lock off and logs
   `WARNING lock.notEngaged code=<unavailable|authenticatorError|settingsUnreadable>`, with
-  the error's type and nothing else.
+  the error's type and nothing else (under the mandatory policy it stays covered: see below).
+
+## Mandatory mode
+
+`lockPolicyProvider` is `LockPolicy.optional` (everything above) unless the app overrides it.
+APSIRA, whose lock cannot be turned off (D-018, D-APK-026), binds the mandatory policy with
+its own line for a phone with no screen lock (the package has no string for it):
+
+```dart
+lockPolicyProvider.overrideWithValue(LockPolicy.mandatory.copyWith(
+  cannotPromptMessage: (context) => AppLocalizations.of(context).lockSetScreenLock,
+)),
+```
+
+| | `LockPolicy.optional` | `LockPolicy.mandatory` |
+|---|---|---|
+| `isMandatory` | false | true |
+| `timeoutOptions` | 0, 1, 5, 15, 30 | 0, 1, 5 |
+| `defaults` | off, 5 minutes | on, 1 minute |
+
+Under the mandatory policy the lock never opens unlocked:
+
+- `lockSettingsProvider` reads and writes the app's store through
+  `MandatoryLockSettingsStore`: a stored `enabled: false` reads and is written as on, and
+  no store, a read that throws or one slower than `mandatoryReadBound` (1 s) reads as the
+  policy's defaults (`lock.settingsReadFailed`), so launch locks. An app's own store passes
+  `LockSettings.fromJson(row, fallback: LockPolicy.mandatory.defaults)` so a fresh install
+  gets 1 minute.
+- A device that cannot prompt, or an `Authenticator` that throws, keeps the cover:
+  `LockState.cannotPrompt` (`locked` with `lastOutcome: unavailable`), no prompt due, logged
+  `lock.notEngaged code=<unavailable|authenticatorError>`. The cover shows the policy's
+  `cannotPromptMessage` (`lock/notice`) and Unlock as the retry, and no other button; a
+  return from the background prompts once. No counter, no back-off.
+- The Settings rows show **App lock** without its switch and **Lock after** always, with the
+  policy's options (and a stored value outside them).
+
+## Re-confirm
+
+`LockController.reconfirm(prompt)` asks for a fresh confirmation before a sensitive act
+(D-018: install, restore, pair, revoke), whatever the settings say, and answers a
+`ReconfirmOutcome`; the act goes ahead only when `outcome.proceeds`:
+
+| Outcome | When | `proceeds` |
+|---|---|---|
+| `confirmed` | passed | yes |
+| `declined` | failed or cancelled (no counter, no back-off); the app covered; another re-confirm pending — no prompt in the last two | no |
+| `skipped` | optional policy: unavailable or a throw, logged `lock.reconfirmSkipped code=…` | yes |
+| `unavailable` | mandatory policy: unavailable or a throw, logged `lock.reconfirmUnavailable code=…` | no |
+
+While its prompt is up, the pause it causes is not a background: at a timeout of 0 the app
+does not lock under the user. A pause the app has not come back from when the prompt
+resolves (Home pressed with the prompt up) is a background from that moment: the outcome
+stands, the app shields, and the return locks past **Lock after** (at 0, at once).
 
 ## Hide in recents
 
@@ -111,16 +163,18 @@ the user.
   semantics, not hit-tested, tickers paused, and offstage once locked; Back while covered
   leaves the app. `isExempt` (with `exemptChanges`, the listenable that says when its
   answer changes) lets an app show some screens without the lock, as RELAY's KAIROS space.
-- `LockCover({appTitle, onUnlock, showRetry, icon})`: the `ground` screen with one bordered
+- `LockCover({appTitle, onUnlock, showRetry, icon, notice})`: the `ground` screen with one bordered
   `surface` card, the lock glyph, the app's title as the wordmark; never any content. `icon`
   (the shield's `coverIcon`) is the app's glyph, `Icon(AppIcons.lock)`, drawn at the cover's
-  size in `accentText`; without it, Material's `lock_outline`.
+  size in `accentText`; without it, Material's `lock_outline`. `notice` is the app's line
+  under the cover's (`lock/notice`, the mandatory policy's `cannotPromptMessage`).
 - `LockSettingsSection({note})`: **App lock**, **Lock after** (Immediately, 1, 5, 15, 30
-  minutes, and a stored value outside the list) and **Hide in recent apps**, on
+  minutes, and a stored value outside the list; the mandatory policy's options and no lock
+  switch under it) and **Hide in recent apps**, on
   `apsira_ui`'s settings rows, rows only (the app places them in its card); `note` is a line
   under them.
 
-Keys: `lock/cover`, `lock/retry`, `lock/unlock`, `lock/settings/enabled`,
+Keys: `lock/cover`, `lock/retry`, `lock/notice`, `lock/unlock`, `lock/settings/enabled`,
 `lock/settings/timeout`, `lock/settings/hideInRecents`, `lock/settings/note`.
 
 ## What it holds, and what each app deletes
@@ -139,6 +193,7 @@ source in its header. "Replaces" is under the app's root; the adoption lane conf
 | `LockShield` | R `lib/features/lock/ui/lock_gate.dart` (`LockGate`) | `LockGate`; `LockCrossing`, `CrossingRouter`, `LockExemptRoute` and `route_privacy.dart` stay | — |
 | `LockCover` | R `lib/features/lock/ui/lock_cover.dart` | that file | `lib/features/auth/ui/lock_screen.dart` |
 | `LockSettingsSection` | R `lib/features/lock/ui/lock_settings_section.dart`; the note of `_LockRowsWithCalendarNote` | that file | its lock rows |
+| `LockPolicy`, `lockPolicyProvider`, `MandatoryLockSettingsStore`, `mandatoryReadBound`, `ReconfirmOutcome`, `LockController.reconfirm`, `LockState.cannotPrompt`, `LockCover.notice` | the package's own (D-APK-026) | — | — |
 | `FakeAuthenticator`, `FakeScreenPrivacy`, `FakeLockSettingsStore` (`testing.dart`) | R `test/fakes/` | `fake_authenticator.dart`, `fake_screen_privacy.dart` | `test/fakes/fake_authenticator.dart` |
 
 VIATICUM has no lock (its D-036); it gains this one off by default and supersedes D-036 in
@@ -147,7 +202,8 @@ its own log.
 ## Checks
 
 From this directory: `flutter analyze` and `flutter test` (the `lock` gate): the
-controller, settings, recents and shield tests ported from RELAY, the adapter against a
+controller, settings, recents and shield tests ported from RELAY, the mandatory policy and
+re-confirm (`lock_policy_test`, `lock_mandatory_test`, `lock_reconfirm_test`), the adapter against a
 scripted `local_auth`, FLAG_SECURE against a mocked channel, and EN/ES × 100–200 % layout
 of the cover, the shield and the rows. Mocked channels cannot see a mismatch between the
 Dart and Kotlin halves, so `example/`'s debug build compiles them: run by hand, under a

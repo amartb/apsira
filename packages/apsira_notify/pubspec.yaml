@@ -10,7 +10,7 @@ description: >-
   Kotlin; and the per-install alarm registry, its snooze store, the alarm
   sync with RELAY's window and the notification plugin's alarm scheduler.
 publish_to: none
-version: 0.4.0
+version: 0.5.0
 
 environment:
   sdk: ^3.13.0
@@ -23,11 +23,11 @@ environment:
 # every one of them at its directory (D-APK-007). No app_settings (ruling
 # R-2, Q4-c): the settings intents are the package's own Kotlin.
 dependencies:
-  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_app } }
-  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/apsira_core } }
+  apsira_app: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_app } }
+  apsira_core: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/apsira_core } }
   flutter:
     sdk: flutter
-  flutter_local_notifications: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.4.0, path: packages/third_party/flutter_local_notifications } }
+  flutter_local_notifications: { git: { url: git@github.com:amartb/apsira.git, ref: apsira-v0.5.0, path: packages/third_party/flutter_local_notifications } }
   # FlnAlarmScheduler's zonedSchedule takes a TZDateTime (D-APK-022); the
   # plugin already brings it, as it does to RELAY and LYCEUM.
   timezone: ^0.11.2
