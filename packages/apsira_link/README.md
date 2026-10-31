@@ -162,38 +162,13 @@ expect(declaresLinkDevSwitch(File('android/app/src/main/AndroidManifest.xml').re
 `main`, `profile` and the plugin's manifest. A dev link reaches the app as
 `LinkHello.devUnverified`; show "dev link: unverified" where the link's state is shown.
 
+## The archive (ATRIUM's offload)
+
+The five calls of `atrium-offload.md` §3 (`package:apsira_link/archive.dart`), only for `com.apsiralabs.atrium`, at home only: [doc/archive.md](doc/archive.md).
+
 ## APK files
 
-Before installing or offering an APK file, check its signer with the same rule the link
-applies to an installed package (D-031). `ApkSignerCheck.kt` takes `isDebugSubject` from
-`LinkTrust.kt`, its source:
-
-```kotlin
-when (val verdict = ApkSignerCheck.check(context.packageManager, apkPath, table)) {
-    is ApkVerdict.Trusted -> install(verdict.packageName, verdict.versionCode)
-    is ApkVerdict.Refused -> refuse(verdict.reason)
-}
-```
-
-`Trusted(packageName, versionCode)` only when Android reads the archive
-(`getPackageArchiveInfo` with `GET_SIGNING_CERTIFICATES`), it has exactly one current
-signer, its package has a digest in the `FingerprintTable`, and that signer is not the SDK
-debug subject and has the recorded SHA-256. Otherwise `Refused(reason)`:
-
-| Reason | When |
-|---|---|
-| `unreadable` | no archive info (missing, corrupt or not an APK) |
-| `api` | below API 28 |
-| `signers` | not exactly one current signer, or several signers |
-| `unrecorded` | the package has no digest in the table, or a malformed one |
-| `debug` | the signer has the subject `CN=Android Debug`, or a subject that does not parse, even when its digest is recorded |
-| `digest` | the signer's SHA-256 is not the recorded one |
-
-The check compares the current signer only; a rotated key's history is not trusted. The
-decision is `ApkSignerCheck.checkSigners(signers, multiple, digest)`, which needs no
-package manager. A verdict holds a reason code, never the path or the certificate.
-`ApkSignerCheckTest` covers each case with the two test certificates on Robolectric's
-archive info; a real archive is a device check.
+`ApkSignerCheck.kt` checks an APK file's signer by the link's own rule (D-031) before it is installed or offered: [doc/apk_files.md](doc/apk_files.md).
 
 ## The Kotlin side
 
@@ -218,7 +193,9 @@ Package `com.apsiralabs.apsira_link`. `LinkTrust.kt` is ATRIUM's `CallerCheck.kt
 From this directory: `flutter analyze` and `flutter test` (the `link` gate): the failure
 codes and their wire names, hello and the version choice, and the adapter against a
 mocked channel (every reply shape, a platform error, a missing plugin, a 6 s silence), and
-`LinkChannel`'s streams (chunking, the digest, a short, long or altered read, cancels).
+`LinkChannel`'s streams (chunking, the digest, a short, long or altered read, cancels), and
+the archive calls (each method's extras, the put cancelled on a size or SHA-256 mismatch, AO
+§4's errors, no content in a `toString`, the fake's rules).
 From `example/`: `flutter analyze` and `flutter test`, the consumer proof (APSIRA missing,
 a hello, a call error, a dev link) against `FakeApsiraLink`, and `release_manifest_test.dart`.
 `test/example_android_test.dart` holds the Kotlin names (channel, methods, the deadline and
