@@ -1,16 +1,19 @@
 # The app link — APSIRA ⇄ Apsira apps on the device
 
-Status: **1.0 draft, planned.** Decisions: D-016 (trust), D-017 (the shared client), D-008 and D-028 (backups),
+Status: **1.0 draft.** Decisions: D-016 (trust), D-017 (the shared client), D-008 and D-028 (backups),
 D-034 (restore), D-011, D-030 and D-033 (gateway), D-012 (notification policy), D-031 (who is trusted). Built in
-slices 2–4 (D-006); nothing here exists yet. For every interface value here this file wins over `04` and `05`
-(D-032).
+slices 2–4 (D-006). At `apsira-v0.5.0` the app side's core exists in `apsira_link` (D-APK-026): `hello` with its
+version choice (§9), the failures (every §8 code, as `unavailable` or a call error) and the trust core (§3: the
+caller's check, the provider's caller check, the §3.3 dev selection; `F_APSIRA` still unset). Still planned:
+APSIRA itself with its provider, every other method (§5–§7), the adapters in `apsira_storage` and `apsira_notify`,
+and each app's provider. For every interface value here this file wins over `04` and `05` (D-032).
 Clarified 2026-10-31 (§3.3): still version 1.0, with no change on the wire or for a peer.
 
 This is the contract between APSIRA and every Apsira app on the same phone or tablet: what crosses, how each side
 proves who the other is, and how it is versioned. Both sides build to it. The app side is shared code
 (`apsira_link`, the APSIRA adapter of `apsira_storage`'s `BackupTarget`, the policy check in `apsira_notify`;
-D-017), so an app adopts it through a package tag, not its own code. Every name marked *new* does not exist in the
-packages today.
+D-017), so an app adopts it through a package tag, not its own code. Every name marked *new* is still planned: it
+is not in the packages at `apsira-v0.5.0`.
 
 ## 1. Overview
 
@@ -39,7 +42,8 @@ Both providers are exported, declare no `permission`, `readPermission` or `write
 ### 3.1 The fingerprints
 
 - `F_APSIRA`: the SHA-256 of APSIRA's release certificate, recorded in APSIRA's `release-signing.md` §2 and held by
-  `apsira_link` as build-time configuration (*new*). It reaches each app through the package tag that carries it.
+  `apsira_link` as build-time configuration (unset at `apsira-v0.5.0`). It reaches each app through the package tag
+  that carries it.
 - The **app table**: APSIRA holds `package → SHA-256` for every Apsira app signed with **its own release key**,
   copied from each app's `release-signing.md` (RELAY, LYCEUM, ATRIUM, ASTROLABE; STYLUS when released). An app
   without a recorded release digest is absent from the table and is refused. **VIATICUM is absent** until its own
