@@ -38,8 +38,9 @@ switch (opening) {
 ```
 
 The package's own tests use the host's `libsqlite3` (`hooks: user_defines: sqlite3: source:
-system` in its pubspec). Hooks read that from the root package only, so an app keeps the
-library `sqlite3`'s build hook bundles.
+system` in its pubspec), at Fedora's `/usr/lib64/libsqlite3.so.0`: `sqlite-libs` ships only
+the versioned name, and the bare `libsqlite3.so` needs `sqlite-devel`. Hooks read that from the
+root package only, so an app keeps the library `sqlite3`'s build hook bundles.
 
 ## File names: `DatabaseLayout`
 

@@ -26,10 +26,13 @@ dev_dependencies:
 
 # The package's own tests use the host's libsqlite3 instead of the build
 # hook's download. Hooks read this from the root package only, so the apps,
-# which bundle sqlite3's own library, are unaffected.
+# which bundle sqlite3's own library, are unaffected. The path is Fedora's:
+# `sqlite-libs` ships only the versioned `libsqlite3.so.0` (the bare
+# `libsqlite3.so` comes with `sqlite-devel`, not installed, so it does not
+# resolve).
 hooks:
   user_defines:
     sqlite3:
       source: system
       name:
-        linux: /lib/x86_64-linux-gnu/libsqlite3.so.0
+        linux: /usr/lib64/libsqlite3.so.0

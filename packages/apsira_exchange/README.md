@@ -102,4 +102,6 @@ and LYCEUM v1.0.0's and VIATICUM v1.0.0's `exchange/` folders.
 From this directory: `dart analyze --fatal-infos`, `dart test` and
 `python3 -m unittest discover -s tool -p 'test_*.py'` (the `exchange` gate). The crash matrix
 KP-E1…E6 is `test/crash_matrix_test.dart`. The tests use the host's `libsqlite3`
-(`hooks: user_defines` in `pubspec.yaml`); the apps keep sqlite3's own library.
+(`hooks: user_defines` in `pubspec.yaml`) at Fedora's `/usr/lib64/libsqlite3.so.0` (`sqlite-libs`
+ships only the versioned name; the bare `libsqlite3.so` needs `sqlite-devel`); the apps keep
+sqlite3's own library.
