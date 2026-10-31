@@ -53,6 +53,38 @@ never trusts a debug certificate (D-031).
 records its release certificate (contract §3.1, ruling A-7). Until then a release app
 trusts no APSIRA and every call is `not_trusted`.
 
+## Backups (contract §5.2)
+
+`package:apsira_link/backups.dart`, its own library (an app imports only the calls it makes):
+`ApsiraBackupLink`, the port of APSIRA's backup queue, and `ChannelApsiraBackupLink`, its
+adapter over the channel. No method throws; the one exception is `restoreOpen` without
+exactly one of `name` and `snapshot`, an `ArgumentError` (a programming error).
+
+| Method | Wire call, extras → value |
+|---|---|
+| `backupSpace()` | `backup_space` → `int` (`free_bytes`) |
+| `backupBegin(name, {size})` | `backup_begin` {`name`, `size` when known} → `LinkBackupTicket` (`ticket`, write-end `handle`) |
+| `backupWrite(ticket, bytes)` | the write stream to its end → `LinkWritten` (`sha256`, `size` of what was written) |
+| `backupCommit(ticket, sha256:, size:)` | `backup_commit` {`ticket`, `sha256`, `size`} → `LinkBackupState.queued` |
+| `backupRename(from, to)` | `backup_rename` {`from`, `to`} → `LinkRenameOutcome`: `renamed` (no field), `exists` or `missing` (a true field of that name) |
+| `backupList()` | `backup_list` → `List<LinkBackupEntry>` (`name`, `sizeBytes`, `madeUtc`, `state` queued · shipped, `snapshot` when shipped) |
+| `backupDelete(name)` | `backup_delete` {`name`} → nothing |
+| `restoreOpen({name, snapshot})` | `restore_open` {`name` or `snapshot`} → `LinkRestoreStream` (`bytes`, checked against its `sha256` and `size`) |
+
+**A backup shipped home is never deleted by an app** (D-008): `backup_delete` removes only a
+queued copy and succeeds on a shipped one, which the hub's retention governs. Every `{error}`
+is its `LinkFailure` (`linkFailureFromWire`); a reply that is not the contract's is
+`unknown_error`, and one holding a stream handle cancels it. `made_utc` is an ISO 8601 UTC
+instant ending in `Z`; an entry with a malformed field is dropped, the rest kept. Names and
+bytes are never in a `toString`.
+
+`FakeApsiraBackupLink` (`package:apsira_link/testing/fake_backup_link.dart`) is an in-memory
+queue with §5.2's rules: the stated SHA-256 and size checked on commit (`checksum_mismatch`,
+the write discarded), `ship(name)` marks a backup shipped with a snapshot id, delete removes
+only queued copies, a shipped restore is `away` while `away`, queued bytes past `queueCap`
+are `storage_full`; `unavailable` fails every call, `failures` sets one call's failure, and
+`calls` records each call.
+
 ## The channel
 
 Dart never selects a trust mode (ruling R-2). `LinkChannel` (`lib/src/link_channel.dart`,
