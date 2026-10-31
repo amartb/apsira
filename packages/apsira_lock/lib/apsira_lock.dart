@@ -11,6 +11,7 @@ export 'src/authenticator.dart';
 export 'src/local_auth_authenticator.dart';
 export 'src/lock_controller.dart';
 export 'src/lock_cover.dart';
+export 'src/lock_policy.dart';
 export 'src/lock_settings.dart';
 export 'src/lock_settings_section.dart';
 export 'src/lock_shield.dart';

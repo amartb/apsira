@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.0 — 2026-10-31
+
+Additive; no default moves: every current consumer keeps today's lock (`LockPolicy.optional`).
+
+- **`LockPolicy`** and **`lockPolicyProvider`** (D-APK-026, D-018): `LockPolicy.mandatory`
+  (APSIRA) cannot be turned off, offers 0, 1 and 5 minutes with 1 by default and never opens
+  unlocked: `MandatoryLockSettingsStore` pins the store on (an unreadable or 1 s-late read is
+  the policy's defaults); a device that cannot prompt keeps the cover with Unlock as the retry
+  and the app's `cannotPromptMessage` (`LockState.cannotPrompt`, `LockCover.notice`); the
+  Settings rows drop the lock switch. `LockSettings.fromJson` takes a `fallback`.
+- **`LockController.reconfirm`** and **`ReconfirmOutcome`** (`confirmed`, `declined`,
+  `skipped`, `unavailable`; `proceeds`): a fresh confirmation before a sensitive act; a device
+  that cannot prompt is `skipped` under the optional policy and `unavailable` (refused) under
+  the mandatory one. Its prompt pausing the app is not a background.
+
 ## 0.4.0 — 2026-10-24
 
 Migration: move every apsira `ref:` to `apsira-v0.4.0`. Additive only; no default moves.

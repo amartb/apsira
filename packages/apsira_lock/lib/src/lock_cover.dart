@@ -1,7 +1,9 @@
 // From relay lib/features/lock/ui/lock_cover.dart @ 09b28810, unchanged but
 // for names: the tokens are apsira_ui's, the strings ApsiraL10n's and the
 // wordmark the app's title ([LockCover.appTitle]); the lock glyph may be the
-// app's own ([LockCover.icon], D-APK-016).
+// app's own ([LockCover.icon], D-APK-016). [LockCover.notice] is the
+// package's own (D-APK-026): a mandatory lock's line for a device that
+// cannot prompt, in the app's words.
 import 'package:apsira_l10n/apsira_l10n.dart';
 import 'package:apsira_ui/apsira_ui.dart';
 import 'package:flutter/material.dart';
@@ -12,8 +14,8 @@ import 'package:flutter/material.dart';
 /// The `ground` screen with one bordered `surface` card: a lock [icon], the
 /// app's [appTitle] as the wordmark and a line, in tokens only. [onUnlock]
 /// adds the Unlock button (a primary action, the one accent fill);
-/// [showRetry] says the last attempt did not unlock. It shows no content,
-/// ever.
+/// [showRetry] says the last attempt did not unlock; [notice] is the app's
+/// own line under the cover's. It shows no content, ever.
 class LockCover extends StatelessWidget {
   const LockCover({
     super.key,
@@ -21,6 +23,7 @@ class LockCover extends StatelessWidget {
     this.onUnlock,
     this.showRetry = false,
     this.icon,
+    this.notice,
   });
 
   /// The app's name, as its wordmark.
@@ -36,6 +39,10 @@ class LockCover extends StatelessWidget {
   /// drawn at the cover's size in `accentText` unless it sets its own;
   /// `null` draws Material's `lock_outline`.
   final Widget? icon;
+
+  /// The app's line under the cover's, already in the user's language (a
+  /// mandatory lock on a device with no screen lock); null shows none.
+  final String? notice;
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +92,17 @@ class LockCover extends StatelessWidget {
                       textAlign: TextAlign.center,
                       style: ApsiraTypography.body.copyWith(color: tokens.ink2),
                     ),
+                    if (notice case final notice?) ...[
+                      const SizedBox(height: ApsiraSpacing.titleToMetaPills),
+                      Text(
+                        notice,
+                        key: const Key('lock/notice'),
+                        textAlign: TextAlign.center,
+                        style: ApsiraTypography.meta.copyWith(
+                          color: tokens.ink2,
+                        ),
+                      ),
+                    ],
                     if (showRetry) ...[
                       const SizedBox(height: ApsiraSpacing.titleToMetaPills),
                       Text(
