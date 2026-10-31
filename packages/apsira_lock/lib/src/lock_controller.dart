@@ -175,6 +175,10 @@ final class LockController extends Notifier<LockState> {
   LockSettings _settings = const LockSettings();
   bool _settingsRead = false;
   bool _reconfirming = false;
+
+  /// A pause arrived while a [reconfirm] prompt was up and the app has not
+  /// come back since.
+  bool _pausedDuringReconfirm = false;
   late final LockPolicy _policy = ref.read(lockPolicyProvider);
   DateTime? _backgroundedAt;
   Timer? _readBound;
@@ -310,9 +314,14 @@ final class LockController extends Notifier<LockState> {
 
   /// The app went to the background (`paused`). While the prompt is up the
   /// app is paused by the system credential screen itself, so that is not a
-  /// background, nor is it while a [reconfirm] prompt is up.
+  /// background, nor is it while a [reconfirm] prompt is up, unless the app
+  /// is still away when that prompt resolves: then it is one from then on.
   void backgrounded() {
-    if (!_settings.enabled || _reconfirming) return;
+    if (_reconfirming) {
+      _pausedDuringReconfirm = true;
+      return;
+    }
+    if (!_settings.enabled) return;
     switch (state.phase) {
       case LockPhase.unlocked:
         final now = _now();
@@ -333,6 +342,7 @@ final class LockController extends Notifier<LockState> {
   /// lock locks when the timeout has passed (0 locks at once), and prompts
   /// again when it was locked.
   void foregrounded() {
+    _pausedDuringReconfirm = false;
     _recents.reapply();
     switch (state.phase) {
       case LockPhase.shielded:
@@ -410,27 +420,45 @@ final class LockController extends Notifier<LockState> {
   /// throws, answers [ReconfirmOutcome.skipped] (logged
   /// `lock.reconfirmSkipped`), or under the mandatory policy
   /// [ReconfirmOutcome.unavailable] (logged `lock.reconfirmUnavailable`),
-  /// each with its `code`. While the prompt is up, a background is not one.
+  /// each with its `code`. While the prompt is up, a background is not one;
+  /// a pause the app has not come back from when the prompt resolves is one
+  /// from then on (the outcome stands, and the app shields).
   Future<ReconfirmOutcome> reconfirm(AuthPrompt prompt) async {
     if (state.phase != LockPhase.unlocked || _reconfirming) {
       return ReconfirmOutcome.declined;
     }
     _reconfirming = true;
+    _pausedDuringReconfirm = false;
     AuthOutcome outcome;
     try {
       outcome = await ref.read(authenticatorProvider).authenticate(prompt);
     } catch (e) {
       _reconfirming = false;
       if (!ref.mounted) return ReconfirmOutcome.declined;
-      return _reconfirmCannot(LockSkip.authenticatorError, e);
+      final answer = _reconfirmCannot(LockSkip.authenticatorError, e);
+      _backgroundIfStillAway();
+      return answer;
     }
     _reconfirming = false;
-    if (!ref.mounted || state.covered) return ReconfirmOutcome.declined;
-    return switch (outcome) {
-      AuthOutcome.passed => ReconfirmOutcome.confirmed,
-      AuthOutcome.failed || AuthOutcome.cancelled => ReconfirmOutcome.declined,
-      AuthOutcome.unavailable => _reconfirmCannot(LockSkip.unavailable),
-    };
+    if (!ref.mounted) return ReconfirmOutcome.declined;
+    final answer = state.covered
+        ? ReconfirmOutcome.declined
+        : switch (outcome) {
+            AuthOutcome.passed => ReconfirmOutcome.confirmed,
+            AuthOutcome.failed ||
+            AuthOutcome.cancelled => ReconfirmOutcome.declined,
+            AuthOutcome.unavailable => _reconfirmCannot(LockSkip.unavailable),
+          };
+    _backgroundIfStillAway();
+    return answer;
+  }
+
+  /// The app was paused during the re-confirm prompt and has not come back:
+  /// the background starts now, measured as any other.
+  void _backgroundIfStillAway() {
+    if (!_pausedDuringReconfirm) return;
+    _pausedDuringReconfirm = false;
+    backgrounded();
   }
 
   ReconfirmOutcome _reconfirmCannot(LockSkip code, [Object? error]) {

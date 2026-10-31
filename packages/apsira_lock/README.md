@@ -141,7 +141,9 @@ Under the mandatory policy the lock never opens unlocked:
 | `unavailable` | mandatory policy: unavailable or a throw, logged `lock.reconfirmUnavailable code=…` | no |
 
 While its prompt is up, the pause it causes is not a background: at a timeout of 0 the app
-does not lock under the user.
+does not lock under the user. A pause the app has not come back from when the prompt
+resolves (Home pressed with the prompt up) is a background from that moment: the outcome
+stands, the app shields, and the return locks past **Lock after** (at 0, at once).
 
 ## Hide in recents
 

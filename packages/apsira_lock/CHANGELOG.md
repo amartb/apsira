@@ -14,7 +14,8 @@ current consumer keeps today's lock (`LockPolicy.optional`).
 - **`LockController.reconfirm`** and **`ReconfirmOutcome`** (`confirmed`, `declined`,
   `skipped`, `unavailable`; `proceeds`): a fresh confirmation before a sensitive act; a device
   that cannot prompt is `skipped` under the optional policy and `unavailable` (refused) under
-  the mandatory one. Its prompt pausing the app is not a background.
+  the mandatory one. Its prompt pausing the app is not a background; a pause the app has not
+  come back from when the prompt resolves is one from then on (the app shields).
 
 ## 0.4.0 — 2026-10-24
 

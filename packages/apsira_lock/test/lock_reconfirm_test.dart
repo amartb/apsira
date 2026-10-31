@@ -177,6 +177,62 @@ void main() {
     },
   );
 
+  for (final policy in [LockPolicy.optional, LockPolicy.mandatory]) {
+    final name = policy.isMandatory ? 'mandatory' : 'optional';
+    group('$name policy: a pause the prompt outlives is a background', () {
+      Future<(ProviderContainer, PendingAuthenticatorFake)> openAt1() async {
+        final auth = PendingAuthenticatorFake();
+        final c = await start(
+          settings: const LockSettings(enabled: true, timeoutMinutes: 1),
+          authenticator: auth,
+          policy: policy,
+        );
+        final unlocking = controllerOf(c).unlock(enPrompt);
+        auth.prompts.single.complete(AuthOutcome.passed);
+        await unlocking;
+        expect(stateOf(c).phase, LockPhase.unlocked);
+        return (c, auth);
+      }
+
+      for (final (outcome, answer) in [
+        (AuthOutcome.cancelled, ReconfirmOutcome.declined),
+        (AuthOutcome.passed, ReconfirmOutcome.confirmed),
+      ]) {
+        test('${outcome.name}, back after 10 min: locked', () async {
+          final (c, auth) = await openAt1();
+          final pending = controllerOf(c).reconfirm(enPrompt);
+          controllerOf(c).backgrounded();
+          auth.prompts.last.complete(outcome);
+          expect(await pending, answer);
+          expect(stateOf(c).phase, LockPhase.shielded);
+
+          clock.advance(const Duration(minutes: 10));
+          controllerOf(c).foregrounded();
+          await pumpEventQueue();
+          expect(
+            stateOf(c),
+            const LockState(LockPhase.locked, promptDue: true),
+          );
+        });
+      }
+
+      test('back within the timeout of the prompt resolving: open', () async {
+        final (c, auth) = await openAt1();
+        final pending = controllerOf(c).reconfirm(enPrompt);
+        clock.advance(const Duration(minutes: 5));
+        controllerOf(c).backgrounded();
+        auth.prompts.last.complete(AuthOutcome.cancelled);
+        expect(await pending, ReconfirmOutcome.declined);
+
+        clock.advance(const Duration(seconds: 30));
+        controllerOf(c).foregrounded();
+        await pumpEventQueue();
+        expect(stateOf(c), const LockState(LockPhase.unlocked));
+        expect(auth.prompts, hasLength(2));
+      });
+    });
+  }
+
   group('optional policy: a device that cannot prompt is skipped', () {
     test('unavailable', () async {
       final c = await start(authenticator: FakeAuthenticator(available: false));

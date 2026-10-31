@@ -1143,6 +1143,9 @@ becomes Decided on review), Superseded.
     (not a lock-out in D-APK-016's sense). `LockController.reconfirm` returns a `ReconfirmOutcome` (`confirmed`,
     `declined`, `skipped`, `unavailable`): a device that cannot prompt is `skipped` (the act goes ahead) under
     the optional policy and `ReconfirmOutcome.unavailable` (the act is refused) under the mandatory one.
+    The pause its prompt causes is not a background, but a pause the app has not come back from when the prompt
+    resolves is one from then on: the outcome stands, the app shields, and the return locks past the timeout
+    (at 0, at once), under both policies (final validation F-1).
   - **`apsira_link`** (contract `app-link.md` 1.0): `ApsiraLink.hello` over `ChannelApsiraLink`, `LinkFailure`
     (`LinkUnavailable` with its `LinkUnavailableReason`s beside the §8 `LinkErrorCode`s of `LinkCallFailed`),
     `LinkHello`, `chooseLinkVersion`, `FakeApsiraLink`; no method throws and APSIRA missing is unavailable. The
