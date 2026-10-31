@@ -1,5 +1,6 @@
-# apsira_link pins apsira_core by the shared tag; inside the repository it
-# resolves from its directory, as the package's own pubspec_overrides.yaml
-# does (D-APK-007).
+# apsira_link pins apsira_core and apsira_storage by the shared tag; inside
+# the repository each resolves from its directory, as the package's own
+# pubspec_overrides.yaml does (D-APK-007).
 dependency_overrides:
   apsira_core: { path: ../../apsira_core }
+  apsira_storage: { path: ../../apsira_storage }

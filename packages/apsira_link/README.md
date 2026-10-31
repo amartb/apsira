@@ -5,9 +5,10 @@ APSIRA's `master-app/docs/contracts/app-link.md`, version 1.0). One Flutter plug
 port with typed failures over one method channel, and the package's own Kotlin, which
 resolves APSIRA and checks its certificate before any call and carries the byte streams.
 
-Dependencies: `apsira_core` (the git form at the shared tag, with the committed
-`pubspec_overrides.yaml`, D-APK-007) and `crypto` (already in its closure) for the streams'
-SHA-256. Nothing else: the trust check is the package's Kotlin.
+Dependencies: `apsira_core` and `apsira_storage` (the git form at the shared tag, with the
+committed `pubspec_overrides.yaml` of both, D-APK-007), `crypto` (already in its closure) for
+the streams' SHA-256. `apsira_storage` is for the `BackupTarget` port `ApsiraBackupTarget`
+adapts (ruling R-2); it does not depend on this package. The trust check is the package's Kotlin.
 
 ```yaml
 dependencies:
@@ -84,6 +85,23 @@ the write discarded), `ship(name)` marks a backup shipped with a snapshot id, de
 only queued copies, a shipped restore is `away` while `away`, queued bytes past `queueCap`
 are `storage_full`; `unavailable` fails every call, `failures` sets one call's failure, and
 `calls` records each call.
+
+## The APSIRA backup target (contract §5.1)
+
+`ApsiraBackupTarget(link:, backups:, appPackage:, clock:)` (`package:apsira_link/backup_target.dart`)
+is `apsira_storage`'s unchanged `BackupTarget` over these calls: the app gives it to its backup
+code instead of, or beside, `SafBackupTarget`. Its `folder` is `apsira:<appPackage>` ("APSIRA");
+`pickFolder` returns it after a good `hello` (null otherwise), `hasAccess` is that folder and a
+good `hello`, `freeBytes` is `backup_space` (null on failure).
+
+`write` refuses a taken name, queued or shipped, with `exists` before listening, then
+begins, writes and commits with the plain SHA-256 (an error from the app's own bytes is rethrown, as the port says); `rename` and
+`list` are the queue's; `read` is `restore_open` by name; `delete` removes a queued copy and
+**succeeds without deleting a shipped backup** (D-008). `storage_full` is `storageFull`,
+`not_found` on rename and read `missing`, every other failure `folderUnavailable`: an app
+without APSIRA falls back as from a folder that is gone. `FakeApsiraBackupTarget`
+(`testing/fake_apsira_backup_target.dart`) is the adapter over a good `FakeApsiraLink` and a
+`FakeApsiraBackupLink`, both exposed.
 
 ## The channel
 
@@ -201,8 +219,12 @@ mocked channel (every reply shape, a platform error, a missing plugin, a 6 s sil
 `LinkChannel`'s streams (chunking, the digest, a short, long or altered read, cancels), and
 the archive calls (each method's extras, the put cancelled on a size or SHA-256 mismatch, AO
 §4's errors, no content in a `toString`, the fake's rules).
+
 From `example/`: `flutter analyze` and `flutter test`, the consumer proof (APSIRA missing,
-a hello, a call error, a dev link) against `FakeApsiraLink`, and `release_manifest_test.dart`.
+a hello, a call error, a dev link) against `FakeApsiraLink`; `backup_restore_test.dart` (a
+backup lands queued with its SHA-256, an offer through the example's own confirmation restores
+the same bytes, APSIRA absent says unavailable); `provider_manifest_test.dart` (the example's
+`AppLinkProvider` as `doc/provider.md` declares it, no `BACKUP_JOB`) and `release_manifest_test.dart`.
 `test/example_android_test.dart` holds the Kotlin names (channel, methods, the deadline and
 pool, `F_APSIRA`, `DEV_SWITCH`) and the plugin manifest (`<queries>` for both APSIRA builds, no switch) to the
 Dart ones.
